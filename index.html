@@ -224,6 +224,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ghost { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 30; font-family: var(--f-piece); line-height: 1; font-variant-emoji: text; transform: translate(-50%, -62%) scale(1.15); filter: drop-shadow(0 6px 8px rgb(0 0 0 / .35)); }
 .ghost.w { color: var(--pc-w); paint-order: stroke fill; }
 .ghost.b { color: var(--pc-b); paint-order: stroke fill; }
+.src { font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.src:hover { color: var(--accent); }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -281,7 +283,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 <div class="app">
   <header>
     <h1>Time <span>Chess!</span></h1>
-    <div class="hdr-right"><span class="pass">Pass 3</span><button class="revbtn" id="revBtn" type="button" aria-pressed="false">Review</button></div>
+    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a><button class="revbtn" id="revBtn" type="button" aria-pressed="false">Review</button></div>
   </header>
 
   <div class="board-wrap">
