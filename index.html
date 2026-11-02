@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Chess with square-control overlays, branching timelines, Stockfish, and a piece-by-piece review.">
+<meta name="description" content="Chess with square-control overlays, branching timelines, Stockfish, a coach, and a piece-by-piece review.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>TIME CHESS!</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -226,6 +226,31 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ghost.b { color: var(--pc-b); paint-order: stroke fill; }
 .src { font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .src:hover { color: var(--accent); }
+/* Coach */
+.coachbtn[aria-pressed="true"] { background: var(--ctl-w); border-color: var(--ctl-w); color: #fff; }
+.coach { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
+.pip { width: 52px; height: 60px; margin-top: 6px; }
+@media (prefers-reduced-motion: no-preference) { .pip { animation: bob 3s ease-in-out infinite; } @keyframes bob { 50% { transform: translateY(-3px); } } }
+.bubble { position: relative; background: var(--surface); border: 1.5px solid var(--accent); border-radius: 10px; padding: 10px 12px 12px; display: grid; gap: 8px; min-width: 0; }
+.bubble::before { content: ""; position: absolute; left: -8px; top: 22px; width: 12px; height: 12px; background: var(--surface); border-left: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent); transform: rotate(45deg); }
+.bubble p { margin: 0; max-width: 65ch; font-size: 14.5px; line-height: 1.5; }
+.bubble .muted { color: var(--muted); }
+.c-tools { display: flex; gap: 4px; }
+.mini { padding: 2px 8px; border-radius: 4px; border: 1px solid var(--line); background: none; color: var(--muted); font: 600 11px var(--f-mono); cursor: pointer; }
+.mini[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.pill { display: inline-block; font: 700 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; vertical-align: 1px; margin-right: 4px; color: #fff; }
+.pill.great { background: var(--ctl-w); } .pill.good { background: var(--accent); } .pill.meh { background: var(--ctl-c); } .pill.bad { background: var(--ctl-b); }
+.c-open { font-size: 13.5px !important; color: var(--muted); } .c-open b { color: var(--ink); }
+.c-open .label { margin-right: 4px; }
+.c-book { display: flex; flex-wrap: wrap; gap: 6px; }
+.c-book .chip small { font: 500 11px var(--f-body); color: var(--muted); }
+.c-alts { font: 500 13px var(--f-mono); color: var(--muted); } .c-alts small { font-size: 11px; }
+.c-claude { border-left: 3px solid var(--sim); padding-left: 10px; font-style: italic; }
+.c-tips { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); display: grid; gap: 3px; }
+.c-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.cbtn { padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--ctl-w); background: var(--ctl-w); color: #fff; font: 600 13.5px var(--f-body); cursor: pointer; }
+.cbtn.ghost { background: none; color: var(--ink); border-color: var(--line); }
+.cbtn:disabled { opacity: .6; cursor: default; }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -283,7 +308,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 <div class="app">
   <header>
     <h1>Time <span>Chess!</span></h1>
-    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a><button class="revbtn" id="revBtn" type="button" aria-pressed="false">Review</button></div>
+    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a><button class="revbtn coachbtn" id="coachBtn" type="button" aria-pressed="false">Coach</button><button class="revbtn" id="revBtn" type="button" aria-pressed="false">Review</button></div>
   </header>
 
   <div class="board-wrap">
@@ -295,6 +320,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       <button id="navFwd" type="button" aria-label="Forward one move">›</button>
       <button id="navEnd" type="button" aria-label="Go to end of this line">»</button>
     </div>
+    <section class="coach" id="coachCard" hidden aria-live="polite">
+      <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
+      <div class="bubble">
+        <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Always draw the engine's top moves on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
+        <div id="coachBody"></div>
+      </div>
+    </section>
     <div class="ribbon-wrap">
       <div class="cardhead"><p class="label">Timeline</p><span class="engine" id="engineState">Engine loading</span></div>
       <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
@@ -515,7 +547,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     const list = Object.values(nodes).filter(n => n.id !== 0).sort((a, b) => a.id - b.id)
       .map(n => [n.id, n.parent, n.move.from, n.move.to, n.move.promotion, n.sim ? 1 : 0, n.ev]);
     const prefs = Object.values(nodes).map(n => [n.id, n.pref]);
-    return { v: 2, list, prefs, rootEv: nodes[0].ev, cur, nextId, flipped, opts, simCfg, botCfg };
+    return { v: 2, list, prefs, rootEv: nodes[0].ev, cur, nextId, flipped, opts, simCfg, botCfg, coachCfg };
   }
   function deserialize(s) {
     resetTree();
@@ -541,7 +573,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   // ---------- engine ----------
-  const engine = { worker: null, state: 'loading', job: null, queue: [], lastScore: null };
+  const engine = { worker: null, state: 'loading', job: null, queue: [], lastScore: null, lines: [] };
   function initEngine() {
     try {
       const blob = new Blob(["importScripts('" + SF_URL + "');"], { type: 'application/javascript' });
@@ -556,10 +588,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     if (line === 'readyok' && engine.state === 'loading') { engine.state = 'ready'; renderEngine(); pump(); maybeBotMove(); return; }
     if (!engine.job) return;
     if (line.startsWith('info') && line.includes(' score ') && !line.includes('bound')) {
-      const m = line.match(/score (cp|mate) (-?\d+)/); if (m) engine.lastScore = { kind: m[1], v: +m[2] };
+      const m = line.match(/score (cp|mate) (-?\d+)/);
+      if (m) { const sc = { kind: m[1], v: +m[2] }, mp = line.match(/ multipv (\d+)/), pv = line.match(/ pv (.+)$/), k = mp ? +mp[1] : 1; if (k === 1) engine.lastScore = sc; if (pv) engine.lines[k - 1] = { score: sc, pv: pv[1].trim().split(' ') }; }
     } else if (line.startsWith('bestmove')) {
       const job = engine.job; engine.job = null;
-      job.resolve({ best: line.split(' ')[1], score: engine.lastScore });
+      job.resolve({ best: line.split(' ')[1], score: engine.lastScore, lines: engine.lines.slice() });
       pump();
     }
   }
@@ -573,9 +606,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   function pump() {
     if (engine.state !== 'ready' || engine.job) return;
     if (!engine.queue.length) { analyzeNext(); if (!engine.queue.length) { renderEngine(); return; } }
-    const job = engine.queue.shift(); engine.job = job; engine.lastScore = null;
+    const job = engine.queue.shift(); engine.job = job; engine.lastScore = null; engine.lines = [];
     const w = engine.worker;
     w.postMessage('setoption name Skill Level value ' + job.cfg.skill);
+    w.postMessage('setoption name MultiPV value ' + (job.cfg.multipv || 1));
     w.postMessage('position fen ' + job.fen);
     w.postMessage('go movetime ' + job.cfg.ms);
     renderEngine();
@@ -967,7 +1001,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   function render() {
-    renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp();
+    renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     pump();
@@ -1159,7 +1193,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     card.hidden = !review;
     $('revBtn').setAttribute('aria-pressed', String(review));
     boardEl.classList.toggle('reviewing', review);
-    if (!review) { $('overlay').innerHTML = ''; return; }
+    if (!review) { renderCoachArrows(); return; }
     const J = journeys();
     renderOverlay(J);
     const RL = reviewLine().length - 1;
@@ -1225,6 +1259,286 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     const v = e.target.closest('[data-view]'); if (v) { goTo(+v.dataset.view); save(); render(); }
   });
 
+  // ---------- coach mode ----------
+  let coachCfg = { on: false, arrows: false };
+  const reveal = {};               // node id -> 'nudge' | 'best'
+  const coachText = {};            // node id -> Claude explanation
+  let coachAsk = null;             // node id being explained
+  const COACH_MS = 900;
+
+  // Opening book: SAN sequence -> [name, idea?]
+  const BOOK = {
+    'e4': ["King's Pawn Opening", 'Grabs the center and opens lines for the queen and the light-squared bishop.'],
+    'd4': ["Queen's Pawn Opening", 'Takes the center with a pawn the queen already protects.'],
+    'c4': ['English Opening', 'Fights for d5 from the side and keeps options flexible.'],
+    'Nf3': ['Réti Opening', 'Develops a knight first and waits to see how Black sets up.'],
+    'e4 e5': ['Open Game'], 'e4 e5 Nf3': ["King's Knight Opening", 'Develops with a threat on the e5 pawn.'],
+    'e4 e5 Nf3 Nc6': ["King's Knight Opening"],
+    'e4 e5 Nf3 Nc6 Bc4': ['Italian Game', 'The bishop aims at f7, the weakest square near Black’s king.'],
+    'e4 e5 Nf3 Nc6 Bc4 Bc5': ['Giuoco Piano'], 'e4 e5 Nf3 Nc6 Bc4 Bc5 c3': ['Giuoco Piano, main line', 'Prepares d4 to build a big pawn center.'],
+    'e4 e5 Nf3 Nc6 Bc4 Bc5 d3': ['Giuoco Pianissimo', 'A quiet, solid setup: castle, then maneuver.'],
+    'e4 e5 Nf3 Nc6 Bc4 Bc5 O-O': ['Italian Game, early castling'],
+    'e4 e5 Nf3 Nc6 Bc4 Nf6': ['Two Knights Defense'], 'e4 e5 Nf3 Nc6 Bc4 Nf6 d3': ['Two Knights, quiet line'], 'e4 e5 Nf3 Nc6 Bc4 Nf6 Ng5': ['Two Knights, Knight Attack', 'Goes straight for f7. Sharp!'],
+    'e4 e5 Nf3 Nc6 Bb5': ['Ruy Lopez', 'Pressures the knight that defends e5.'],
+    'e4 e5 Nf3 Nc6 Bb5 a6': ['Ruy Lopez, Morphy Defense'], 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4': ['Ruy Lopez, main line', 'Keeps the pin and the pressure.'], 'e4 e5 Nf3 Nc6 Bb5 a6 Bxc6': ['Ruy Lopez, Exchange Variation'],
+    'e4 e5 Nf3 Nc6 Bb5 Nf6': ['Ruy Lopez, Berlin Defense'], 'e4 e5 Nf3 Nc6 Bb5 Nf6 O-O': ['Berlin Defense, main line'],
+    'e4 e5 Nf3 Nc6 d4': ['Scotch Game', 'Opens the center right away.'], 'e4 e5 Nf3 Nc6 d4 exd4': ['Scotch Game'], 'e4 e5 Nf3 Nc6 d4 exd4 Nxd4': ['Scotch Game, main line'],
+    'e4 e5 Nf3 Nc6 Nc3': ['Three Knights Game'], 'e4 e5 Nf3 Nc6 Nc3 Nf6': ['Four Knights Game'],
+    'e4 e5 Nf3 Nf6': ["Petrov's Defense"], 'e4 e5 Nf3 Nf6 Nxe5': ["Petrov's Defense, main line"],
+    'e4 e5 Nf3 d6': ['Philidor Defense'], 'e4 e5 Nf3 d6 d4': ['Philidor Defense, main line'],
+    'e4 e5 f4': ["King's Gambit", 'Offers a pawn to rip open the f-file.'], 'e4 e5 Bc4': ["Bishop's Opening"], 'e4 e5 Nc3': ['Vienna Game'],
+    'e4 c5': ['Sicilian Defense'], 'e4 c5 Nf3': ['Sicilian Defense', 'Prepares d4 to open the game.'],
+    'e4 c5 Nf3 d6': ['Sicilian Defense'], 'e4 c5 Nf3 d6 d4': ['Open Sicilian'], 'e4 c5 Nf3 d6 d4 cxd4': ['Open Sicilian'], 'e4 c5 Nf3 d6 d4 cxd4 Nxd4': ['Open Sicilian, main line'],
+    'e4 c5 Nf3 Nc6': ['Sicilian Defense'], 'e4 c5 Nf3 Nc6 d4': ['Open Sicilian'], 'e4 c5 Nf3 Nc6 Bb5': ['Sicilian, Rossolimo'],
+    'e4 c5 Nf3 e6': ['Sicilian Defense'], 'e4 c5 Nf3 e6 d4': ['Open Sicilian'],
+    'e4 c5 Nc3': ['Closed Sicilian'], 'e4 c5 c3': ['Sicilian, Alapin', 'Prepares d4 so a pawn can recapture.'],
+    'e4 e6': ['French Defense'], 'e4 e6 d4': ['French Defense', 'Builds the classic two-pawn center.'], 'e4 e6 d4 d5': ['French Defense'],
+    'e4 e6 d4 d5 Nc3': ['French Defense, Nc3 lines'], 'e4 e6 d4 d5 e5': ['French, Advance Variation', 'Gains space and cramps Black.'], 'e4 e6 d4 d5 exd5': ['French, Exchange Variation'], 'e4 e6 d4 d5 Nd2': ['French, Tarrasch Variation'],
+    'e4 c6': ['Caro-Kann Defense'], 'e4 c6 d4': ['Caro-Kann Defense'], 'e4 c6 d4 d5': ['Caro-Kann Defense'],
+    'e4 c6 d4 d5 Nc3': ['Caro-Kann, main line'], 'e4 c6 d4 d5 e5': ['Caro-Kann, Advance Variation'], 'e4 c6 d4 d5 exd5': ['Caro-Kann, Exchange Variation'],
+    'e4 d5': ['Scandinavian Defense'], 'e4 d5 exd5': ['Scandinavian Defense'], 'e4 d5 exd5 Qxd5': ['Scandinavian Defense'], 'e4 d5 exd5 Qxd5 Nc3': ['Scandinavian, main line', 'Develops with tempo by attacking the queen.'],
+    'e4 Nf6': ["Alekhine's Defense"], 'e4 Nf6 e5': ["Alekhine's Defense", 'Chases the knight and gains space.'],
+    'e4 d6': ['Pirc Defense'], 'e4 d6 d4': ['Pirc Defense'], 'e4 d6 d4 Nf6': ['Pirc Defense'], 'e4 d6 d4 Nf6 Nc3': ['Pirc Defense, main line'],
+    'e4 g6': ['Modern Defense'], 'e4 g6 d4': ['Modern Defense'],
+    'd4 d5': ['Closed Game'], 'd4 d5 c4': ["Queen's Gambit", 'Offers a wing pawn to pull Black’s pawn away from the center.'],
+    'd4 d5 c4 e6': ["Queen's Gambit Declined"], 'd4 d5 c4 e6 Nc3': ["Queen's Gambit Declined"], 'd4 d5 c4 e6 Nc3 Nf6': ["Queen's Gambit Declined"],
+    'd4 d5 c4 dxc4': ["Queen's Gambit Accepted"], 'd4 d5 c4 dxc4 Nf3': ["Queen's Gambit Accepted", 'Develop first; the pawn can be won back later.'], 'd4 d5 c4 dxc4 e3': ["Queen's Gambit Accepted"],
+    'd4 d5 c4 c6': ['Slav Defense'], 'd4 d5 c4 c6 Nf3': ['Slav Defense'], 'd4 d5 c4 c6 Nc3': ['Slav Defense'],
+    'd4 d5 Nf3': ["Queen's Pawn Game"], 'd4 d5 Bf4': ['London System', 'A reliable setup: Bf4, e3, Nf3, Bd3, then castle.'],
+    'd4 Nf6': ['Indian Defense'], 'd4 Nf6 c4': ['Indian Defense'], 'd4 Nf6 c4 e6': ['Indian Defense'],
+    'd4 Nf6 c4 e6 Nc3': ['Indian Defense'], 'd4 Nf6 c4 e6 Nc3 Bb4': ['Nimzo-Indian Defense'], 'd4 Nf6 c4 e6 Nc3 Bb4 e3': ['Nimzo-Indian, Rubinstein'], 'd4 Nf6 c4 e6 Nc3 Bb4 Qc2': ['Nimzo-Indian, Classical'],
+    'd4 Nf6 c4 e6 Nf3': ["Queen's Indian setup"], 'd4 Nf6 c4 e6 Nf3 b6': ["Queen's Indian Defense"],
+    'd4 Nf6 c4 g6': ["King's Indian setup"], 'd4 Nf6 c4 g6 Nc3': ["King's Indian setup"],
+    'd4 Nf6 c4 g6 Nc3 Bg7': ["King's Indian Defense"], 'd4 Nf6 c4 g6 Nc3 Bg7 e4': ["King's Indian, main line", 'Take the big center while you can.'],
+    'd4 Nf6 c4 g6 Nc3 d5': ['Grünfeld Defense'], 'd4 Nf6 c4 g6 Nc3 d5 cxd5': ['Grünfeld, Exchange Variation'],
+    'd4 Nf6 Bf4': ['London System', 'A reliable setup: Bf4, e3, Nf3, Bd3, then castle.'], 'd4 Nf6 Nf3': ['Indian Game'],
+    'd4 f5': ['Dutch Defense'], 'd4 f5 g3': ['Dutch Defense'], 'd4 f5 c4': ['Dutch Defense'],
+    'c4 e5': ['English, Reversed Sicilian'], 'c4 e5 Nc3': ['English Opening'], 'c4 Nf6': ['English, Anglo-Indian'], 'c4 Nf6 Nc3': ['English Opening'],
+    'c4 c5': ['Symmetrical English'], 'c4 c5 Nf3': ['Symmetrical English'], 'c4 e6': ['English Opening'], 'c4 e6 Nc3': ['English Opening'],
+    'Nf3 d5': ['Réti Opening'], 'Nf3 d5 c4': ['Réti Opening'], 'Nf3 d5 g3': ['Réti, King’s Indian Attack setup'], 'Nf3 Nf6': ['Réti Opening'], 'Nf3 Nf6 c4': ['English Opening']
+  };
+  const clean = san => san.replace(/[+#?!]/g, '');
+  function bookInfo(path) {
+    const seq = path.slice(1).map(n => clean(n.san));
+    let name = null, idea = null, depth = 0;
+    for (let k = seq.length; k > 0; k--) { const e = BOOK[seq.slice(0, k).join(' ')]; if (e) { name = e[0]; idea = e[1] || null; depth = k; break; } }
+    const inBook = depth === seq.length;
+    const key = seq.join(' '), next = [];
+    if (inBook) for (const k in BOOK) { if (key ? k.startsWith(key + ' ') : true) { const rest = key ? k.slice(key.length + 1) : k; if (rest && !rest.includes(' ')) next.push({ san: rest, name: BOOK[k][0], idea: BOOK[k][1] || null }); } }
+    return { name, idea, inBook: inBook && seq.length > 0, next };
+  }
+
+  const PNAME = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+  const PVAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+  function sanOf(fen, uci) { try { const g = new Chess(fen); const r = g.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' }); return r ? r.san : uci; } catch (e) { return uci; } }
+
+  // Plain-language reasons a move is good, read off the position (not the engine).
+  function explain(fen, uci, ev) {
+    const g = new Chess(fen), me = g.turn(), them = me === 'w' ? 'b' : 'w';
+    const before = attackMap(g);
+    const from = uci.slice(0, 2), to = uci.slice(2, 4);
+    const piece = g.get(from);
+    const r = g.move({ from, to, promotion: uci[4] || 'q' }); if (!r) return [];
+    const after = attackMap(g);
+    const at = s => { const [f, k] = sqXY(s); return idx(f, k); };
+    const out = [];
+    if (r.san.endsWith('#')) return ['it’s checkmate'];
+    if (ev && ev.mate != null && (me === 'w' ? ev.mate > 0 : ev.mate < 0)) out.push('it starts a forced mate in ' + Math.abs(ev.mate));
+    if (r.flags.includes('k') || r.flags.includes('q')) out.push('it castles, tucking your king away and connecting your rooks');
+    if (r.captured) {
+      const i = at(r.to), defenders = after[them][i];
+      if (!defenders) out.push('it wins a ' + PNAME[r.captured] + ' for free');
+      else if (PVAL[r.captured] > PVAL[piece.type]) out.push('it wins material: your ' + PNAME[piece.type] + ' takes a ' + PNAME[r.captured]);
+      else out.push('it trades off ' + (them === 'w' ? 'White' : 'Black') + '’s ' + PNAME[r.captured]);
+    }
+    if (r.promotion) out.push('it promotes to a ' + PNAME[r.promotion]);
+    if (r.san.endsWith('+') && !out.length) out.push('it gives check');
+    // threats from the moved piece
+    const [tf, tr] = sqXY(r.to);
+    const hits = attacksFrom(g, tf, tr, g.get(r.to)).map(i => sqName(i % 8, Math.floor(i / 8))).filter(s => { const p = g.get(s); return p && p.color === them && p.type !== 'k'; });
+    const targets = hits.filter(s => { const p = g.get(s), i = at(s); return after[them][i] === 0 || PVAL[p.type] > PVAL[piece.type]; });
+    if (targets.length >= 2) out.push('it forks the ' + PNAME[g.get(targets[0]).type] + ' and the ' + PNAME[g.get(targets[1]).type]);
+    else if (targets.length) out.push('it attacks the ' + PNAME[g.get(targets[0]).type] + ' on ' + targets[0]);
+    // safety: moving out of danger / defending
+    const fi = at(from);
+    if (before[them][fi] > before[me][fi] && piece.type !== 'p' && !r.captured) out.push('it moves your ' + PNAME[piece.type] + ' out of danger');
+    for (const s of Object.keys(cells)) {
+      const p = g.get(s); if (!p || p.color !== me || s === r.to) continue;
+      const i = at(s);
+      if (before[them][i] > before[me][i] && !(after[them][i] > after[me][i])) { out.push('it defends your ' + PNAME[p.type] + ' on ' + s); break; }
+    }
+    // development and center
+    const homeRank = me === 'w' ? '1' : '8';
+    if ((piece.type === 'n' || piece.type === 'b') && from[1] === homeRank) out.push('it develops your ' + PNAME[piece.type]);
+    const center = ['d4', 'e4', 'd5', 'e5'];
+    if (center.includes(r.to) && piece.type === 'p') out.push('it stakes a claim in the center');
+    else { const gain = center.reduce((a, s) => a + after[me][at(s)] - before[me][at(s)], 0); if (gain >= 2 && out.length < 2) out.push('it adds pressure on the center'); }
+    if (piece.type === 'r') { const file = r.to[0]; let pawns = 0; for (let k = 1; k <= 8; k++) { const p = g.get(file + k); if (p && p.type === 'p') pawns++; } if (!pawns) out.push('it puts the rook on an open file'); }
+    if (piece.type === 'q' && Math.ceil((g.history().length || 0) / 2) <= 6 && !r.captured && !out.length) out.push('the queen joins the fight, but watch that she doesn’t get chased around');
+    return [...new Set(out)].slice(0, 3);
+  }
+  const joinReasons = rs => rs.length ? (rs.length === 1 ? rs[0] : rs.slice(0, -1).join(', ') + ' and ' + rs[rs.length - 1]) : 'it’s the engine’s top choice and improves your position';
+
+  function principleTips(g) {
+    const me = g.turn(), them = me === 'w' ? 'b' : 'w', tips = [];
+    const hist = g.history({ verbose: true }), mine = hist.filter(m => m.color === me);
+    const moveNo = Math.ceil((hist.length + 1) / 2);
+    const homeRank = me === 'w' ? '1' : '8';
+    const undeveloped = ['b', 'c', 'f', 'g'].filter(f => { const p = g.get(f + homeRank); return p && p.color === me && (p.type === 'n' || p.type === 'b'); }).length;
+    if (moveNo <= 10 && mine.filter(m => m.piece === 'q').length >= 2 && undeveloped >= 2) tips.push('Bring out your knights and bishops before going on queen adventures.');
+    const castled = mine.some(m => m.flags.includes('k') || m.flags.includes('q'));
+    const canCastle = g.fen().split(' ')[2].split('').some(c => me === 'w' ? 'KQ'.includes(c) : 'kq'.includes(c));
+    if (!castled && canCastle && moveNo >= 7) tips.push('Your king is still in the middle. Castling soon will keep it safe.');
+    if (moveNo <= 12 && undeveloped >= 3 && moveNo >= 5) tips.push('You still have ' + undeveloped + ' minor pieces at home. Developing them is usually the priority.');
+    const map = attackMap(g);
+    for (const s of Object.keys(cells)) {
+      const p = g.get(s); if (!p || p.color !== me || p.type === 'k') continue;
+      const [f, k] = sqXY(s), i = idx(f, k);
+      if (map[them][i] > map[me][i]) { tips.unshift('Heads up: your ' + PNAME[p.type] + ' on ' + s + ' is attacked ' + map[them][i] + (map[them][i] > 1 ? ' times' : ' time') + ' and defended ' + (map[me][i] || 'zero') + (map[me][i] === 1 ? ' time.' : ' times.')); break; }
+    }
+    return tips.slice(0, 2);
+  }
+
+  function humanTurnNow() { return !(botCfg.on && game.turn() === 'b') && !game.game_over() && !sim; }
+  function requestCoach(n) {
+    if (!n || n.coach || n.coachPending || engine.state !== 'ready' || sim) return;
+    const g = new Chess(n.fen); if (g.game_over()) return;
+    n.coachPending = true;
+    runEngine(n.fen, { skill: 20, ms: COACH_MS, multipv: 3 }, true).then(r => {
+      n.coachPending = false; if (!nodes[n.id]) return;
+      const lines = (r.lines || []).filter(l => l && l.pv && l.pv[0]).map(l => ({ uci: l.pv[0], ev: toWhite(l.score, n.fen) }));
+      if (!lines.length && r.best && r.best !== '(none)') lines.push({ uci: r.best, ev: toWhite(r.score, n.fen) });
+      n.coach = { lines };
+      if (!n.ev && lines[0]) n.ev = lines[0].ev;
+      render();
+    });
+  }
+  function verdictFor(n) {
+    if (!n || n.id === 0) return null;
+    const par = nodes[n.parent];
+    const pathSoFar = pathTo(n.id);
+    const bk = bookInfo(pathSoFar);
+    const best = par.coach && par.coach.lines[0];
+    const isBest = best && best.uci === n.move.from + n.move.to + (n.move.promotion || '');
+    const a = evVal(par.ev), b = evVal(n.ev);
+    let label, cls;
+    if (bk.inBook && bk.name) { label = 'Book move'; cls = 'good'; }
+    else if (isBest) { label = 'Best move'; cls = 'great'; }
+    else if (a == null || b == null) return { pending: true, n };
+    else {
+      const fm = n.color === 'w' ? b - a : a - b;
+      if (fm >= -0.04) { label = 'Good move'; cls = 'good'; }
+      else if (fm >= -0.12) { label = 'Inaccuracy'; cls = 'meh'; }
+      else if (fm >= -0.3) { label = 'Mistake'; cls = 'bad'; }
+      else { label = 'Blunder'; cls = 'bad'; }
+    }
+    let better = null;
+    if (best && !isBest && cls !== 'good' && cls !== 'great') better = { san: sanOf(par.fen, best.uci), why: joinReasons(explain(par.fen, best.uci, best.ev)) };
+    return { label, cls, n, better };
+  }
+
+  function renderCoach() {
+    const card = $('coachCard');
+    $('coachBtn').setAttribute('aria-pressed', String(coachCfg.on));
+    card.hidden = !coachCfg.on;
+    if (!coachCfg.on) return;
+    const n = nodes[cur], path = pathTo(cur), bk = bookInfo(path);
+    // last move verdict: in a Stockfish game, judge White's most recent move; in hotseat, the move just played
+    let vn = cur ? n : null;
+    if (botCfg.on) { vn = n; while (vn && vn.id !== 0 && vn.color !== 'w') vn = nodes[vn.parent]; if (vn && vn.id === 0) vn = null; }
+    if (vn && !nodes[vn.parent].coach) requestCoach(nodes[vn.parent]);
+    const v = vn ? verdictFor(vn) : null;
+    let h = '';
+    if (v && !v.pending) {
+      h += '<p class="c-verdict"><span class="pill ' + v.cls + '">' + v.label + '</span> ' + esc(moveLabel(v.n)) + (v.better ? '. Stronger was <b>' + esc(v.better.san) + '</b>, because ' + esc(v.better.why) + '.' : '') + '</p>';
+    } else if (v && v.pending) h += '<p class="c-verdict muted">Checking your last move…</p>';
+
+    if (bk.name) h += '<p class="c-open"><span class="label">Opening</span> <b>' + esc(bk.name) + '</b>' + (bk.idea ? ' · ' + esc(bk.idea) : '') + '</p>';
+
+    let actions = '';
+    if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Review to see the turning points.</p>';
+    else if (sim) h += '<p class="c-main muted">Watching the simulation.</p>';
+    else if (!humanTurnNow()) h += '<p class="c-main muted">Stockfish is choosing its reply…</p>';
+    else {
+      const side = game.turn() === 'w' ? 'White' : 'Black';
+      if (bk.next.length && path.length <= 12) {
+        h += '<p class="c-main">' + (path.length === 1 ? 'Pick an opening. Popular first moves:' : 'Book moves for ' + side + ' here:') + '</p><div class="c-book">' +
+          bk.next.slice(0, 4).map(b => '<button type="button" class="chip" data-bookmove="' + esc(b.san) + '" title="' + esc(b.idea || '') + '">' + esc(b.san) + ' <small>' + esc(b.name) + '</small></button>').join('') + '</div>';
+      }
+      if (!n.coach) { requestCoach(n); h += '<p class="c-main muted">' + (engine.state === 'ready' ? 'Looking for good moves…' : engine.state === 'off' ? 'The engine isn’t available, so I can only offer opening advice.' : 'Warming up the engine…') + '</p>'; }
+      else {
+        const best = n.coach.lines[0], rv = reveal[cur];
+        if (!best) h += '<p class="c-main">No legal moves to suggest.</p>';
+        else if (rv === 'best') {
+          const why = explain(n.fen, best.uci, best.ev);
+          h += '<p class="c-main">Try <b>' + esc(sanOf(n.fen, best.uci)) + '</b>, because ' + esc(joinReasons(why)) + '.</p>';
+          const alts = n.coach.lines.slice(1).map(l => esc(sanOf(n.fen, l.uci)) + ' <small>' + fmtEval(l.ev).t + '</small>');
+          if (alts.length) h += '<p class="c-alts">Also playable: ' + alts.join(' · ') + '</p>';
+          if (coachText[cur]) h += '<p class="c-claude">' + esc(coachText[cur]) + '</p>';
+          if (sampler && !coachText[cur]) actions += '<button type="button" class="cbtn" data-coach="claude"' + (coachAsk === cur ? ' disabled' : '') + '>' + (coachAsk === cur ? 'Claude is thinking…' : 'Ask Claude to explain') + '</button>';
+        } else if (rv === 'nudge') {
+          const p = game.get(best.uci.slice(0, 2));
+          h += '<p class="c-main">Look at your <b>' + PNAME[p.type] + ' on ' + best.uci.slice(0, 2) + '</b>. It has a strong move.</p>';
+          actions += '<button type="button" class="cbtn" data-coach="best">Show the move</button>';
+        } else {
+          h += '<p class="c-main">I see a good move here. Want a hint?</p>';
+          actions += '<button type="button" class="cbtn" data-coach="nudge">Give me a nudge</button><button type="button" class="cbtn ghost" data-coach="best">Show the move</button>';
+        }
+      }
+      const tips = principleTips(game);
+      if (tips.length) h += '<ul class="c-tips">' + tips.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>';
+    }
+    $('coachBody').innerHTML = h + (actions ? '<div class="c-acts">' + actions + '</div>' : '');
+    $('coachArrows').setAttribute('aria-pressed', String(coachCfg.arrows));
+  }
+
+  function renderCoachArrows() {
+    const svg = $('overlay');
+    const n = nodes[cur];
+    if (!coachCfg.on || !n.coach || !n.coach.lines.length || !humanTurnNow()) { svg.innerHTML = ''; return; }
+    const rv = reveal[cur];
+    const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
+    let h = '<defs><marker id="cah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ctl-w)"/></marker><marker id="cah2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>';
+    if (rv === 'nudge') { const [x, y] = XY(n.coach.lines[0].uci.slice(0, 2)); h += '<circle cx="' + x + '" cy="' + y + '" r=".46" fill="none" stroke="var(--ctl-w)" stroke-width=".09" stroke-dasharray=".18 .1"/>'; }
+    else if (rv === 'best' || coachCfg.arrows) {
+      n.coach.lines.slice().reverse().forEach((l, k, arr) => {
+        const top = k === arr.length - 1;
+        const [x1, y1] = XY(l.uci.slice(0, 2)), [x2, y2] = XY(l.uci.slice(2, 4)), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+        const ax = x1 + dx / L * .2, ay = y1 + dy / L * .2, bx = x2 - dx / L * .3, by = y2 - dy / L * .3;
+        h += '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" stroke="' + (top ? 'var(--ctl-w)' : 'var(--accent)') + '" stroke-width="' + (top ? .16 : .09) + '" stroke-linecap="round" opacity="' + (top ? .9 : .55) + '" marker-end="url(#' + (top ? 'cah' : 'cah2') + ')"/>';
+      });
+    }
+    svg.innerHTML = h;
+  }
+
+  async function askClaudeCoach() {
+    const id = cur, n = nodes[id]; if (!sampler || !n.coach || coachAsk != null) return;
+    coachAsk = id; renderCoach();
+    const moves = []; pathTo(id).slice(1).forEach((m, i) => { if (i % 2 === 0) moves.push(Math.ceil(m.ply / 2) + '. ' + m.san); else moves[moves.length - 1] += ' ' + m.san; });
+    const lines = n.coach.lines.map(l => sanOf(n.fen, l.uci) + ' (' + fmtEval(l.ev).t + ', White’s view)').join(', ');
+    const best = n.coach.lines[0];
+    const prompt = 'You are a friendly chess coach for a beginner-to-intermediate player. Explain in 2 to 3 short sentences, in plain language, why the suggested move is good and what plan it supports. ' +
+      'Be concrete about squares and pieces but do not invent tactics you cannot see from the data. No headings, no lists.\n\n' +
+      'Side to move: ' + (game.turn() === 'w' ? 'White' : 'Black') + '\nFEN: ' + n.fen + '\nMoves so far: ' + (moves.join(' ') || '(start)') + '\n' +
+      'Engine top moves: ' + lines + '\nSuggested move: ' + sanOf(n.fen, best.uci) + '\nPosition-based reasons: ' + joinReasons(explain(n.fen, best.uci, best.ev));
+    try { const r = await sampler(prompt, { cache: { gcTime: 86400000 } }); coachText[id] = r.text.trim(); }
+    catch (e) { if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(e && e.code)) sampler = null; }
+    coachAsk = null; renderCoach();
+  }
+
+  $('coachBtn').onclick = () => { coachCfg.on = !coachCfg.on; save(); render(); };
+  $('coachClose').onclick = () => { coachCfg.on = false; save(); render(); };
+  $('coachArrows').onclick = () => { coachCfg.arrows = !coachCfg.arrows; save(); render(); };
+  $('coachCard').addEventListener('click', e => {
+    const c = e.target.closest('[data-coach]');
+    if (c) { const k = c.dataset.coach; if (k === 'claude') askClaudeCoach(); else { reveal[cur] = k; render(); } return; }
+    const b = e.target.closest('[data-bookmove]');
+    if (b && humanTurnNow()) {
+      const g = new Chess(game.fen()), r = g.move(b.dataset.bookmove);
+      if (r) { const all = game.moves({ verbose: true }); const m = all.find(x => x.san === r.san); if (m) { addChild({ from: m.from, to: m.to, promotion: m.promotion }, false); save(); render(); } }
+    }
+  });
+
   // ---------- events ----------
   $('ribInner').addEventListener('click', e => {
     if (sim) return;
@@ -1270,6 +1584,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       if (s.opts) opts = Object.assign(opts, s.opts);
       if (s.simCfg) simCfg = Object.assign(simCfg, s.simCfg);
       if (s.botCfg) botCfg = Object.assign(botCfg, s.botCfg);
+      if (s.coachCfg) coachCfg = Object.assign(coachCfg, s.coachCfg);
       if (s.migrate) { for (const m of s.migrate) if (!addChild(m, false)) break; }
       else deserialize(s);
     }
