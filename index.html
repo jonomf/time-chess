@@ -323,7 +323,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <section class="coach" id="coachCard" hidden aria-live="polite">
       <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
       <div class="bubble">
-        <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Always draw the engine's top moves on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
+        <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
         <div id="coachBody"></div>
       </div>
     </section>
@@ -1260,7 +1260,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   });
 
   // ---------- coach mode ----------
-  let coachCfg = { on: false, arrows: false };
+  let coachCfg = { on: false, showArrows: true };
   const reveal = {};               // node id -> 'nudge' | 'best'
   const coachText = {};            // node id -> Claude explanation
   let coachAsk = null;             // node id being explained
@@ -1467,7 +1467,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       }
       if (!n.coach) { requestCoach(n); h += '<p class="c-main muted">' + (engine.state === 'ready' ? 'Looking for good moves…' : engine.state === 'off' ? 'The engine isn’t available, so I can only offer opening advice.' : 'Warming up the engine…') + '</p>'; }
       else {
-        const best = n.coach.lines[0], rv = reveal[cur];
+        const best = n.coach.lines[0], rv = reveal[cur] || 'best';
         if (!best) h += '<p class="c-main">No legal moves to suggest.</p>';
         else if (rv === 'best') {
           const why = explain(n.fen, best.uci, best.ev);
@@ -1489,18 +1489,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       if (tips.length) h += '<ul class="c-tips">' + tips.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>';
     }
     $('coachBody').innerHTML = h + (actions ? '<div class="c-acts">' + actions + '</div>' : '');
-    $('coachArrows').setAttribute('aria-pressed', String(coachCfg.arrows));
+    $('coachArrows').setAttribute('aria-pressed', String(coachCfg.showArrows));
   }
 
   function renderCoachArrows() {
     const svg = $('overlay');
     const n = nodes[cur];
     if (!coachCfg.on || !n.coach || !n.coach.lines.length || !humanTurnNow()) { svg.innerHTML = ''; return; }
-    const rv = reveal[cur];
+    if (!coachCfg.showArrows) { svg.innerHTML = ''; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     let h = '<defs><marker id="cah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ctl-w)"/></marker><marker id="cah2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>';
-    if (rv === 'nudge') { const [x, y] = XY(n.coach.lines[0].uci.slice(0, 2)); h += '<circle cx="' + x + '" cy="' + y + '" r=".46" fill="none" stroke="var(--ctl-w)" stroke-width=".09" stroke-dasharray=".18 .1"/>'; }
-    else if (rv === 'best' || coachCfg.arrows) {
+    { const [x, y] = XY(n.coach.lines[0].uci.slice(0, 2)); h += '<circle cx="' + x + '" cy="' + y + '" r=".46" fill="none" stroke="var(--ctl-w)" stroke-width=".09" stroke-dasharray=".18 .1"/>'; }
+    {
       n.coach.lines.slice().reverse().forEach((l, k, arr) => {
         const top = k === arr.length - 1;
         const [x1, y1] = XY(l.uci.slice(0, 2)), [x2, y2] = XY(l.uci.slice(2, 4)), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
@@ -1528,7 +1528,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   $('coachBtn').onclick = () => { coachCfg.on = !coachCfg.on; save(); render(); };
   $('coachClose').onclick = () => { coachCfg.on = false; save(); render(); };
-  $('coachArrows').onclick = () => { coachCfg.arrows = !coachCfg.arrows; save(); render(); };
+  $('coachArrows').onclick = () => { coachCfg.showArrows = !coachCfg.showArrows; save(); render(); };
   $('coachCard').addEventListener('click', e => {
     const c = e.target.closest('[data-coach]');
     if (c) { const k = c.dataset.coach; if (k === 'claude') askClaudeCoach(); else { reveal[cur] = k; render(); } return; }
