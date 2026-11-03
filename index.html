@@ -1554,7 +1554,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     const svg = $('overlay');
     const n = nodes[cur];
     if (!coachCfg.on || !n.coach || !n.coach.lines.length || !humanTurnNow()) { svg.innerHTML = ''; return; }
-    if (!coachCfg.showArrows) { svg.innerHTML = ''; return; }
+    if (!coachCfg.showArrows || inspectSq) { svg.innerHTML = ''; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     let h = '<defs><marker id="cah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ctl-w)"/></marker><marker id="cah2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>';
     { const [x, y] = XY(n.coach.lines[0].uci.slice(0, 2)); h += '<circle cx="' + x + '" cy="' + y + '" r=".46" fill="none" stroke="var(--ctl-w)" stroke-width=".09" stroke-dasharray=".18 .1"/>'; }
