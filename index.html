@@ -2007,7 +2007,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   $('simBtn').onclick = () => { if (sim) { sim.stop = true; } else startSim(); };
   $('flip').onclick = () => { flipped = !flipped; prevSq = null; buildBoard(); save(); render(); };
   const confirmEl = $('confirm'), controlsEl = $('controls');
-  $('newgame').onclick = () => { if (sim) return; confirmEl.hidden = false; controlsEl.hidden = true; $('confirmNo').focus(); };
+  $('newgame').onclick = () => { if (sim) return; if (navTimer) stopNav(); resetTree(); forkOpen = null; focus = null; review = false; prevSq = null; applyState(); };
   $('confirmNo').onclick = () => { confirmEl.hidden = true; controlsEl.hidden = false; };
   $('confirmYes').onclick = () => { resetTree(); forkOpen = null; focus = null; review = false; confirmEl.hidden = true; controlsEl.hidden = false; save(); render(); };
   for (const t of document.querySelectorAll('.tog')) t.onclick = () => { opts[t.dataset.opt] = !opts[t.dataset.opt]; save(); render(); };
