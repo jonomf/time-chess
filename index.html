@@ -2396,12 +2396,12 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     for (let i = 1; i < path.length; i++) { const par = GO.nodes[path[i].parent]; par.pref = par.children.indexOf(path[i].id); }
     GO.cur = id; GO.st = goStateOf(GO.nodes[id]);
   }
-  function goOver(n) { n = n || GO.nodes[GO.cur]; if (!n.parent && n.parent !== 0) return false; const par = GO.nodes[n.parent]; return n.p === -1 && par && par.p === -1; }
+  function goOver(n) { n = n || GO.nodes[GO.cur]; if (!n.parent && n.parent !== 0) return false; if (n.p === -2) return true; const par = GO.nodes[n.parent]; return n.p === -1 && par && par.p === -1; }
   function goAdd(p, sim) {
     const here = GO.nodes[GO.cur];
     const same = here.children.map(c => GO.nodes[c]).find(c => c.p === p && !!c.sim === !!sim);
     if (same) { goGoTo(same.id); return same; }
-    const s = goStateOf(here), mover = s.turn, r = GC.play(s, p);
+    const s = goStateOf(here), mover = s.turn, r = p === -2 ? { captured: [] } : GC.play(s, p);
     if (!r) return null;
     const caps = here.caps.slice(); caps[mover] += r.captured.length;
     const n = { id: GO.nextId++, parent: here.id, children: [], pref: 0, p, color: mover, ply: here.ply + 1, enc: GC.encode(s), ko: s.ko, turn: s.turn, caps, capN: r.captured.length, sim: !!sim, ev: null };
@@ -2409,7 +2409,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     GO.cur = n.id; GO.st = s;
     return n;
   }
-  const goLabel = (p) => { if (p === -1) return 'Pass'; const [x, y] = GC.xy(GO.st || GC.make(GO.N), p); return GO_LETTERS[x] + (GO.N - y); };
+  const goLabel = (p) => { if (p === -1) return 'Pass'; if (p === -2) return 'Resigns'; const [x, y] = GC.xy(GO.st || GC.make(GO.N), p); return GO_LETTERS[x] + (GO.N - y); };
   const goMoveLabel = n => n.ply + '. ' + (n.color === 1 ? 'B ' : 'W ') + goLabel(n.p);
 
   // ---- persistence ----
@@ -2505,6 +2505,14 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     let sum = 0; for (const v of r.own) sum += v;
     const est = sum - GO.komi, winning = myColor === 1 ? est > 0 : est < 0;
     if (!m || m.p < 0) return -1;
+    // concede: hopeless on this turn and on its previous turn, with the board well filled
+    let stones = 0; { const st = goStateOf(n); for (let i = 0; i < st.b.length; i++) if (st.b[i] === 1 || st.b[i] === 2) stones++; }
+    const behind = myColor === 1 ? -est : est;
+    const gp = par && par.parent != null ? GO.nodes[par.parent] : null;
+    const prevWr = gp && gp.ev ? (myColor === 1 ? gp.ev.wr : 1 - gp.ev.wr) : null;
+    // the expected score is the steady signal; the best move's own rate is noisy, so it only has to agree loosely
+    const lost = behind > Math.max(10, GO.N * 1.2) && stones > GO.N * GO.N * 0.15;
+    if (lost && (prevWr != null ? prevWr < 0.15 : behind > GO.N * 2.5)) return -2;
     if (n.p === -1 && winning) return -1;                         // opponent passed and we are ahead
     if (n.ply > GO.N * GO.N * 1.4) return -1;                      // the game has run very long
     if (m.wr < 0.03 && n.ply > GO.N * GO.N * 0.5) return -1;        // nothing left worth playing
@@ -2544,6 +2552,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   // ---- scoring ----
   function goResult(n) {
     n = n || GO.nodes[GO.cur];
+    if (n.p === -2) { const w = n.color === 1 ? 'White' : 'Black'; return { diff: n.color === 1 ? -999 : 999, text: w + ' wins by resignation' }; }
     const s = goStateOf(n), own = n.ev && n.ev.own;
     // remove stones the analysis judges dead, then count area
     if (own) for (let y = 0; y < GO.N; y++) for (let x = 0; x < GO.N; x++) {
@@ -2624,7 +2633,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       coach: '<div class="coach">' + GO_PIP + '<div class="bubble"><div class="c-tools"><button type="button" class="mini" id="goCoachMarks" aria-pressed="true" title="Show suggested points on the board">Marks</button></div><div class="c-body" id="goCoachBody"></div></div></div>',
       review: '<p class="label">Turning points</p><div class="turns" id="goTurns"></div><p class="label">Biggest captures</p><div class="turns" id="goCaps"></div><p class="label">The story so far</p><p class="story" id="goStory"></p><button class="btn simgo" id="goStoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="goStoryNote" hidden></p>',
       sim: '<div class="simrow"><div class="seg" id="goSegLen"><span class="label">Length</span><button type="button" data-len="20">10 moves</button><button type="button" data-len="60">30 moves</button><button type="button" data-len="400">To the end</button></div><div class="seg" id="goSegStr"><span class="label">Strength</span><button type="button" data-str="strong">Strong</button><button type="button" data-str="club">Club</button><button type="button" data-str="casual">Casual</button></div><div class="seg" id="goSegPace"><span class="label">Speed</span><button type="button" data-pace="0">Fastest</button><button type="button" data-pace="200">Fast</button><button type="button" data-pace="700">Normal</button><button type="button" data-pace="1600">Slow</button></div><button class="btn simgo" id="goSimBtn" type="button">Simulate from here</button></div>',
-      game: '<p class="gostatus" id="goStatus"></p><div class="seg" id="goSegSize"><span class="label">Board</span><button type="button" data-size="9">9×9</button><button type="button" data-size="13">13×13</button><button type="button" data-size="19">19×19</button></div><div class="seg" id="goSegKomi"><span class="label">Komi</span><button type="button" data-komi="5.5">5.5</button><button type="button" data-komi="6.5">6.5</button><button type="button" data-komi="7.5">7.5</button></div><p class="note" id="goNextNote" hidden>Board size and komi apply when you start a new game.</p><div class="seg" id="goSegOpp"><span class="label">White</span><button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Computer</button></div><div class="diff" id="goDiffRow"><div class="diffhead"><label for="goDiff">Difficulty</label><span id="goDiffName"></span></div><input type="range" id="goDiff" min="1" max="10" step="1"><div class="diffscale"><span>Beginner</span><span>Strongest</span></div></div><div class="controls" id="goControls"><button class="btn" id="goPass" type="button">Pass</button><button class="btn danger" id="goNew" type="button">New game</button></div><div class="confirm" id="goConfirm" hidden><button class="btn primary" id="goConfirmYes" type="button">Start new game</button><button class="btn" id="goConfirmNo" type="button">Keep playing</button></div>',
+      game: '<p class="gostatus" id="goStatus"></p><div class="seg" id="goSegSize"><span class="label">Board</span><button type="button" data-size="9">9×9</button><button type="button" data-size="13">13×13</button><button type="button" data-size="19">19×19</button></div><div class="seg" id="goSegKomi"><span class="label">Komi</span><button type="button" data-komi="5.5">5.5</button><button type="button" data-komi="6.5">6.5</button><button type="button" data-komi="7.5">7.5</button></div><p class="note" id="goNextNote" hidden>Board size and komi apply when you start a new game.</p><div class="seg" id="goSegOpp"><span class="label">White</span><button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Computer</button></div><div class="diff" id="goDiffRow"><div class="diffhead"><label for="goDiff">Difficulty</label><span id="goDiffName"></span></div><input type="range" id="goDiff" min="1" max="10" step="1"><div class="diffscale"><span>Beginner</span><span>Strongest</span></div></div><div class="controls" id="goControls"><button class="btn" id="goPass" type="button">Pass</button><button class="btn" id="goResign" type="button">Resign</button><button class="btn danger" id="goNew" type="button">New game</button></div><div class="confirm" id="goConfirm" hidden><button class="btn primary" id="goConfirmYes" type="button">Start new game</button><button class="btn" id="goConfirmNo" type="button">Keep playing</button></div>',
       settings: '<div class="toggles"><button class="tog" data-gov="territory" type="button"><span>Territory map<small>Shade each point by who is likely to own it at the end, from the engine’s playouts. Small squares on stones mark ones that look dead.</small></span><span class="sw2"></span></button><button class="tog" data-gov="atari" type="button"><span>Atari warnings<small>Red ring on any group down to its last liberty.</small></span><span class="sw2"></span></button><button class="tog" data-gov="libs" type="button"><span>Liberty counts<small>Number of liberties on each group with three or fewer.</small></span><span class="sw2"></span></button><button class="tog" data-gov="numbers" type="button"><span>Move numbers<small>Number every stone by the move it was played.</small></span><span class="sw2"></span></button></div><div class="seg" id="goSegSpeed"><span class="label">Replay</span><button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button></div>'
     };
     for (const k in body) {
@@ -2759,6 +2768,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       const label = n.id ? goMoveLabel(n) : 'Start';
       dots += '<g data-gonode="' + n.id + '" role="button" tabindex="0" aria-label="' + esc(label) + '"><title>' + esc(label) + (n.ev ? ' (' + goEvText(n.ev) + ')' : '') + '</title><circle cx="' + x + '" cy="' + y + '" r="12" fill="transparent"/>' +
         (n.id === 0 ? '<rect x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" fill="' + (isCur ? 'var(--accent)' : 'var(--ink)') + '"/>'
+          : n.p === -2 ? '<rect x="' + (x - 7) + '" y="' + (y - 7) + '" width="14" height="14" rx="3" fill="var(--ctl-b)" stroke="' + (isCur ? 'var(--ink)' : 'none') + '" stroke-width="2"/>'
           : n.p === -1 ? '<circle cx="' + x + '" cy="' + y + '" r="' + (isCur ? 9 : 7) + '" fill="var(--surface)" stroke="' + ring + '" stroke-width="2" stroke-dasharray="2 2"/>'
           : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 10 : 7.5) + '" fill="' + (n.color === 1 ? '#1c2320' : '#f6f4ee') + '" stroke="' + (isCur ? 'var(--ink)' : ring) + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
       if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + goLabel(n.p) + '</text>';
@@ -2790,7 +2800,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       }
     }
     let acts = '';
-    if (goOver()) h += '<p class="c-main">Both players passed. ' + goResult().text + '. Open Story Mode for the turning points.</p>';
+    if (goOver()) h += '<p class="c-main">' + (n.p === -2 ? (n.color === GO.bot.color && GO.bot.on ? 'The computer saw no way back and resigned. ' : (n.color === 1 ? 'Black' : 'White') + ' resigned. ') : 'Both players passed. ') + goResult().text + '. Open Story Mode for the turning points.</p>';
     else if (GO.sim) h += '<p class="c-main muted">Watching the simulation.</p>';
     else if (!goHumanTurn()) h += '<p class="c-main muted">The computer is choosing its move…</p>';
     else {
@@ -2847,7 +2857,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
         parts.push('This line runs ' + (line.length - 1) + ' moves on a ' + GO.N + '×' + GO.N + ' board.');
         parts.push('Black has captured ' + end.caps[1] + ' stone' + (end.caps[1] === 1 ? '' : 's') + ' and White ' + end.caps[2] + '.');
         if (top[0]) parts.push('The biggest turn came at move ' + top[0].n.ply + ', when ' + (top[0].n.color === 1 ? 'Black' : 'White') + ' played ' + goLabel(top[0].n.p) + ' and the balance moved from ' + goEvText(top[0].p.ev) + ' to ' + goEvText(top[0].n.ev) + '.');
-        if (goOver(end)) parts.push('Both players passed: ' + goResult(end).text + '.');
+        if (goOver(end)) parts.push(end.p === -2 ? (end.color === 1 ? 'Black' : 'White') + ' resigned at move ' + end.ply + ': ' + goResult(end).text + '.' : 'Both players passed: ' + goResult(end).text + '.');
         else if (end.ev) parts.push('Right now the engine gives ' + goEvText(end.ev) + ', with an estimated margin of ' + Math.abs(end.ev.score).toFixed(1) + ' points for ' + (end.ev.score > 0 ? 'Black' : 'White') + '.');
       }
       story = parts.join(' ');
@@ -2871,7 +2881,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   function goRenderPanels() {
     const n = GO.nodes[GO.cur], s = GO.st;
     let st;
-    if (goOver()) st = '<b>Game over.</b> ' + goResult().text + '.';
+    if (goOver()) st = '<b>Game over.</b> ' + (n.p === -2 ? (n.color === 1 ? 'Black' : 'White') + ' resigned. ' : '') + goResult().text + '.';
     else if (GO.sim) st = 'Simulating · ' + (GO.sim.total - GO.sim.left) + ' of ' + GO.sim.total + ' moves';
     else if (GO.thinking) st = 'The computer is thinking…';
     else st = '<b>' + (s.turn === 1 ? 'Black' : 'White') + '</b> to move' + (n.p === -1 ? ' · ' + (n.color === 1 ? 'Black' : 'White') + ' passed' : '');
@@ -2883,7 +2893,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     for (const b of document.querySelectorAll('#goSegOpp button')) b.setAttribute('aria-pressed', String((b.dataset.opp === 'bot') === GO.bot.on));
     $('goDiffRow').hidden = !GO.bot.on; $('goDiff').value = GO.bot.level;
     $('goDiffName').textContent = GO.bot.level + ' · ' + goBotPlayouts(GO.bot.level) + ' playouts';
-    $('goPass').disabled = !goHumanTurn();
+    $('goPass').disabled = $('goResign').disabled = !goHumanTurn();
     $('goConfirm').hidden = !GO.confirm; $('goControls').hidden = GO.confirm;
     for (const b of document.querySelectorAll('[data-gov]')) b.setAttribute('aria-pressed', String(!!GO.view[b.dataset.gov]));
     for (const b of document.querySelectorAll('#goSegSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
@@ -2949,6 +2959,11 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     $('goNavFwd').onclick = () => { if (GO.navTimer) goStopNav(); const n = GO.nodes[GO.cur]; if (n.children.length) { goGoTo(n.children[Math.min(n.pref, n.children.length - 1)]); goSave(); goRender(); } };
     $('goNavEnd').onclick = () => { const l = goLine(GO.cur); goNavTo(l[l.length - 1].id); };
     $('goPass').onclick = () => { if (!goHumanTurn()) return; goAdd(-1, false); goSave(); goRender(); };
+    $('goResign').onclick = () => {
+      const b = $('goResign'); if (!goHumanTurn()) return;
+      if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Tap again to resign'; setTimeout(() => { delete b.dataset.armed; b.textContent = 'Resign'; }, 3000); return; }
+      delete b.dataset.armed; b.textContent = 'Resign'; goAdd(-2, false); goSave(); goRender();
+    };
     $('goNew').onclick = () => { if (GO.sim) return; GO.confirm = true; goRender(); $('goConfirmNo').focus(); };
     $('goConfirmNo').onclick = () => { GO.confirm = false; goRender(); };
     $('goConfirmYes').onclick = () => { GO.confirm = false; if (GO.navTimer) goStopNav(); goReset(GO.nextN, GO.nextKomi); goPrevCur = null; goSave(); goRender(); };
