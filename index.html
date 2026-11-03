@@ -271,6 +271,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .cbtn { padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--ctl-w); background: var(--ctl-w); color: #fff; font: 600 13.5px var(--f-body); cursor: pointer; }
 .cbtn.ghost { background: none; color: var(--ink); border-color: var(--line); }
 .cbtn:disabled { opacity: .6; cursor: default; }
+.col { display: grid; gap: 14px; align-content: start; min-width: 0; }
+@media (max-width: 899px) {
+  .col { display: contents; }
+  .o-board { order: 1; } .o-review { order: 2; } .o-coach { order: 3; } .o-time { order: 4; } .o-branch { order: 5; } .o-game { order: 6; } .o-sim { order: 7; } .o-set { order: 8; }
+}
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -337,7 +342,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a><button class="revbtn coachbtn" id="coachBtn" type="button" aria-pressed="false">Coach</button><button class="revbtn" id="revBtn" type="button" aria-pressed="false">Review</button></div>
   </header>
 
-  <div class="board-wrap">
+  <div class="col col-l">
+  <div class="o-board board-wrap">
     <div class="status" id="status" aria-live="polite"><span class="turn-chip w" id="chip"></span><span id="statusText">White to move</span><span class="evaltag" id="evalTag" title="Engine evaluation, in pawns, from White's side">…</span></div>
     <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
     <p class="inspect idle" id="inspectNote">Tap any square or piece to see what attacks and protects it.</p>
@@ -347,37 +353,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       <button id="navFwd" type="button" aria-label="Forward one move">›</button>
       <button id="navEnd" type="button" aria-label="Go to end of this line">»</button>
     </div>
-    <section class="coach" id="coachCard" hidden aria-live="polite">
-      <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
-      <div class="bubble">
-        <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
-        <div class="c-body" id="coachBody"></div>
-        <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
-      </div>
-    </section>
-    <div class="ribbon-wrap">
-      <div class="cardhead"><p class="label">Timeline</p><span class="engine" id="engineState">Engine loading</span></div>
-      <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
-      <p class="empty" id="ribEmpty">No moves yet. White starts: drag a piece, or tap it and then a highlighted square.</p>
-      <div class="alts" id="alts" hidden></div>
-    </div>
   </div>
-
-  <div class="panel">
-    <section class="card review" id="reviewCard" hidden>
-      <div class="cardhead"><p class="label" id="reviewLabel">Review</p><button class="revbtn" id="revClose" type="button">Back to play</button></div>
-      <p class="note">Tap any piece on the board or below to trace its path. Faded pieces have been captured.</p>
-      <div class="roster" id="roster"></div>
-      <div class="journey" id="journey" hidden></div>
-      <p class="label">Notable pieces</p>
-      <div class="notables" id="notables"></div>
-      <button class="btn simgo" id="storyBtn" type="button" hidden>Write their stories with Claude</button>
-      <p class="note" id="storyNote" hidden></p>
-      <p class="label">Turning points</p>
-      <div class="turns" id="turns"></div>
-    </section>
-
-    <section class="card">
+    <section class="o-game card">
       <p class="label">Game</p>
       <div class="seg" id="segOpp"><span class="label">Black</span>
         <button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Stockfish</button>
@@ -397,8 +374,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         <button class="btn" id="confirmNo" type="button">Keep playing</button>
       </div>
     </section>
-
-    <section class="card">
+    <section class="o-sim card">
       <p class="label">Simulate from this position</p>
       <div class="simrow">
         <div class="seg" id="segLen"><span class="label">Length</span>
@@ -410,14 +386,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         <button class="btn simgo" id="simBtn" type="button">Simulate from here</button>
       </div>
     </section>
-
-    <section class="card">
-      <p class="label">Branches</p>
-      <div class="tree" id="tree" hidden></div>
-      <div class="branches" id="branches"></div>
-    </section>
-
-    <section class="card settings" id="settingsCard">
+    <section class="o-set card settings" id="settingsCard">
       <button type="button" class="sethead" id="setToggle" aria-expanded="true" aria-controls="setBody"><span class="label">Settings</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="setbody" id="setBody">
       <div class="seg" id="segSpeed"><span class="label">Replay</span>
@@ -438,7 +407,40 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       </div>
       </div>
     </section>
+  </div>
 
+  <div class="col col-r">
+    <section class="o-review card review" id="reviewCard" hidden>
+      <div class="cardhead"><p class="label" id="reviewLabel">Review</p><button class="revbtn" id="revClose" type="button">Back to play</button></div>
+      <p class="note">Tap any piece on the board or below to trace its path. Faded pieces have been captured.</p>
+      <div class="roster" id="roster"></div>
+      <div class="journey" id="journey" hidden></div>
+      <p class="label">Notable pieces</p>
+      <div class="notables" id="notables"></div>
+      <button class="btn simgo" id="storyBtn" type="button" hidden>Write their stories with Claude</button>
+      <p class="note" id="storyNote" hidden></p>
+      <p class="label">Turning points</p>
+      <div class="turns" id="turns"></div>
+    </section>
+    <section class="o-coach coach" id="coachCard" hidden aria-live="polite">
+      <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
+      <div class="bubble">
+        <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
+        <div class="c-body" id="coachBody"></div>
+        <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
+      </div>
+    </section>
+    <section class="o-branch card">
+      <p class="label">Branches</p>
+      <div class="tree" id="tree" hidden></div>
+      <div class="branches" id="branches"></div>
+    </section>
+    <div class="o-time ribbon-wrap">
+      <div class="cardhead"><p class="label">Timeline</p><span class="engine" id="engineState">Engine loading</span></div>
+      <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
+      <p class="empty" id="ribEmpty">No moves yet. White starts: drag a piece, or tap it and then a highlighted square.</p>
+      <div class="alts" id="alts" hidden></div>
+    </div>
   </div>
 </div>
 
