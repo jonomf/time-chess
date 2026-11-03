@@ -1111,30 +1111,33 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   // Smooth-follow camera for a scroll container: eases toward the current move every frame,
   // re-aims on every render, and stands down while the person scrolls it themselves.
   function makeCam(el) {
-    const c = { tx: 0, ty: 0, raf: 0, manual: false, key: undefined, shown: false };
-    const hands = () => { c.manual = true; };
-    el.addEventListener('wheel', hands, { passive: true });
-    el.addEventListener('touchstart', hands, { passive: true });
-    el.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') hands(); });
+    // Follows its target every frame. If the person actually scrolls it themselves, it holds
+    // still so they can look around, and picks up again when the position changes.
+    const c = { tx: 0, ty: 0, raf: 0, key: undefined, shown: false, lastX: 0, lastY: 0, holdUntil: 0 };
+    const now = () => performance.now();
+    el.addEventListener('scroll', () => {
+      if (Math.abs(el.scrollLeft - c.lastX) > 2 || Math.abs(el.scrollTop - c.lastY) > 2) { c.holdUntil = Infinity; c.lastX = el.scrollLeft; c.lastY = el.scrollTop; }
+    }, { passive: true });
     const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const put = (x, y) => { el.scrollLeft = x; el.scrollTop = y; c.lastX = el.scrollLeft; c.lastY = el.scrollTop; };
     function step() {
-      c.raf = 0; if (c.manual) return;
+      c.raf = 0;
+      if (now() < c.holdUntil) { c.raf = requestAnimationFrame(step); return; }
       const dx = c.tx - el.scrollLeft, dy = c.ty - el.scrollTop;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { el.scrollLeft = c.tx; el.scrollTop = c.ty; return; }
-      const ease = opts.dev.camEase, cap = opts.dev.camMax;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { put(c.tx, c.ty); return; }
+      const ease = opts.dev.camEase || 0.06, cap = opts.dev.camMax || 28;
       const mv = d => Math.abs(d) < 1 ? d : Math.sign(d) * Math.min(cap, Math.max(1, Math.abs(d) * ease));
-      el.scrollLeft += mv(dx); el.scrollTop += mv(dy);
+      put(el.scrollLeft + mv(dx), el.scrollTop + mv(dy));
       c.raf = requestAnimationFrame(step);
     }
     c.follow = (x, y, key) => {
-      if (key !== c.key) { c.key = key; c.manual = false; }
+      if (key !== c.key) { c.key = key; c.holdUntil = 0; }
       const visible = el.offsetParent !== null && el.clientWidth > 0;
       if (!visible) { c.shown = false; return; }
-      if (c.manual) return;
       const maxX = Math.max(0, el.scrollWidth - el.clientWidth), maxY = Math.max(0, el.scrollHeight - el.clientHeight);
       c.tx = Math.round(Math.min(maxX, Math.max(0, x)));
-      c.ty = y == null ? el.scrollTop : Math.round(Math.min(maxY, Math.max(0, y)));
-      if (!c.shown || reduce()) { c.shown = true; el.scrollLeft = c.tx; el.scrollTop = c.ty; return; }
+      c.ty = y == null ? Math.round(el.scrollTop) : Math.round(Math.min(maxY, Math.max(0, y)));
+      if (!c.shown || reduce()) { c.shown = true; put(c.tx, c.ty); return; }
       if (!c.raf) c.raf = requestAnimationFrame(step);
     };
     return c;
