@@ -129,7 +129,8 @@ section.card { background: var(--surface); border: 1px solid var(--line); border
 @keyframes pulse { to { opacity: .3; } }
 
 .ribbon-wrap { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 0 10px; min-width: 0; }
-.ribbon-wrap > .cardhead, .ribbon-wrap > .empty, .ribbon-wrap > .alts { margin: 0 12px; }
+.ribbon-wrap > .cardtog, .ribbon-wrap .cbody > .empty, .ribbon-wrap .cbody > .alts { margin: 0 12px; }
+.ribbon-wrap > .cardtog { width: auto; }
 .ribbon { overflow-x: auto; overflow-y: hidden; touch-action: pan-x; scrollbar-width: thin; overscroll-behavior-x: contain; padding: 0 12px 6px; scroll-padding: 0 12px; }
 .rib-inner { position: relative; }
 .rgraph { display: block; cursor: pointer; }
@@ -279,6 +280,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ribbon, .tree { cursor: grab; }
 .ribbon.dragging, .tree.dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
 .ribbon.dragging *, .tree.dragging * { cursor: grabbing !important; }
+.cardtog { display: flex; align-items: center; gap: 10px; width: 100%; padding: 2px 0; border: 0; background: none; color: var(--muted); cursor: pointer; text-align: left; font: inherit; }
+.cardtog .label { flex: 1; }
+.cardtog .engine { min-width: 0; }
+.cardtog .chev { width: 14px; height: 14px; flex: none; transition: transform .15s; }
+.cardtog[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+.cardtog:hover .label { color: var(--ink); }
+.cbody { display: grid; gap: 10px; min-width: 0; }
+.ribbon-wrap .cbody { gap: 8px; }
+.card .cbody.coach { display: grid; }
+.c-tools { display: flex; gap: 4px; justify-content: flex-end; }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -342,7 +353,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 <div class="app">
   <header>
     <h1>Time <span>Chess!</span></h1>
-    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a><button class="revbtn coachbtn" id="coachBtn" type="button" aria-pressed="false">Coach</button><button class="revbtn" id="revBtn" type="button" aria-pressed="false">Review</button></div>
+    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a></div>
   </header>
 
   <div class="col col-l">
@@ -357,8 +368,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       <button id="navEnd" type="button" aria-label="Go to end of this line">»</button>
     </div>
   </div>
-    <section class="o-game card">
-      <p class="label">Game</p>
+    <section class="o-game card" data-card="game">
+      <button type="button" class="cardtog" data-tog="game" aria-expanded="false"><span class="label">Game</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody">
       <div class="seg" id="segOpp"><span class="label">Black</span>
         <button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Stockfish</button>
       </div>
@@ -376,10 +388,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         <button class="btn primary" id="confirmYes" type="button">Start new game</button>
         <button class="btn" id="confirmNo" type="button">Keep playing</button>
       </div>
+      </div>
     </section>
-    <section class="o-set card settings" id="settingsCard">
-      <button type="button" class="sethead" id="setToggle" aria-expanded="true" aria-controls="setBody"><span class="label">Settings</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="setbody" id="setBody">
+    <section class="o-set card settings" id="settingsCard" data-card="settings">
+      <button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody">
       <div class="seg" id="segSpeed"><span class="label">Replay</span>
         <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
       </div>
@@ -401,8 +414,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   </div>
 
   <div class="col col-r">
-    <section class="o-review card review" id="reviewCard" hidden>
-      <div class="cardhead"><p class="label" id="reviewLabel">Review</p><button class="revbtn" id="revClose" type="button">Back to play</button></div>
+    <section class="o-review card review" id="reviewCard" data-card="review">
+      <button type="button" class="cardtog" data-tog="review" aria-expanded="false"><span class="label" id="reviewLabel">Review</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody">
       <p class="note">Tap any piece on the board or below to trace its path. Faded pieces have been captured.</p>
       <div class="roster" id="roster"></div>
       <div class="journey" id="journey" hidden></div>
@@ -412,28 +426,37 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       <p class="note" id="storyNote" hidden></p>
       <p class="label">Turning points</p>
       <div class="turns" id="turns"></div>
+      </div>
     </section>
-    <section class="o-coach coach" id="coachCard" hidden aria-live="polite">
+    <section class="o-coach card" id="coachCard" data-card="coach">
+      <button type="button" class="cardtog" data-tog="coach" aria-expanded="false"><span class="label">Coach Pip</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody coach" aria-live="polite">
       <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
       <div class="bubble">
-        <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
+        <div class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button></div>
         <div class="c-body" id="coachBody"></div>
         <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
       </div>
+      </div>
     </section>
-    <div class="o-time ribbon-wrap">
-      <div class="cardhead"><p class="label">Timeline</p><span class="engine" id="engineState">Engine loading</span></div>
+    <div class="o-time ribbon-wrap" data-card="timeline">
+      <button type="button" class="cardtog" data-tog="timeline" aria-expanded="false"><span class="label">Timeline</span><span class="engine" id="engineState">Engine loading</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody">
       <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
       <p class="empty" id="ribEmpty">No moves yet. White starts: drag a piece, or tap it and then a highlighted square.</p>
       <div class="alts" id="alts" hidden></div>
+      </div>
     </div>
-    <section class="o-branch card">
-      <p class="label">Branches</p>
+    <section class="o-branch card" data-card="branches">
+      <button type="button" class="cardtog" data-tog="branches" aria-expanded="false"><span class="label">Branches</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody">
       <div class="tree" id="tree" hidden></div>
       <div class="branches" id="branches"></div>
+      </div>
     </section>
-    <section class="o-sim card">
-      <p class="label">Simulate from this position</p>
+    <section class="o-sim card" data-card="sim">
+      <button type="button" class="cardtog" data-tog="sim" aria-expanded="false"><span class="label">Simulate from this position</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cbody">
       <div class="simrow">
         <div class="seg" id="segLen"><span class="label">Length</span>
           <button type="button" data-len="20">10 moves</button><button type="button" data-len="60">30 moves</button><button type="button" data-len="400">To the end</button>
@@ -442,6 +465,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
           <button type="button" data-str="strong">Strong</button><button type="button" data-str="club">Club</button><button type="button" data-str="casual">Casual</button>
         </div>
         <button class="btn simgo" id="simBtn" type="button">Simulate from here</button>
+      </div>
       </div>
     </section>
   </div>
@@ -472,7 +496,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   let nodes, nextId, cur;           // move tree
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
-  let opts = { map: true, counts: false, flag: true, safety: true, replay: 440, settingsOpen: true };
+  let opts = { map: true, counts: false, flag: true, safety: true, replay: 440, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club' };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1170,8 +1194,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     for (const b of document.querySelectorAll('#segSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
-    $('setToggle').setAttribute('aria-expanded', String(!!opts.settingsOpen));
-    $('setBody').hidden = !opts.settingsOpen;
+    renderCards();
     pump();
   }
 
@@ -1357,11 +1380,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   const glyphOf = j => GLYPH[(j.promo || j.type).toLowerCase()];
 
   function renderReview() {
-    const card = $('reviewCard');
-    card.hidden = !review;
-    $('revBtn').setAttribute('aria-pressed', String(review));
     boardEl.classList.toggle('reviewing', review);
-    if (!review) { renderCoachArrows(); return; }
+    if (!review) { $('reviewLabel').textContent = 'Review'; renderCoachArrows(); return; }
     const J = journeys();
     renderOverlay(J);
     const RL = reviewLine().length - 1;
@@ -1417,8 +1437,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   function setReview(on) { review = on; clearSel(); if (on && !focus) { const p = notables(journeys())[0]; focus = p ? p.id : null; } focusStep = null; render(); if (on) $('reviewCard').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-  $('revBtn').onclick = () => { if (!sim) setReview(!review); };
-  $('revClose').onclick = () => setReview(false);
   $('storyBtn').onclick = writeStories;
   $('reviewCard').addEventListener('click', e => {
     const p = e.target.closest('[data-piece]'); if (p) { focus = focus === p.dataset.piece && !p.classList.contains('notable') ? null : p.dataset.piece; focusStep = null; renderReview(); return; }
@@ -1619,9 +1637,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   function renderCoach() {
-    const card = $('coachCard');
-    $('coachBtn').setAttribute('aria-pressed', String(coachCfg.on));
-    card.hidden = !coachCfg.on;
     if (!coachCfg.on) return;
     const n = nodes[cur], path = pathTo(cur), bk = bookInfo(path);
     // last move verdict: in a Stockfish game, judge White's most recent move; in hotseat, the move just played
@@ -1710,8 +1725,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   $('coachMore').onclick = () => { coachOpen = !coachOpen; fitCoach(); };
   $('inspectNote').addEventListener('click', e => { const n = e.currentTarget; if (n.classList.contains('clamped')) n.classList.toggle('open'); });
-  $('coachBtn').onclick = () => { coachCfg.on = !coachCfg.on; save(); render(); };
-  $('coachClose').onclick = () => { coachCfg.on = false; save(); render(); };
   $('coachArrows').onclick = () => { coachCfg.showArrows = !coachCfg.showArrows; save(); render(); };
   $('coachCard').addEventListener('click', e => {
     const c = e.target.closest('[data-coach]');
@@ -1768,7 +1781,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   $('segOpp').addEventListener('click', e => { const b = e.target.closest('[data-opp]'); if (b) { botCfg.on = b.dataset.opp === 'bot'; if (botCfg.on && flipped) { flipped = false; buildBoard(); } clearSel(); save(); render(); } });
   $('diffRange').addEventListener('input', e => { botCfg.level = +e.target.value; save(); renderOpp(); });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
-  $('setToggle').onclick = () => { opts.settingsOpen = !opts.settingsOpen; save(); render(); };
+  // Every card folds from its header. Coach and Review are on while open.
+  function cardOpen(k) { return k === 'coach' ? coachCfg.on : k === 'review' ? review : !!(opts.cards || {})[k]; }
+  function renderCards() {
+    for (const c of document.querySelectorAll('[data-card]')) {
+      const k = c.dataset.card, open = cardOpen(k);
+      c.querySelector('.cardtog').setAttribute('aria-expanded', String(open));
+      c.querySelector('.cbody').hidden = !open;
+      c.classList.toggle('folded', !open);
+    }
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('.cardtog'); if (!t) return;
+    const k = t.dataset.tog;
+    if (k === 'coach') { coachCfg.on = !coachCfg.on; save(); render(); }
+    else if (k === 'review') { if (!sim) setReview(!review); }
+    else { opts.cards = Object.assign({}, opts.cards, { [k]: !cardOpen(k) }); save(); render(); }
+  });
   $('segLen').addEventListener('click', e => { const b = e.target.closest('[data-len]'); if (b) { simCfg.len = +b.dataset.len; save(); render(); } });
   $('segStr').addEventListener('click', e => { const b = e.target.closest('[data-str]'); if (b) { simCfg.str = b.dataset.str; save(); render(); } });
   $('simBtn').onclick = () => { if (sim) { sim.stop = true; } else startSim(); };
