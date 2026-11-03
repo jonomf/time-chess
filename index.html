@@ -129,8 +129,7 @@ section.card { background: var(--surface); border: 1px solid var(--line); border
 @keyframes pulse { to { opacity: .3; } }
 
 .ribbon-wrap { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 0 10px; min-width: 0; }
-.ribbon-wrap > .cardtog, .ribbon-wrap .cbody > .empty, .ribbon-wrap .cbody > .alts { margin: 0 12px; }
-.ribbon-wrap > .cardtog { width: auto; }
+.ribbon-wrap > .cardhd, .ribbon-wrap .cbody > .empty, .ribbon-wrap .cbody > .alts { margin: 0 12px; }
 .ribbon { overflow-x: auto; overflow-y: hidden; touch-action: pan-x; scrollbar-width: thin; overscroll-behavior-x: contain; padding: 0 12px 6px; scroll-padding: 0 12px; }
 .rib-inner { position: relative; }
 .rgraph { display: block; cursor: pointer; }
@@ -275,7 +274,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .col { display: grid; gap: 14px; align-content: start; min-width: 0; }
 @media (max-width: 899px) {
   .col { display: contents; }
-  .o-board { order: 1; } .o-review { order: 2; } .o-coach { order: 3; } .o-time { order: 4; } .o-branch { order: 5; } .o-game { order: 6; } .o-sim { order: 7; } .o-set { order: 8; }
 }
 .ribbon, .tree { cursor: grab; }
 .ribbon.dragging, .tree.dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
@@ -290,6 +288,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ribbon-wrap .cbody { gap: 8px; }
 .card .cbody.coach { display: grid; }
 .c-tools { display: flex; gap: 4px; justify-content: flex-end; }
+.cardhd { display: flex; align-items: center; gap: 6px; }
+.cardhd .cardtog { flex: 1; min-width: 0; }
+.grip { flex: none; width: 18px; height: 22px; margin-left: -6px; display: grid; place-items: center; color: var(--muted); cursor: grab; border-radius: 4px; touch-action: none; opacity: .55; }
+.grip svg { width: 8px; height: 13px; fill: currentColor; }
+.grip:hover, .grip:focus-visible { opacity: 1; background: color-mix(in oklab, var(--ink) 8%, transparent); }
+.grip:focus-visible { outline: 2px solid var(--accent); }
+.dragcard { position: fixed !important; z-index: 40; pointer-events: none; box-shadow: 0 14px 30px rgb(0 0 0 / .25); opacity: .96; }
+.card-ph { border: 2px dashed var(--accent); border-radius: 8px; background: color-mix(in oklab, var(--accent) 7%, transparent); }
+body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -369,7 +376,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     </div>
   </div>
     <section class="o-game card" data-card="game">
-      <button type="button" class="cardtog" data-tog="game" aria-expanded="false"><span class="label">Game</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="game" aria-expanded="false"><span class="label">Game</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <div class="seg" id="segOpp"><span class="label">Black</span>
         <button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Stockfish</button>
@@ -391,7 +398,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       </div>
     </section>
     <section class="o-set card settings" id="settingsCard" data-card="settings">
-      <button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <div class="seg" id="segSpeed"><span class="label">Replay</span>
         <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
@@ -415,7 +422,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   <div class="col col-r">
     <section class="o-review card review" id="reviewCard" data-card="review">
-      <button type="button" class="cardtog" data-tog="review" aria-expanded="false"><span class="label" id="reviewLabel">Review</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="review" aria-expanded="false"><span class="label" id="reviewLabel">Review</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <p class="note">Tap any piece on the board or below to trace its path. Faded pieces have been captured.</p>
       <div class="roster" id="roster"></div>
@@ -429,7 +436,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       </div>
     </section>
     <section class="o-coach card" id="coachCard" data-card="coach">
-      <button type="button" class="cardtog" data-tog="coach" aria-expanded="false"><span class="label">Coach Pip</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="coach" aria-expanded="false"><span class="label">Coach Pip</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody coach" aria-live="polite">
       <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
       <div class="bubble">
@@ -440,7 +447,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       </div>
     </section>
     <div class="o-time ribbon-wrap" data-card="timeline">
-      <button type="button" class="cardtog" data-tog="timeline" aria-expanded="false"><span class="label">Timeline</span><span class="engine" id="engineState">Engine loading</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="timeline" aria-expanded="false"><span class="label">Timeline</span><span class="engine" id="engineState">Engine loading</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
       <p class="empty" id="ribEmpty">No moves yet. White starts: drag a piece, or tap it and then a highlighted square.</p>
@@ -448,14 +455,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       </div>
     </div>
     <section class="o-branch card" data-card="branches">
-      <button type="button" class="cardtog" data-tog="branches" aria-expanded="false"><span class="label">Branches</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="branches" aria-expanded="false"><span class="label">Branches</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <div class="tree" id="tree" hidden></div>
       <div class="branches" id="branches"></div>
       </div>
     </section>
     <section class="o-sim card" data-card="sim">
-      <button type="button" class="cardtog" data-tog="sim" aria-expanded="false"><span class="label">Simulate from this position</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="sim" aria-expanded="false"><span class="label">Simulate from this position</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <div class="simrow">
         <div class="seg" id="segLen"><span class="label">Length</span>
@@ -650,7 +657,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     } catch (e) { engine.state = 'off'; }
   }
   function onEngine(line) {
-    if (line === 'readyok' && engine.state === 'loading') { engine.state = 'ready'; renderEngine(); pump(); maybeBotMove(); return; }
+    if (line === 'readyok' && engine.state === 'loading') { engine.state = 'ready'; render(); maybeBotMove(); return; }
     if (!engine.job) return;
     if (line.startsWith('info') && line.includes(' score ') && !line.includes('bound')) {
       const m = line.match(/score (cp|mate) (-?\d+)/);
@@ -1781,6 +1788,78 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   $('segOpp').addEventListener('click', e => { const b = e.target.closest('[data-opp]'); if (b) { botCfg.on = b.dataset.opp === 'bot'; if (botCfg.on && flipped) { flipped = false; buildBoard(); } clearSel(); save(); render(); } });
   $('diffRange').addEventListener('input', e => { botCfg.level = +e.target.value; save(); renderOpp(); });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
+  // ---------- rearrangeable cards ----------
+  const colL = document.querySelector('.col-l'), colR = document.querySelector('.col-r');
+  const narrow = () => matchMedia('(max-width: 899px)').matches;
+  const cardEls = col => [...col.children].filter(c => c.dataset.card || c.classList.contains('card-ph'));
+  function applyOrder() {
+    // phones show one stack: board, then the right column, then the left column
+    let k = 2;
+    document.querySelector('.o-board').style.order = 1;
+    for (const c of [...cardEls(colR), ...cardEls(colL)]) c.style.order = k++;
+  }
+  function saveLayout() { opts.layout = { l: cardEls(colL).map(c => c.dataset.card), r: cardEls(colR).map(c => c.dataset.card) }; save(); }
+  function restoreLayout() {
+    const L = opts.layout; if (!L) { applyOrder(); return; }
+    const byKey = {}; for (const c of document.querySelectorAll('[data-card]')) byKey[c.dataset.card] = c;
+    for (const k of L.l || []) if (byKey[k]) { colL.appendChild(byKey[k]); delete byKey[k]; }
+    for (const k of L.r || []) if (byKey[k]) { colR.appendChild(byKey[k]); delete byKey[k]; }
+    for (const k in byKey) colR.appendChild(byKey[k]);   // cards added in later versions
+    applyOrder();
+  }
+  let drag = null;
+  document.addEventListener('pointerdown', e => {
+    const g = e.target.closest('.grip'); if (!g || e.button > 0) return;
+    e.preventDefault();
+    const card = g.closest('[data-card]'), r = card.getBoundingClientRect();
+    const ph = document.createElement('div'); ph.className = 'card-ph'; ph.style.height = r.height + 'px';
+    card.parentNode.insertBefore(ph, card);
+    card.classList.add('dragcard'); card.style.width = r.width + 'px'; card.style.left = r.left + 'px'; card.style.top = r.top + 'px';
+    document.body.classList.add('dragging-card');
+    drag = { card, ph, dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId };
+    try { g.setPointerCapture(e.pointerId); } catch (_) {}
+    applyOrder();
+  });
+  document.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const { card, ph } = drag;
+    card.style.left = (e.clientX - drag.dx) + 'px'; card.style.top = (e.clientY - drag.dy) + 'px';
+    let col, list;
+    if (narrow()) { list = [...cardEls(colR), ...cardEls(colL)].filter(c => c !== card && c !== ph); }
+    else {
+      const rr = colR.getBoundingClientRect();
+      col = e.clientX >= rr.left - 9 ? colR : colL;
+      list = cardEls(col).filter(c => c !== card && c !== ph);
+    }
+    const before = list.find(c => { const b = c.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
+    if (before) before.parentNode.insertBefore(ph, before);
+    else if (narrow()) { const last = list[list.length - 1]; if (last) last.parentNode.insertBefore(ph, last.nextSibling); }
+    else col.appendChild(ph);
+    applyOrder();
+    // keep the page scrolling while dragging near the edges
+    if (e.clientY < 60) window.scrollBy(0, -12); else if (e.clientY > innerHeight - 60) window.scrollBy(0, 12);
+  });
+  function endCardDrag() {
+    if (!drag) return;
+    const { card, ph } = drag; drag = null;
+    ph.parentNode.insertBefore(card, ph); ph.remove();
+    card.classList.remove('dragcard'); card.style.width = card.style.left = card.style.top = '';
+    document.body.classList.remove('dragging-card');
+    applyOrder(); saveLayout();
+  }
+  document.addEventListener('pointerup', endCardDrag);
+  document.addEventListener('pointercancel', endCardDrag);
+  document.addEventListener('keydown', e => {
+    const g = e.target.closest && e.target.closest('.grip'); if (!g) return;
+    const card = g.closest('[data-card]'), col = card.parentNode, sibs = cardEls(col), i = sibs.indexOf(card);
+    if (e.key === 'ArrowUp' && i > 0) col.insertBefore(card, sibs[i - 1]);
+    else if (e.key === 'ArrowDown' && i < sibs.length - 1) col.insertBefore(card, sibs[i + 1].nextSibling);
+    else if (e.key === 'ArrowLeft' && col === colR) colL.appendChild(card);
+    else if (e.key === 'ArrowRight' && col === colL) colR.insertBefore(card, colR.firstChild);
+    else return;
+    e.preventDefault(); applyOrder(); saveLayout(); g.focus();
+  });
+
   // Every card folds from its header. Coach and Review are on while open.
   function cardOpen(k) { return k === 'coach' ? coachCfg.on : k === 'review' ? review : !!(opts.cards || {})[k]; }
   function renderCards() {
@@ -1821,7 +1900,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       if (s.migrate) { for (const m of s.migrate) if (!addChild(m, false)) break; }
       else deserialize(s);
     }
-    buildBoard(); render(); initEngine();
+    restoreLayout(); buildBoard(); render(); initEngine();
   }
   if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(serialize);
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
