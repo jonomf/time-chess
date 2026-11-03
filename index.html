@@ -85,8 +85,9 @@ h1 span { color: var(--muted); font-weight: 600; }
   user-select: none; -webkit-user-select: none;
 }
 .board.simming { border-color: var(--sim); }
-.sq { position: relative; border: 0; padding: 0; margin: 0; background: var(--sq-dark); cursor: pointer; font: inherit; color: inherit; overflow: visible; -webkit-tap-highlight-color: transparent; }
-.sq.light { background: var(--sq-light); }
+.board { --checker: 100%; background: var(--surface); }
+.sq { position: relative; border: 0; padding: 0; margin: 0; background: color-mix(in oklab, var(--sq-dark) var(--checker), var(--surface)); cursor: pointer; font: inherit; color: inherit; overflow: visible; -webkit-tap-highlight-color: transparent; }
+.sq.light { background: color-mix(in oklab, var(--sq-light) var(--checker), var(--surface)); }
 .sq:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; z-index: 2; }
 .sq > span { position: absolute; pointer-events: none; }
 .tint { inset: 0; }
@@ -487,6 +488,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     <section class="o-set card settings" id="settingsCard" data-card="settings">
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
+      <div class="diff"><div class="diffhead"><label for="checkerRange">Checkerboard</label><span id="checkerVal">100%</span></div><input type="range" id="checkerRange" min="0" max="100" step="5" value="100"><div class="diffscale"><span>Hidden</span><span>Full</span></div></div>
       <div class="seg" id="segSpeed"><span class="label">Replay</span>
         <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
       </div>
@@ -535,7 +537,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   let nodes, nextId, cur;           // move tree
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
-  let opts = { map: true, counts: false, flag: true, safety: true, replay: 440, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club' };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1234,6 +1236,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
+    boardEl.style.setProperty('--checker', opts.checker + '%');
+    $('checkerRange').value = opts.checker; $('checkerVal').textContent = opts.checker + '%';
     for (const b of document.querySelectorAll('#segSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
     renderCards();
     pump();
@@ -1821,6 +1825,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   }
   $('segOpp').addEventListener('click', e => { const b = e.target.closest('[data-opp]'); if (b) { botCfg.on = b.dataset.opp === 'bot'; if (botCfg.on && flipped) { flipped = false; buildBoard(); } clearSel(); save(); render(); } });
   $('diffRange').addEventListener('input', e => { botCfg.level = +e.target.value; save(); renderOpp(); });
+  $('checkerRange').addEventListener('input', e => { opts.checker = +e.target.value; boardEl.style.setProperty('--checker', opts.checker + '%'); $('checkerVal').textContent = opts.checker + '%'; save(); });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
   // ---------- detachable tabs: each tool is a tab in the inspector or a card of its own ----------
   const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'settings'];
