@@ -185,6 +185,9 @@ section.card { background: var(--surface); border: 1px solid var(--line); border
 .tree text.lbl { font-weight: 700; fill: var(--ink); font-size: 10.5px; }
 .tree text.lbl.on { fill: var(--accent); }
 .tree text.san { fill: var(--ink); font-weight: 600; }
+.tree text.pg { font-family: var(--f-piece); font-size: 14px; font-variant-emoji: text; pointer-events: none; paint-order: stroke fill; }
+.tree text.pg.w { fill: var(--pc-w); stroke: var(--pc-w-edge); stroke-width: .9px; }
+.tree text.pg.b { fill: var(--pc-b); stroke: var(--pc-b-edge); stroke-width: .4px; }
 .tree [data-node] { cursor: pointer; }
 .tree [data-node]:focus-visible { outline: none; }
 .tree [data-node]:focus-visible circle.dot { stroke: var(--accent); stroke-width: 3; }
@@ -1143,14 +1146,14 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     const wrap = $('tree');
     if (!nodes[0].children.length) { wrap.hidden = true; wrap.innerHTML = ''; lastTreeCur = null; return; }
     wrap.hidden = false;
-    const DX = 24, DY = 30, PX = 18, PY = 26;
+    const DX = 26, DY = 32, PX = 20, PY = 30;
     const lane = {}; let next = 0, maxPly = 0;
     (function dfs(id, l) {
       lane[id] = l; maxPly = Math.max(maxPly, nodes[id].ply);
       nodes[id].children.forEach((c, k) => dfs(c, k === 0 ? l : ++next));
     })(0, 0);
     const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
-    const W = PX * 2 + maxPly * DX + 24, H = PY + next * DY + 22;
+    const W = PX * 2 + maxPly * DX + 24, H = PY + next * DY + 30;
     const onLine = new Set(lineOf(cur).map(n => n.id)), onPath = new Set(pathTo(cur).map(n => n.id));
     let edges = '', dots = '', labels = '';
     // move-number axis
@@ -1173,10 +1176,11 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       const label = n.id ? moveLabel(n) : 'Start';
       dots += '<g data-node="' + n.id + '" role="button" tabindex="0" aria-label="' + esc(label) + '"><title>' + esc(label) + (n.ev ? ' (' + fmtEval(n.ev).t + ')' : '') + '</title><circle cx="' + x + '" cy="' + y + '" r="12" fill="transparent"/>' +
         (n.id === 0 ? '<rect class="dot" x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" fill="' + (isCur ? 'var(--accent)' : 'var(--ink)') + '"/>'
-          : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + fill + '" stroke="' + (isCur ? 'var(--ink)' : fork ? 'var(--surface)' : 'none') + '" stroke-width="' + (isCur ? 2 : 1.5) + '"/>') + '</g>';
+          : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 11.5 : 9.5) + '" fill="' + (isCur ? 'color-mix(in oklab, var(--accent) 22%, var(--surface))' : 'var(--surface)') + '" stroke="' + (isCur ? 'var(--ink)' : fill) + '" stroke-width="' + (isCur ? 2.5 : q || fork ? 2 : 1.4) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>' +
+            '<text class="pg ' + n.color + '" x="' + x + '" y="' + (y + 5) + '" text-anchor="middle">' + GLYPH[pieceOfSan(n.san)] + '</text>') + '</g>';
       // first move of each side branch, and the current move
       const par = n.parent != null ? nodes[n.parent] : null;
-      if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 19) + '" text-anchor="middle">' + esc(n.san) + '</text>';
+      if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + esc(n.san) + '</text>';
     }
     wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a dot to jump to that move.">' + labels + edges + dots + '</svg>';
     wrap.style.height = Math.min(H + 2, 260) + 'px';
