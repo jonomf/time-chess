@@ -67,7 +67,8 @@ h1 span { color: var(--muted); font-weight: 600; }
 
 /* Board */
 .board-wrap { display: grid; gap: 10px; min-width: 0; }
-.status { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 600; font-size: 22px; letter-spacing: .03em; text-transform: uppercase; min-height: 30px; }
+.status { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 600; font-size: 22px; letter-spacing: .03em; text-transform: uppercase; height: 30px; }
+.status #statusText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .status #statusText { flex: 1; min-width: 0; }
 .turn-chip { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ink); flex: none; }
 .turn-chip.w { background: var(--pc-w); }
@@ -120,7 +121,7 @@ h1 span { color: var(--muted); font-weight: 600; }
 section.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
 .cardhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .label { font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
-.engine { font-family: var(--f-mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.engine { font-family: var(--f-mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; min-width: 130px; justify-content: flex-end; white-space: nowrap; }
 .engine::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .engine.ready::before { background: var(--ctl-w); }
 .engine.busy::before { background: var(--ctl-c); animation: pulse 1s infinite alternate; }
@@ -227,6 +228,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .src { font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .src:hover { color: var(--accent); }
 /* Coach */
+.c-body { display: grid; gap: 8px; align-content: start; height: 168px; overflow: hidden; position: relative; }
+.c-body.clip::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 28px; background: linear-gradient(transparent, var(--surface)); pointer-events: none; }
+.c-body.open { height: auto; }
+.more { justify-self: start; padding: 0; border: 0; background: none; color: var(--accent); font: 600 12.5px var(--f-mono); cursor: pointer; margin-top: -4px; }
+
 .coachbtn[aria-pressed="true"] { background: var(--ctl-w); border-color: var(--ctl-w); color: #fff; }
 .coach { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
 .pip { width: 52px; height: 60px; margin-top: 6px; }
@@ -256,7 +262,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .revbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .board-box { position: relative; }
-.inspect { margin: 0; font-size: 13.5px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.inspect { margin: 0; font-size: 13.5px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); height: calc(2 * 1.45em + 16px + 2px); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.inspect.idle { color: var(--muted); }
+.inspect.open { height: auto; -webkit-line-clamp: unset; display: block; cursor: default; }
+.inspect.clamped { cursor: pointer; }
 .inspect b { font-family: var(--f-mono); }
 .inspect .w { color: var(--ctl-w); font-weight: 600; } .inspect .pr { color: var(--accent); font-weight: 600; } .inspect .b { color: var(--ctl-b); font-weight: 600; }
 .overlay { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); pointer-events: none; z-index: 5; overflow: visible; }
@@ -317,7 +326,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   <div class="board-wrap">
     <div class="status" id="status" aria-live="polite"><span class="turn-chip w" id="chip"></span><span id="statusText">White to move</span><span class="evaltag" id="evalTag" title="Engine evaluation, in pawns, from White's side">…</span></div>
     <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
-    <p class="inspect" id="inspectNote" hidden></p>
+    <p class="inspect idle" id="inspectNote">Tap any square or piece to see what attacks and protects it.</p>
     <div class="nav">
       <button id="navStart" type="button" aria-label="Go to start">«</button>
       <button id="navBack" type="button" aria-label="Back one move">‹</button>
@@ -328,7 +337,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
       <div class="bubble">
         <div class="cardhead"><p class="label">Coach Pip</p><span class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button><button type="button" class="mini" id="coachClose" aria-label="Turn off Coach">×</button></span></div>
-        <div id="coachBody"></div>
+        <div class="c-body" id="coachBody"></div>
+        <button type="button" class="more" id="coachMore" hidden aria-expanded="false">More</button>
       </div>
     </section>
     <div class="ribbon-wrap">
@@ -735,7 +745,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
   function renderInspect() {
     const svg = $('inspectLayer'), note = $('inspectNote');
-    if (!inspectSq || review) { svg.innerHTML = ''; note.hidden = true; return; }
+    const keepOpen = note.classList.contains('open') && note.dataset.sq === inspectSq;
+    note.dataset.sq = inspectSq || '';
+    if (!inspectSq || review) { svg.innerHTML = ''; note.className = 'inspect idle'; note.textContent = 'Tap any square or piece to see what attacks and protects it.'; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     const target = game.get(inspectSq), att = attackersOf(game, inspectSq), [tx, ty] = XY(inspectSq);
     // On a piece: its own side protects it, the other side attacks it. On an empty square: color by side.
@@ -771,7 +783,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       else if (at && groups[1].list.some(a => PVAL[a.p.type] < PVAL[target.type])) verdict = ' <span class="b">A cheaper piece attacks it.</span>';
     }
     note.innerHTML = lead + ' · ' + (att.length ? part(groups[0]) + ' · ' + part(groups[1]) : (target ? 'Nothing protects or attacks it.' : 'Nobody attacks this square.')) + verdict;
-    note.hidden = false;
+    note.className = 'inspect';
+    if (keepOpen) { note.classList.add('clamped', 'open'); return; }
+    if (note.scrollHeight > note.clientHeight + 2) { note.classList.add('clamped'); note.title = 'Tap to show all'; } else note.title = '';
   }
 
   // ---------- pointer: tap or drag ----------
@@ -1318,6 +1332,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   });
 
   // ---------- coach mode ----------
+  let coachOpen = false;
+  function fitCoach() {
+    const body = $('coachBody'), more = $('coachMore');
+    body.classList.toggle('open', coachOpen);
+    const over = body.scrollHeight > body.clientHeight + 2;
+    body.classList.toggle('clip', !coachOpen && over);
+    more.hidden = !coachOpen && !over;
+    more.textContent = coachOpen ? 'Less' : 'More';
+    more.setAttribute('aria-expanded', String(coachOpen));
+  }
+
   let coachCfg = { on: false, showArrows: true };
   const reveal = {};               // node id -> 'nudge' | 'best'
   const coachText = {};            // node id -> Claude explanation
@@ -1547,6 +1572,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       if (tips.length) h += '<ul class="c-tips">' + tips.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>';
     }
     $('coachBody').innerHTML = h + (actions ? '<div class="c-acts">' + actions + '</div>' : '');
+    fitCoach();
     $('coachArrows').setAttribute('aria-pressed', String(coachCfg.showArrows));
   }
 
@@ -1584,6 +1610,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     coachAsk = null; renderCoach();
   }
 
+  $('coachMore').onclick = () => { coachOpen = !coachOpen; fitCoach(); };
+  $('inspectNote').addEventListener('click', e => { const n = e.currentTarget; if (n.classList.contains('clamped')) n.classList.toggle('open'); });
   $('coachBtn').onclick = () => { coachCfg.on = !coachCfg.on; save(); render(); };
   $('coachClose').onclick = () => { coachCfg.on = false; save(); render(); };
   $('coachArrows').onclick = () => { coachCfg.showArrows = !coachCfg.showArrows; save(); render(); };
