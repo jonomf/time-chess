@@ -2,7 +2,7 @@
 
 Chess in the browser with visual overlays and branching timelines.
 
-- **Square control map**: every square shaded by who attacks it (counted from White's side), with outnumbered pieces flagged and move safety shown as you pick a piece. Tap an empty square to see exactly which pieces attack it.
+- **Square control map**: every square shaded by who attacks it (counted from White's side), with outnumbered pieces flagged and move safety shown as you pick a piece. Tap an empty square to see which pieces attack it, or any piece to see what protects and attacks it.
 - **Play Stockfish or a friend**: Stockfish plays Black by default, with a 1–10 difficulty slider.
 - **Branching timelines**: go back to any move and play something else; the old line stays. Simulate any position forward with Stockfish.
 - **Timeline ribbon**: one card per move under the board, with the engine's evaluation graph drawn at the same scale and blunders, mistakes and strong moves marked.

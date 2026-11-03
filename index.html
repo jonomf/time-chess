@@ -258,7 +258,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .board-box { position: relative; }
 .inspect { margin: 0; font-size: 13.5px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
 .inspect b { font-family: var(--f-mono); }
-.inspect .w { color: var(--ctl-w); font-weight: 600; } .inspect .b { color: var(--ctl-b); font-weight: 600; }
+.inspect .w { color: var(--ctl-w); font-weight: 600; } .inspect .pr { color: var(--accent); font-weight: 600; } .inspect .b { color: var(--ctl-b); font-weight: 600; }
 .overlay { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); pointer-events: none; z-index: 5; overflow: visible; }
 .overlay text { font-family: var(--f-mono); font-weight: 700; }
 .board.reviewing { border-color: var(--accent); }
@@ -696,7 +696,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   let inspectSq = null;
   function clearSel() { selected = null; legal = []; safety = {}; inspectSq = null; }
   function select(s) {
-    inspectSq = null;
+    inspectSq = s;
     selected = s; legal = game.moves({ square: s, verbose: true }); safety = {};
     const mover = game.get(s).color, foe = mover === 'w' ? 'b' : 'w';
     for (const m of legal) {
@@ -719,7 +719,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       }
     }
     if (!p) { const was = inspectSq; clearSel(); inspectSq = was === s ? null : s; render(); return; }
-    if (p && p.color === game.turn() && !(botCfg.on && p.color === 'b') && !botThinking && !game.game_over() && s !== selected) select(s); else clearSel();
+    if (p && p.color === game.turn() && !(botCfg.on && p.color === 'b') && !botThinking && !game.game_over() && s !== selected) select(s);
+    else { const was = inspectSq; clearSel(); if (s !== was) inspectSq = s; }
     render();
   }
 
@@ -736,22 +737,40 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     const svg = $('inspectLayer'), note = $('inspectNote');
     if (!inspectSq || review) { svg.innerHTML = ''; note.hidden = true; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
-    const att = attackersOf(game, inspectSq), [tx, ty] = XY(inspectSq);
+    const target = game.get(inspectSq), att = attackersOf(game, inspectSq), [tx, ty] = XY(inspectSq);
+    // On a piece: its own side protects it, the other side attacks it. On an empty square: color by side.
+    const groups = target
+      ? [{ list: att.filter(a => a.p.color === target.color), col: 'var(--accent)', word: 'Protected by', cls: 'pr' },
+         { list: att.filter(a => a.p.color !== target.color), col: 'var(--ctl-b)', word: 'Attacked by', cls: 'b' }]
+      : [{ list: att.filter(a => a.p.color === 'w'), col: 'var(--ctl-w)', word: 'White', cls: 'w' },
+         { list: att.filter(a => a.p.color === 'b'), col: 'var(--ctl-b)', word: 'Black', cls: 'b' }];
     let h = '';
-    for (const a of att) {
-      const [x, y] = XY(a.sq), col = a.p.color === 'w' ? 'var(--ctl-w)' : 'var(--ctl-b)';
-      const dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
-      h += '<line x1="' + (x + dx / L * .3) + '" y1="' + (y + dy / L * .3) + '" x2="' + (tx - dx / L * .34) + '" y2="' + (ty - dy / L * .34) + '" stroke="' + col + '" stroke-width=".1" stroke-linecap="round" opacity=".85"/>';
-      h += '<circle cx="' + x + '" cy="' + y + '" r=".44" fill="none" stroke="' + col + '" stroke-width=".08"/>';
+    for (const g of groups) for (const a of g.list) {
+      const [x, y] = XY(a.sq), dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
+      h += '<line x1="' + (x + dx / L * .3) + '" y1="' + (y + dy / L * .3) + '" x2="' + (tx - dx / L * .4) + '" y2="' + (ty - dy / L * .4) + '" stroke="' + g.col + '" stroke-width=".1" stroke-linecap="round" opacity=".85"/>';
+      h += '<circle cx="' + x + '" cy="' + y + '" r=".44" fill="none" stroke="' + g.col + '" stroke-width=".08"/>';
     }
-    h += '<rect x="' + (tx - .46) + '" y="' + (ty - .46) + '" width=".92" height=".92" rx=".08" fill="color-mix(in oklab, var(--ink) 10%, transparent)" stroke="var(--ink)" stroke-width=".06"/>';
-    const w = att.filter(a => a.p.color === 'w'), b = att.filter(a => a.p.color === 'b');
-    h += '<text x="' + tx + '" y="' + (ty + .12) + '" text-anchor="middle" font-size=".34" font-family="var(--f-mono)" font-weight="700"><tspan fill="var(--ctl-w)">' + w.length + '</tspan><tspan fill="var(--ink)">·</tspan><tspan fill="var(--ctl-b)">' + b.length + '</tspan></text>';
+    if (target) {
+      h += '<rect x="' + (tx - .47) + '" y="' + (ty - .47) + '" width=".94" height=".94" rx=".08" fill="none" stroke="var(--ink)" stroke-width=".06"/>';
+      h += '<rect x="' + (tx - .46) + '" y="' + (ty - .78) + '" width=".92" height=".3" rx=".08" fill="var(--surface)" stroke="var(--ink)" stroke-width=".03"/>';
+      h += '<text x="' + tx + '" y="' + (ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="var(--accent)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
+    } else {
+      h += '<rect x="' + (tx - .46) + '" y="' + (ty - .46) + '" width=".92" height=".92" rx=".08" fill="color-mix(in oklab, var(--ink) 10%, transparent)" stroke="var(--ink)" stroke-width=".06"/>';
+      h += '<text x="' + tx + '" y="' + (ty + .12) + '" text-anchor="middle" font-size=".34" font-weight="700"><tspan fill="var(--ctl-w)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)">·</tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
+    }
     svg.innerHTML = h;
     const list = arr => arr.map(a => PNAME[a.p.type] + ' ' + a.sq).join(', ');
-    note.innerHTML = '<b>' + inspectSq + '</b> · ' + (att.length
-      ? (w.length ? '<span class="w">White ' + w.length + '</span> (' + list(w) + ')' : '<span class="w">White 0</span>') + ' · ' + (b.length ? '<span class="b">Black ' + b.length + '</span> (' + list(b) + ')' : '<span class="b">Black 0</span>')
-      : 'Nobody attacks this square.') + ' Tap it again to clear.';
+    const part = g => '<span class="' + g.cls + '">' + g.word + ' ' + g.list.length + '</span>' + (g.list.length ? ' (' + list(g.list) + ')' : '');
+    let lead = '<b>' + inspectSq + '</b>';
+    if (target) lead += ' · ' + (target.color === 'w' ? 'White' : 'Black') + ' ' + PNAME[target.type];
+    let verdict = '';
+    if (target && target.type !== 'k') {
+      const pro = groups[0].list.length, at = groups[1].list.length;
+      if (at && !pro) verdict = ' <span class="b">Hanging: nothing protects it.</span>';
+      else if (at > pro) verdict = ' <span class="b">Outnumbered.</span>';
+      else if (at && groups[1].list.some(a => PVAL[a.p.type] < PVAL[target.type])) verdict = ' <span class="b">A cheaper piece attacks it.</span>';
+    }
+    note.innerHTML = lead + ' · ' + (att.length ? part(groups[0]) + ' · ' + part(groups[1]) : (target ? 'Nothing protects or attacks it.' : 'Nobody attacks this square.')) + verdict;
     note.hidden = false;
   }
 
