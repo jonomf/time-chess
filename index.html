@@ -355,7 +355,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .goboard .gocoord { fill: var(--go-coord); font: 700 .3px var(--f-mono); text-anchor: middle; }
 .goboard .gostone.b { fill: #18191b; stroke: #000; stroke-width: .02; }
 .goboard .gostone.w { fill: #f8f6f0; stroke: #6f6a60; stroke-width: .035; }
-.goboard .gostone.ghost { opacity: .45; pointer-events: none; }
+.goboard .gostone.gohover { opacity: .45; pointer-events: none; }
 .goboard .gostone.fresh { transform-box: fill-box; transform-origin: center; animation: gopop .18s ease-out; }
 @keyframes gopop { from { transform: scale(.55); opacity: .4; } to { transform: scale(1); opacity: 1; } }
 .goboard .goterr-b { fill: #18191b; }
@@ -2691,13 +2691,17 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       });
     }
     // hover preview
-    if (GO.hover >= 0 && goHumanTurn() && !s.b[GO.hover] && GC.legal(s, GO.hover)) { const [x, y] = GC.xy(s, GO.hover); h += '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r=".46" class="gostone ' + (s.turn === 1 ? 'b' : 'w') + ' ghost"/>'; }
+    if (GO.hover >= 0 && goHumanTurn() && !s.b[GO.hover] && GC.legal(s, GO.hover)) { const [x, y] = GC.xy(s, GO.hover); h += '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r=".46" class="gostone ' + (s.turn === 1 ? 'b' : 'w') + ' gohover"/>'; }
     svg.innerHTML = h;
     goPrevCur = GO.cur;
   }
   function goPointAt(e) {
-    const svg = $('goBoard'), r = svg.getBoundingClientRect(), N = GO.N, M = 0.9, size = N - 1 + 2 * M;
-    const x = Math.round((e.clientX - r.left) / r.width * size - M), y = Math.round((e.clientY - r.top) / r.height * size - M);
+    // map the pointer into the board's own coordinates, which accounts for letterboxing and scaling
+    const svg = $('goBoard'), N = GO.N, M = 0.9, ctm = svg.getScreenCTM();
+    if (!ctm) return -1;
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const q = pt.matrixTransform(ctm.inverse());
+    const x = Math.round(q.x - M), y = Math.round(q.y - M);
     return x >= 0 && y >= 0 && x < N && y < N ? GC.pt(GO.st, x, y) : -1;
   }
   const goHumanTurn = () => !GO.sim && !GO.thinking && !goOver() && !(GO.bot.on && GO.st.turn === GO.bot.color);
