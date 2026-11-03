@@ -325,6 +325,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 .inspector.droptarget { outline: 2.5px dashed var(--accent); outline-offset: 3px; }
 .inspector.droptarget .tabbar { background: color-mix(in oklab, var(--accent) 14%, var(--surface)); }
 .inspector.empty .panes { display: none; }
+.devrow .note { margin: 0; font-size: 12px; }
+.devdebug { margin: 0; padding: 10px; border-radius: 6px; background: color-mix(in oklab, var(--ink) 6%, transparent); font: 500 11.5px/1.5 var(--f-mono); white-space: pre-wrap; color: var(--ink); }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -487,6 +489,23 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       </div>
       </div>
     </section>
+    <section class="o-dev card" data-card="dev">
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="dev" aria-expanded="false"><span class="label">Developer</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="cbody">
+        <p class="label">Camera</p>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-camEase">Follow ease</label><span id="devv-camEase"></span></div><input type="range" id="dev-camEase" data-dev="camEase" min="0.01" max="0.4" step="0.01" data-unit="×"><p class="note">Share of the remaining distance covered each frame. Lower is smoother.</p></div>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-camMax">Follow top speed</label><span id="devv-camMax"></span></div><input type="range" id="dev-camMax" data-dev="camMax" min="4" max="200" step="2" data-unit=" px/frame"><p class="note">Caps how fast the timeline and tree can scroll toward the current move.</p></div>
+        <p class="label">Motion</p>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-animMs">Piece slide</label><span id="devv-animMs"></span></div><input type="range" id="dev-animMs" data-dev="animMs" min="0" max="800" step="10" data-unit=" ms"><p class="note">How long a single move takes to slide.</p></div>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-botDelay">Stockfish reply delay</label><span id="devv-botDelay"></span></div><input type="range" id="dev-botDelay" data-dev="botDelay" min="0" max="2000" step="50" data-unit=" ms"><p class="note">Minimum wait before Stockfish plays, so its move doesn’t feel instant.</p></div>
+        <p class="label">Engine</p>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-analysisMs">Background analysis</label><span id="devv-analysisMs"></span></div><input type="range" id="dev-analysisMs" data-dev="analysisMs" min="100" max="3000" step="50" data-unit=" ms"><p class="note">Thinking time per position for the evaluation graph. Higher is more accurate but slower to fill in.</p></div>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-coachMs">Coach thinking</label><span id="devv-coachMs"></span></div><input type="range" id="dev-coachMs" data-dev="coachMs" min="200" max="5000" step="100" data-unit=" ms"><p class="note">Thinking time for Coach Pip’s suggestions.</p></div>
+        <button class="tog" data-devflag="debug" type="button"><span>Debug readout<small>Show live counters for the move tree and the engine.</small></span><span class="sw2"></span></button>
+        <pre class="devdebug" id="devDebug" hidden></pre>
+        <div class="controls"><button class="btn" id="devResetDev" type="button">Reset developer settings</button><button class="btn" id="devResetLayout" type="button">Reset layout</button><button class="btn danger" id="devWipe" type="button">Clear saved data</button></div>
+      </div>
+    </section>
     <section class="o-set card settings" id="settingsCard" data-card="settings">
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
@@ -539,7 +558,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   let nodes, nextId, cur;           // move tree
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
-  let opts = { map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -744,7 +764,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       const t = terminalEval(n.fen);
       if (t) { n.ev = t; continue; }
       analyzing = n.id;
-      runEngine(n.fen, { skill: 20, ms: ANALYSIS_MS }).then(r => {
+      runEngine(n.fen, { skill: 20, ms: opts.dev.analysisMs }).then(r => {
         if (nodes[n.id]) n.ev = toWhite(r.score, n.fen) || { cp: 0 };
         analyzing = null; save(); renderEval();
         pump();
@@ -762,7 +782,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     const cfg = { skill: Math.round((L - 1) * 20 / 9), ms: 80 + L * 70 };
     const t0 = Date.now();
     runEngine(fen, cfg, true).then(r => {
-      const wait = Math.max(0, 450 - (Date.now() - t0));
+      const wait = Math.max(0, opts.dev.botDelay - (Date.now() - t0));
       setTimeout(() => {
         botThinking = false;
         if (cur !== at || !botCfg.on || game.fen() !== fen) { render(); return; }
@@ -971,13 +991,13 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
   let prevSq = null;
   // ---------- animated navigation: replay each move on the way to a target ----------
-  let animMs = 220, navTimer = null;
+  let animMs = 220, navTimer = null, navDest = null;
   function stepsBetween(a, b) {
     const pa = pathTo(a).map(n => n.id), pb = pathTo(b).map(n => n.id);
     let k = 0; while (k < pa.length && k < pb.length && pa[k] === pb[k]) k++;
     return [...pa.slice(k - 1, pa.length - 1).reverse(), ...pb.slice(k)];
   }
-  function stopNav() { clearTimeout(navTimer); navTimer = null; animMs = 220; save(); }
+  function stopNav() { clearTimeout(navTimer); navTimer = null; navDest = null; save(); }
   function navTo(id) {
     if (sim || !nodes[id]) return;
     if (navTimer) stopNav();
@@ -985,12 +1005,13 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (steps.length <= 1 || reduce) { goTo(id); save(); render(); return; }
     if (!opts.replay) { goTo(id); save(); render(); return; }
+    navDest = id;
     const per = Math.max(opts.replay / 16, Math.min(opts.replay / 5, opts.replay / steps.length));
     animMs = Math.round(per * 0.9);
     let i = 0;
     const tick = () => {
       goTo(steps[i++]);
-      if (i >= steps.length) { navTimer = null; render(); animMs = 220; save(); return; }
+      if (i >= steps.length) { navTimer = null; navDest = null; render(); save(); return; }
       navTimer = setTimeout(tick, per);
       render();
     };
@@ -1031,7 +1052,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
         const a = from.el.getBoundingClientRect(), b = to.el.getBoundingClientRect();
         const dx = a.left - b.left, dy = a.top - b.top;
         to.el.classList.add('anim');
-        const anim = to.pc.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'translate(0,0)' }], { duration: animMs, easing: 'cubic-bezier(.3,.7,.2,1)' });
+        const anim = to.pc.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'translate(0,0)' }], { duration: navTimer ? animMs : opts.dev.animMs, easing: 'cubic-bezier(.3,.7,.2,1)' });
         anim.onfinish = anim.oncancel = () => to.el.classList.remove('anim');
       }
     }
@@ -1100,7 +1121,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       c.raf = 0; if (c.manual) return;
       const dx = c.tx - el.scrollLeft, dy = c.ty - el.scrollTop;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { el.scrollLeft = c.tx; el.scrollTop = c.ty; return; }
-      const mv = d => Math.abs(d) < 1 ? d : Math.sign(d) * Math.max(1, Math.abs(d) * 0.16);
+      const ease = opts.dev.camEase, cap = opts.dev.camMax;
+      const mv = d => Math.abs(d) < 1 ? d : Math.sign(d) * Math.min(cap, Math.max(1, Math.abs(d) * ease));
       el.scrollLeft += mv(dx); el.scrollTop += mv(dy);
       c.raf = requestAnimationFrame(step);
     }
@@ -1172,7 +1194,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     $('ribInner').innerHTML = g + c;
     $('ribEmpty').hidden = L > 1;
     ribCam = ribCam || makeCam(rib);
-    ribCam.follow(xs(ci) + 12 - rib.clientWidth / 2, null, cur);
+    const di = navDest != null ? line.findIndex(n => n.id === navDest) : -1, fi = di >= 0 ? di : ci;
+    ribCam.follow(xs(fi) + 12 - rib.clientWidth / 2, null, di >= 0 ? navDest : cur);
   }
 
   function renderTimeline() {
@@ -1249,8 +1272,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     wrap.style.height = Math.min(H + 2, 260) + 'px';
     wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
     treeCam = treeCam || makeCam(wrap);
-    const cn = nodes[cur];
-    treeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, cur);
+    const fid = navDest != null && nodes[navDest] ? navDest : cur, cn = nodes[fid];
+    treeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, fid);
   }
 
   function renderEngine() {
@@ -1264,9 +1287,10 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
   function render() {
     renderCards();  // show the right panes first so views can measure themselves
+    renderDev();
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
     setTimeout(maybeBotMove, 0);
-    for (const t of document.querySelectorAll('.tog')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
+    for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     boardEl.style.setProperty('--checker', opts.checker + '%');
     $('checkerRange').value = opts.checker; $('checkerVal').textContent = opts.checker + '%';
     for (const b of document.querySelectorAll('#segSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
@@ -1679,7 +1703,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     if (!n || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
     const g = new Chess(n.fen); if (g.game_over()) return;
     n.coachPending = true;
-    runEngine(n.fen, { skill: 20, ms: COACH_MS, multipv: 3 }, true).then(r => {
+    runEngine(n.fen, { skill: 20, ms: opts.dev.coachMs, multipv: 3 }, true).then(r => {
       n.coachPending = false; if (!nodes[n.id]) return;
       const lines = (r.lines || []).filter(l => l && l.pv && l.pv[0]).map(l => ({ uci: l.pv[0], ev: toWhite(l.score, n.fen) }));
       if (!lines.length && r.best && r.best !== '(none)') lines.push({ uci: r.best, ev: toWhite(r.score, n.fen) });
@@ -1857,10 +1881,39 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   $('segOpp').addEventListener('click', e => { const b = e.target.closest('[data-opp]'); if (b) { botCfg.on = b.dataset.opp === 'bot'; if (botCfg.on && flipped) { flipped = false; buildBoard(); } clearSel(); save(); render(); } });
   $('diffRange').addEventListener('input', e => { botCfg.level = +e.target.value; save(); renderOpp(); });
   $('checkerRange').addEventListener('input', e => { opts.checker = +e.target.value; boardEl.style.setProperty('--checker', opts.checker + '%'); $('checkerVal').textContent = opts.checker + '%'; save(); });
+  function renderDev() {
+    for (const r of document.querySelectorAll('[data-dev]')) {
+      const k = r.dataset.dev, v = opts.dev[k];
+      if (document.activeElement !== r) r.value = v;
+      $('devv-' + k).textContent = (r.dataset.unit === '×' ? (+v).toFixed(2) + '×' : v + r.dataset.unit);
+    }
+    for (const b of document.querySelectorAll('[data-devflag]')) b.setAttribute('aria-pressed', String(!!opts.dev[b.dataset.devflag]));
+    const dbg = $('devDebug'); dbg.hidden = !opts.dev.debug;
+    if (opts.dev.debug) {
+      const all = Object.values(nodes), leaves = all.filter(n => !n.children.length && n.id);
+      dbg.textContent = 'nodes ' + all.length + ' · leaves ' + leaves.length + ' · deepest ply ' + Math.max(0, ...all.map(n => n.ply)) +
+        '\ncurrent node ' + cur + ' · ply ' + nodes[cur].ply + ' · line ' + (lineOf(cur).length - 1) + ' plies' +
+        '\nevaluated ' + all.filter(n => n.ev).length + '/' + all.length + ' · coach cached ' + all.filter(n => n.coach).length +
+        '\nengine ' + engine.state + (engine.job ? ' · busy' : '') + ' · queued ' + engine.queue.length +
+        '\nfen ' + nodes[cur].fen;
+    }
+  }
+  document.addEventListener('input', e => { const r = e.target.closest && e.target.closest('[data-dev]'); if (!r) return; opts.dev[r.dataset.dev] = +r.value; save(); renderDev(); });
+  document.addEventListener('click', e => {
+    const f = e.target.closest('[data-devflag]'); if (f) { opts.dev[f.dataset.devflag] = !opts.dev[f.dataset.devflag]; save(); renderDev(); return; }
+    if (e.target.closest('#devResetDev')) { opts.dev = Object.assign({}, DEV_DEFAULTS); save(); renderDev(); return; }
+    if (e.target.closest('#devResetLayout')) { opts.dock = null; opts.cards = {}; opts.tab = 'dev'; dockState(); placeAll(); applyState(); return; }
+    const w = e.target.closest('#devWipe');
+    if (w) {
+      if (w.dataset.armed) { try { [STORE, STORE_V1, 'sightline-stories-v1'].forEach(k => localStorage.removeItem(k)); } catch (_) {} location.reload(); return; }
+      w.dataset.armed = '1'; w.textContent = 'Tap again to clear everything';
+      setTimeout(() => { delete w.dataset.armed; w.textContent = 'Clear saved data'; }, 3000);
+    }
+  });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
   // ---------- detachable tabs: each tool is a tab in the inspector or a card of its own ----------
-  const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'settings'];
-  const TOOL_LABEL = { timeline: 'Timeline', branches: 'Branches', coach: 'Coach', review: 'Story Mode', sim: 'Simulate', game: 'Game', settings: 'Settings' };
+  const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'settings', 'dev'];
+  const TOOL_LABEL = { timeline: 'Timeline', branches: 'Branches', coach: 'Coach', review: 'Story Mode', sim: 'Simulate', game: 'Game', settings: 'Settings', dev: 'Developer' };
   const toolEl = {}; document.querySelectorAll('[data-card]').forEach(c => { toolEl[c.dataset.card] = c; });
   const insp = document.querySelector('.inspector'), panesEl = document.querySelector('.panes'), tabsEl = document.querySelector('.tabs');
   const colL = document.querySelector('.col-l'), colR = document.querySelector('.col-r'), boardBox = document.querySelector('.o-board');
@@ -2047,7 +2100,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   $('newgame').onclick = () => { if (sim) return; confirmEl.hidden = false; controlsEl.hidden = true; $('confirmNo').focus(); };
   $('confirmNo').onclick = () => { confirmEl.hidden = true; controlsEl.hidden = false; };
   $('confirmYes').onclick = () => { if (navTimer) stopNav(); resetTree(); forkOpen = null; focus = null; review = false; prevSq = null; confirmEl.hidden = true; controlsEl.hidden = false; applyState(); };
-  for (const t of document.querySelectorAll('.tog')) t.onclick = () => { opts[t.dataset.opt] = !opts[t.dataset.opt]; save(); render(); };
+  for (const t of document.querySelectorAll('.tog[data-opt]')) t.onclick = () => { opts[t.dataset.opt] = !opts[t.dataset.opt]; save(); render(); };
 
   // ---------- boot ----------
   function start(data) {
@@ -2056,6 +2109,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     if (s) {
       flipped = !!s.flipped;
       if (s.opts) opts = Object.assign(opts, s.opts);
+      opts.dev = Object.assign({}, DEV_DEFAULTS, opts.dev || {});
       if (s.simCfg) simCfg = Object.assign(simCfg, s.simCfg);
       if (s.botCfg) botCfg = Object.assign(botCfg, s.botCfg);
       if (s.coachCfg) coachCfg = Object.assign(coachCfg, s.coachCfg);
