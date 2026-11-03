@@ -459,6 +459,9 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
         <div class="seg" id="segStr"><span class="label">Strength</span>
           <button type="button" data-str="strong">Strong</button><button type="button" data-str="club">Club</button><button type="button" data-str="casual">Casual</button>
         </div>
+        <div class="seg" id="segPace"><span class="label">Speed</span>
+          <button type="button" data-pace="0">Fastest</button><button type="button" data-pace="200">Fast</button><button type="button" data-pace="700">Normal</button><button type="button" data-pace="1600">Slow</button>
+        </div>
         <button class="btn simgo" id="simBtn" type="button">Simulate from here</button>
       </div>
       </div>
@@ -537,7 +540,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
   let opts = { map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
-  let simCfg = { len: 20, str: 'club' };
+  let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
   const LEVEL_NAMES = ['Beginner', 'Novice', 'Casual', 'Improving', 'Club', 'Strong club', 'Expert', 'Master', 'Grandmaster', 'Full strength'];
@@ -789,6 +792,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       if (!addChild(m, true)) break;
       sim.left--;
       save(); render();
+      if (simCfg.pace && sim && !sim.stop && sim.left > 0) await new Promise(res => setTimeout(res, simCfg.pace));
     }
     sim = null; save(); render();
   }
@@ -1154,6 +1158,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     } else { alts.hidden = true; forkOpen = null; }
 
     for (const b of document.querySelectorAll('#segLen button')) b.setAttribute('aria-pressed', String(+b.dataset.len === simCfg.len));
+    for (const b of document.querySelectorAll('#segPace button')) b.setAttribute('aria-pressed', String(+b.dataset.pace === simCfg.pace));
     for (const b of document.querySelectorAll('#segStr button')) b.setAttribute('aria-pressed', String(b.dataset.str === simCfg.str));
     const sb = $('simBtn');
     if (sim) { sb.textContent = 'Stop simulation'; sb.disabled = false; }
@@ -2007,6 +2012,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   });
 
   $('segLen').addEventListener('click', e => { const b = e.target.closest('[data-len]'); if (b) { simCfg.len = +b.dataset.len; save(); render(); } });
+  $('segPace').addEventListener('click', e => { const b = e.target.closest('[data-pace]'); if (b) { simCfg.pace = +b.dataset.pace; save(); render(); } });
   $('segStr').addEventListener('click', e => { const b = e.target.closest('[data-str]'); if (b) { simCfg.str = b.dataset.str; save(); render(); } });
   $('simBtn').onclick = () => { if (sim) { sim.stop = true; } else startSim(); };
   $('flip').onclick = () => { flipped = !flipped; prevSq = null; buildBoard(); save(); render(); };
