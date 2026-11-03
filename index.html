@@ -1086,7 +1086,37 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     const fm = n.color === 'w' ? b - a : a - b;
     return fm <= -0.35 ? ['blunder', '??'] : fm <= -0.15 ? ['mistake', '?'] : fm >= 0.3 ? ['great', '!'] : null;
   }
-  let lastRibbonCur = null;
+  let lastRibbonCur = null, ribCam = null, treeCam = null;
+  // Smooth-follow camera for a scroll container: eases toward the current move every frame,
+  // re-aims on every render, and stands down while the person scrolls it themselves.
+  function makeCam(el) {
+    const c = { tx: 0, ty: 0, raf: 0, manual: false, key: undefined, shown: false };
+    const hands = () => { c.manual = true; };
+    el.addEventListener('wheel', hands, { passive: true });
+    el.addEventListener('touchstart', hands, { passive: true });
+    el.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') hands(); });
+    const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function step() {
+      c.raf = 0; if (c.manual) return;
+      const dx = c.tx - el.scrollLeft, dy = c.ty - el.scrollTop;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) { el.scrollLeft = c.tx; el.scrollTop = c.ty; return; }
+      const mv = d => Math.abs(d) < 1 ? d : Math.sign(d) * Math.max(1, Math.abs(d) * 0.16);
+      el.scrollLeft += mv(dx); el.scrollTop += mv(dy);
+      c.raf = requestAnimationFrame(step);
+    }
+    c.follow = (x, y, key) => {
+      if (key !== c.key) { c.key = key; c.manual = false; }
+      const visible = el.offsetParent !== null && el.clientWidth > 0;
+      if (!visible) { c.shown = false; return; }
+      if (c.manual) return;
+      const maxX = Math.max(0, el.scrollWidth - el.clientWidth), maxY = Math.max(0, el.scrollHeight - el.clientHeight);
+      c.tx = Math.round(Math.min(maxX, Math.max(0, x)));
+      c.ty = y == null ? el.scrollTop : Math.round(Math.min(maxY, Math.max(0, y)));
+      if (!c.shown || reduce()) { c.shown = true; el.scrollLeft = c.tx; el.scrollTop = c.ty; return; }
+      if (!c.raf) c.raf = requestAnimationFrame(step);
+    };
+    return c;
+  }
   function renderRibbon() {
     const line = lineOf(cur), L = line.length, ci = line.findIndex(n => n.id === cur);
     const W = L * SLOT, xs = i => i * SLOT + SLOT / 2, pad = 6, ys = v => GH / 2 - v * (GH / 2 - pad);
@@ -1138,13 +1168,11 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     c += '</div>';
     const rib = $('ribbon');
     $('ribInner').style.width = W + 'px';
+    $('ribInner').style.marginRight = Math.max(0, rib.clientWidth / 2 - SLOT) + 'px';
     $('ribInner').innerHTML = g + c;
     $('ribEmpty').hidden = L > 1;
-    if (lastRibbonCur !== cur) {
-      const target = Math.max(0, xs(ci) - rib.clientWidth / 2);
-      rib.scrollTo({ left: target, behavior: lastRibbonCur == null ? 'auto' : 'smooth' });
-      lastRibbonCur = cur;
-    }
+    ribCam = ribCam || makeCam(rib);
+    ribCam.follow(xs(ci) + 12 - rib.clientWidth / 2, null, cur);
   }
 
   function renderTimeline() {
@@ -1188,7 +1216,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       nodes[id].children.forEach((c, k) => dfs(c, k === 0 ? l : ++next));
     })(0, 0);
     const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
-    const W = PX * 2 + maxPly * DX + 24, H = PY + next * DY + 30;
+    const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / 2 - 40), H = PY + next * DY + 30;
     const onLine = new Set(lineOf(cur).map(n => n.id)), onPath = new Set(pathTo(cur).map(n => n.id));
     let edges = '', dots = '', labels = '';
     // move-number axis
@@ -1220,11 +1248,9 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a dot to jump to that move.">' + labels + edges + dots + '</svg>';
     wrap.style.height = Math.min(H + 2, 260) + 'px';
     wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
-    if (lastTreeCur !== cur) {
-      const n = nodes[cur];
-      wrap.scrollTo({ left: Math.max(0, X(n) - wrap.clientWidth / 2), top: Math.max(0, Y(n) - 120), behavior: lastTreeCur == null ? 'auto' : 'smooth' });
-      lastTreeCur = cur;
-    }
+    treeCam = treeCam || makeCam(wrap);
+    const cn = nodes[cur];
+    treeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, cur);
   }
 
   function renderEngine() {
@@ -1237,6 +1263,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   }
 
   function render() {
+    renderCards();  // show the right panes first so views can measure themselves
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
