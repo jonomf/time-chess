@@ -430,17 +430,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
       </div>
     </section>
-    <section class="o-branch card">
-      <p class="label">Branches</p>
-      <div class="tree" id="tree" hidden></div>
-      <div class="branches" id="branches"></div>
-    </section>
     <div class="o-time ribbon-wrap">
       <div class="cardhead"><p class="label">Timeline</p><span class="engine" id="engineState">Engine loading</span></div>
       <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
       <p class="empty" id="ribEmpty">No moves yet. White starts: drag a piece, or tap it and then a highlighted square.</p>
       <div class="alts" id="alts" hidden></div>
     </div>
+    <section class="o-branch card">
+      <p class="label">Branches</p>
+      <div class="tree" id="tree" hidden></div>
+      <div class="branches" id="branches"></div>
+    </section>
   </div>
 </div>
 
@@ -1097,30 +1097,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   function renderBranches() {
-    const el = $('branches');
-    const leaves = Object.values(nodes).filter(n => !n.children.length && n.id !== 0);
-    if (!leaves.length) { el.innerHTML = '<span class="empty">Go back to any move and play something different to start a new branch. Simulations get their own branch too.</span>'; renderTree({}); return; }
-    const main = mainLeaf(), curLeaf = leafOf(cur);
-    leaves.sort((a, b) => (a === main ? -1 : b === main ? 1 : branchRoot(a).id - branchRoot(b).id));
-    let bn = 0, sn = 0, h = '';
-    const names = {};
-    for (const lf of leaves) {
-      const br = branchRoot(lf), isMain = lf === main;
-      const isSim = !isMain && br.sim;
-      const name = isMain ? 'Main line' : isSim ? 'Simulation ' + (++sn) : 'Branch ' + (++bn + 1);
-      names[lf.id] = name;
-      const split = isMain ? '' : 'Splits at ' + moveLabel(br) + ' · ';
-      const e = fmtEval(lf.ev);
-      h += '<div class="br' + (lf === curLeaf ? ' on' : '') + '"><button type="button" class="go" data-leaf="' + lf.id + '"><strong>' + name + '</strong>' + (lf.sim ? '<span class="tag">sim</span>' : '') + '<span class="ev">' + e.t + '</span><small>' + split + Math.ceil(lf.ply / 2) + ' moves</small></button>' +
-        (isMain ? '' : '<button type="button" class="del" data-del="' + lf.id + '" aria-label="Delete ' + name + '">×</button>') + '</div>';
-    }
-    el.innerHTML = h;
-    renderTree(names);
+    const el = $('branches'), any = nodes[0].children.length > 0;
+    el.hidden = any;
+    if (!any) el.innerHTML = '<span class="empty">Your moves will grow into a tree here. Go back to any move and play something different to start a new branch.</span>';
+    renderTree();
   }
 
   // ---------- branch tree: x = move, y = lane; tap a dot to jump there ----------
   let lastTreeCur = null;
-  function renderTree(names) {
+  function renderTree() {
     const wrap = $('tree');
     if (!nodes[0].children.length) { wrap.hidden = true; wrap.innerHTML = ''; lastTreeCur = null; return; }
     wrap.hidden = false;
@@ -1131,7 +1116,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       nodes[id].children.forEach((c, k) => dfs(c, k === 0 ? l : ++next));
     })(0, 0);
     const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
-    const W = PX * 2 + maxPly * DX + 120, H = PY + next * DY + 22;
+    const W = PX * 2 + maxPly * DX + 24, H = PY + next * DY + 22;
     const onLine = new Set(lineOf(cur).map(n => n.id)), onPath = new Set(pathTo(cur).map(n => n.id));
     let edges = '', dots = '', labels = '';
     // move-number axis
@@ -1157,9 +1142,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
           : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + fill + '" stroke="' + (isCur ? 'var(--ink)' : fork ? 'var(--surface)' : 'none') + '" stroke-width="' + (isCur ? 2 : 1.5) + '"/>') + '</g>';
       // first move of each side branch, and the current move
       const par = n.parent != null ? nodes[n.parent] : null;
-      if (par && par.children[0] !== n.id) labels += '<text class="san" x="' + (x + 2) + '" y="' + (y - 9) + '" text-anchor="middle">' + esc(n.san) + '</text>';
       if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 19) + '" text-anchor="middle">' + esc(n.san) + '</text>';
-      if (!n.children.length && n.id && names[n.id]) labels += '<text class="lbl' + (onLine.has(n.id) ? ' on' : '') + '" x="' + (x + 12) + '" y="' + (y + 4) + '">' + esc(names[n.id]) + '</text>';
     }
     wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a dot to jump to that move.">' + labels + edges + dots + '</svg>';
     wrap.style.height = Math.min(H + 2, 260) + 'px';
