@@ -421,31 +421,6 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   </div>
 
   <div class="col col-r">
-    <section class="o-review card review" id="reviewCard" data-card="review">
-      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="review" aria-expanded="false"><span class="label" id="reviewLabel">Review</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-      <div class="cbody">
-      <p class="note">Tap any piece on the board or below to trace its path. Faded pieces have been captured.</p>
-      <div class="roster" id="roster"></div>
-      <div class="journey" id="journey" hidden></div>
-      <p class="label">Notable pieces</p>
-      <div class="notables" id="notables"></div>
-      <button class="btn simgo" id="storyBtn" type="button" hidden>Write their stories with Claude</button>
-      <p class="note" id="storyNote" hidden></p>
-      <p class="label">Turning points</p>
-      <div class="turns" id="turns"></div>
-      </div>
-    </section>
-    <section class="o-coach card" id="coachCard" data-card="coach">
-      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="coach" aria-expanded="false"><span class="label">Coach Pip</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-      <div class="cbody coach" aria-live="polite">
-      <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
-      <div class="bubble">
-        <div class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button></div>
-        <div class="c-body" id="coachBody"></div>
-        <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
-      </div>
-      </div>
-    </section>
     <div class="o-time ribbon-wrap" data-card="timeline">
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="timeline" aria-expanded="false"><span class="label">Timeline</span><span class="engine" id="engineState">Engine loading</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
@@ -459,6 +434,31 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       <div class="cbody">
       <div class="tree" id="tree" hidden></div>
       <div class="branches" id="branches"></div>
+      </div>
+    </section>
+    <section class="o-coach card" id="coachCard" data-card="coach">
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="coach" aria-expanded="false"><span class="label">Coach Pip</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="cbody coach" aria-live="polite">
+      <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
+      <div class="bubble">
+        <div class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button></div>
+        <div class="c-body" id="coachBody"></div>
+        <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
+      </div>
+      </div>
+    </section>
+    <section class="o-review card review" id="reviewCard" data-card="review">
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="review" aria-expanded="false"><span class="label" id="reviewLabel">Story Mode</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="cbody">
+      <p class="note">Tap any piece on the board or below to trace its path. Faded pieces have been captured.</p>
+      <div class="roster" id="roster"></div>
+      <div class="journey" id="journey" hidden></div>
+      <p class="label">Notable pieces</p>
+      <div class="notables" id="notables"></div>
+      <button class="btn simgo" id="storyBtn" type="button" hidden>Write their stories with Claude</button>
+      <p class="note" id="storyNote" hidden></p>
+      <p class="label">Turning points</p>
+      <div class="turns" id="turns"></div>
       </div>
     </section>
     <section class="o-sim card" data-card="sim">
@@ -1388,11 +1388,11 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
   function renderReview() {
     boardEl.classList.toggle('reviewing', review);
-    if (!review) { $('reviewLabel').textContent = 'Review'; renderCoachArrows(); return; }
+    if (!review) { $('reviewLabel').textContent = 'Story Mode'; renderCoachArrows(); return; }
     const J = journeys();
     renderOverlay(J);
     const RL = reviewLine().length - 1;
-    $('reviewLabel').textContent = 'Review · ' + (RL ? 'whole line, ' + mvNo(RL) + ' moves' : 'no moves yet');
+    $('reviewLabel').textContent = 'Story Mode · ' + (RL ? 'whole line, ' + mvNo(RL) + ' moves' : 'no moves yet');
 
     // roster
     $('roster').innerHTML = ROSTER.map(id => { const j = J[id]; return '<button type="button" class="' + j.color + (j.death ? ' dead' : '') + (!j.steps.length && !j.death ? ' idle' : '') + '" data-piece="' + id + '" aria-pressed="' + (focus === id) + '" aria-label="' + esc(pieceName(id)) + '">' + glyphOf(j) + '</button>'; }).join('');
@@ -1659,7 +1659,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     if (bk.name) h += '<p class="c-open"><span class="label">Opening</span> <b>' + esc(bk.name) + '</b>' + (bk.idea ? ' · ' + esc(bk.idea) : '') + '</p>';
 
     let actions = '';
-    if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Review to see the turning points.</p>';
+    if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Story Mode to see the turning points.</p>';
     else if (sim) h += '<p class="c-main muted">Watching the simulation.</p>';
     else if (!humanTurnNow()) h += '<p class="c-main muted">Stockfish is choosing its reply…</p>';
     else {
@@ -1798,9 +1798,9 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     document.querySelector('.o-board').style.order = 1;
     for (const c of [...cardEls(colR), ...cardEls(colL)]) c.style.order = k++;
   }
-  function saveLayout() { opts.layout = { l: cardEls(colL).map(c => c.dataset.card), r: cardEls(colR).map(c => c.dataset.card) }; save(); }
+  function saveLayout() { opts.layout = { v: 2, l: cardEls(colL).map(c => c.dataset.card), r: cardEls(colR).map(c => c.dataset.card) }; save(); }
   function restoreLayout() {
-    const L = opts.layout; if (!L) { applyOrder(); return; }
+    const L = opts.layout; if (!L || L.v !== 2) { applyOrder(); return; }
     const byKey = {}; for (const c of document.querySelectorAll('[data-card]')) byKey[c.dataset.card] = c;
     for (const k of L.l || []) if (byKey[k]) { colL.appendChild(byKey[k]); delete byKey[k]; }
     for (const k of L.r || []) if (byKey[k]) { colR.appendChild(byKey[k]); delete byKey[k]; }
