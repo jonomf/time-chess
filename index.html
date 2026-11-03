@@ -299,7 +299,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .card-ph { border: 2px dashed var(--accent); border-radius: 8px; background: color-mix(in oklab, var(--accent) 7%, transparent); }
 body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
 /* Inspector: one panel, a tab per tool */
-.inspector { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.inspector, .group { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.group .tabbar { padding-left: 6px; padding-right: 6px; gap: 4px; }
+.group .tabbar .grip { margin-left: 0; }
+.group.folded .panes { display: none; }
+.group.folded .tabbar { border-bottom-color: transparent; }
+.gfold { flex: none; width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 5px; }
+.gfold .chev { width: 14px; height: 14px; transition: transform .15s; }
+.gfold[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+.gfold:hover { color: var(--ink); background: var(--surface); }
+.hdr-right .engine { font-size: 0; gap: 0; padding: 6px; cursor: help; min-width: 0; }
 .tabbar { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding-right: 12px; background: color-mix(in oklab, var(--ink) 4%, var(--surface)); }
 .tabs { display: flex; flex-wrap: wrap; flex: 1; min-width: 0; padding-left: 4px; }
 .tabs::-webkit-scrollbar { display: none; }
@@ -322,8 +331,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 .popbtn svg, .dockbtn svg { width: 13px; height: 13px; }
 .popbtn:hover, .dockbtn:hover { color: var(--ink); border-color: var(--line); background: var(--surface); }
 .tabhint { padding: 12px 8px; font-size: 12.5px; color: var(--muted); }
-.inspector.droptarget { outline: 2.5px dashed var(--accent); outline-offset: 3px; }
-.inspector.droptarget .tabbar { background: color-mix(in oklab, var(--accent) 14%, var(--surface)); }
+.inspector.droptarget, .group.droptarget { outline: 2.5px dashed var(--accent); outline-offset: 3px; }
+.group.droptarget .tabbar, .inspector.droptarget .tabbar { background: color-mix(in oklab, var(--accent) 14%, var(--surface)); }
 .inspector.empty .panes { display: none; }
 .devrow .note { margin: 0; font-size: 12px; }
 .devdebug { margin: 0; padding: 10px; border-radius: 6px; background: color-mix(in oklab, var(--ink) 6%, transparent); font: 500 11.5px/1.5 var(--f-mono); white-space: pre-wrap; color: var(--ink); }
@@ -1917,7 +1926,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   document.addEventListener('click', e => {
     const f = e.target.closest('[data-devflag]'); if (f) { opts.dev[f.dataset.devflag] = !opts.dev[f.dataset.devflag]; save(); renderDev(); return; }
     if (e.target.closest('#devResetDev')) { opts.dev = Object.assign({}, DEV_DEFAULTS); save(); renderDev(); return; }
-    if (e.target.closest('#devResetLayout')) { opts.dock = null; opts.cards = {}; opts.tab = 'dev'; dockState(); placeAll(); applyState(); return; }
+    if (e.target.closest('#devResetLayout')) { opts.layout2 = null; opts.dock = null; opts.cards = {}; layout(); placeAll(); applyState(); return; }
     const w = e.target.closest('#devWipe');
     if (w) {
       if (w.dataset.armed) { try { [STORE, STORE_V1, 'sightline-stories-v1'].forEach(k => localStorage.removeItem(k)); } catch (_) {} location.reload(); return; }
@@ -1926,185 +1935,234 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     }
   });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
-  // ---------- detachable tabs: each tool is a tab in the inspector or a card of its own ----------
+  // ---------- tab groups: every panel is a card with one or more tabs ----------
+  // Drag a tab along its bar to reorder, onto another card's bar to move it there, or off any
+  // bar to make a new card. Drag a card by its grip onto another card's bar to merge them.
   const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'settings', 'dev'];
   const TOOL_LABEL = { timeline: 'Timeline', branches: 'Branches', coach: 'Coach', review: 'Story Mode', sim: 'Simulate', game: 'Game', settings: 'Settings', dev: 'Developer' };
   const toolEl = {}; document.querySelectorAll('[data-card]').forEach(c => { toolEl[c.dataset.card] = c; });
-  const insp = document.querySelector('.inspector'), panesEl = document.querySelector('.panes'), tabsEl = document.querySelector('.tabs');
-  const colL = document.querySelector('.col-l'), colR = document.querySelector('.col-r'), boardBox = document.querySelector('.o-board');
-  const DOCK_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2.5h8M2 2.5v7h8v-7M6 4.5v3.2M4.4 6.3 6 7.9l1.6-1.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  for (const k of ALL_TOOLS) {
-    const hd = toolEl[k].querySelector('.cardhd');
-    hd.insertAdjacentHTML('beforeend', '<button type="button" class="dockbtn" data-dock="' + k + '" title="Put back in the tabs" aria-label="Put ' + TOOL_LABEL[k] + ' back in the tabs">' + DOCK_SVG + '</button>');
-    toolEl[k].querySelector('.cardtog .label').textContent = TOOL_LABEL[k];
-  }
-  function dockState() {
-    if (!opts.dock || opts.dock.v !== 1) opts.dock = { v: 1, tabs: ALL_TOOLS.slice(), l: [], r: [] };
-    const d = opts.dock, seen = new Set();
-    for (const key of ['tabs', 'l', 'r']) d[key] = (d[key] || []).filter(k => ALL_TOOLS.includes(k) && !seen.has(k) && seen.add(k));
-    for (const k of ALL_TOOLS) if (!seen.has(k)) d.tabs.push(k);
-    if (!opts.cards) opts.cards = {};
-    if (!d.tabs.includes(opts.tab)) opts.tab = d.tabs.includes('branches') ? 'branches' : d.tabs[0] || null;
-    return d;
-  }
-  const isDocked = k => dockState().tabs.includes(k);
-  function cardOpen(k) { return isDocked(k) ? opts.tab === k : opts.cards[k] !== false; }
+  const colL = document.querySelector('.col-l'), colR = document.querySelector('.col-r');
+  // the engine dot moves to the page header; the old fixed inspector is replaced by groups
+  document.querySelector('.hdr-right').prepend($('engineState'));
+  { const old = document.querySelector('.inspector'); if (old) { for (const k in toolEl) colR.appendChild(toolEl[k]); old.remove(); } }
+  const GRIP_HTML = '<span class="grip" role="button" tabindex="0" aria-label="Move this card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span>';
+  const POP_HTML = '<button type="button" class="popbtn" title="Pop this tab out into its own card" aria-label="Pop this tab out into its own card"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  const FOLD_HTML = '<button type="button" class="gfold" aria-label="Collapse or expand this card"><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  let gid = 1;
+  const newId = () => 'g' + (Date.now().toString(36)) + (gid++);
 
+  function layout(repair) {
+    let L = opts.layout2;
+    if (!L || L.v !== 1) {
+      // carry over the previous arrangement (one tab panel plus detached cards) when there is one
+      const d = opts.dock && opts.dock.v === 1 ? opts.dock : null, cards = opts.cards || {};
+      const single = k => ({ id: newId(), tabs: [k], active: k, open: cards[k] !== false });
+      L = { v: 1, l: [], r: [] };
+      if (d) {
+        L.l = (d.l || []).filter(k => ALL_TOOLS.includes(k)).map(single);
+        const main = (d.tabs || []).filter(k => ALL_TOOLS.includes(k));
+        if (main.length) L.r.push({ id: newId(), tabs: main, active: main.includes(opts.tab) ? opts.tab : main[0], open: true });
+        L.r.push(...(d.r || []).filter(k => ALL_TOOLS.includes(k)).map(single));
+      } else L.r.push({ id: newId(), tabs: ALL_TOOLS.slice(), active: 'branches', open: true });
+      opts.layout2 = L;
+    }
+    // sanitize: every tool exactly once, no empty groups
+    const seen = new Set();
+    for (const side of ['l', 'r']) {
+      L[side] = (L[side] || []).map(g => {
+        g.tabs = (g.tabs || []).filter(k => ALL_TOOLS.includes(k) && !seen.has(k) && seen.add(k));
+        if (!g.tabs.includes(g.active)) g.active = g.tabs[0];
+        if (g.open == null) g.open = true;
+        if (!g.id) g.id = newId();
+        return g;
+      }).filter(g => g.tabs.length);
+    }
+    // only fill in tools that went missing once an operation has finished (mid-move a tool is briefly in no group)
+    const missing = repair ? ALL_TOOLS.filter(k => !seen.has(k)) : [];
+    if (missing.length) { const host = L.r[0] || L.l[0]; if (host) host.tabs.push(...missing); else L.r.push({ id: newId(), tabs: missing, active: missing[0], open: true }); }
+    return L;
+  }
+  const allGroups = () => { const L = layout(); return [...L.l, ...L.r]; };
+  const groupOf = k => allGroups().find(g => g.tabs.includes(k));
+  const groupById = id => allGroups().find(g => g.id === id);
+  function cardOpen(k) { const g = groupOf(k); return !!g && g.open && g.active === k; }
+
+  const groupEls = {};
+  function groupEl(g) {
+    let el = groupEls[g.id];
+    if (!el) {
+      el = document.createElement('section');
+      el.className = 'group'; el.dataset.group = g.id;
+      el.innerHTML = '<div class="tabbar">' + GRIP_HTML + '<div class="tabs" role="tablist"></div>' + POP_HTML + FOLD_HTML + '</div><div class="panes"></div>';
+      groupEls[g.id] = el;
+    }
+    return el;
+  }
   function placeAll() {
-    const d = dockState();
-    for (const k of d.tabs) panesEl.appendChild(toolEl[k]);
-    for (const k of d.l) colL.appendChild(toolEl[k]);
-    for (const k of d.r) colR.appendChild(toolEl[k]);
-    tabsEl.innerHTML = d.tabs.map(k => '<button type="button" class="tab" role="tab" data-tab="' + k + '" aria-selected="false">' + TOOL_LABEL[k] + '</button>').join('') +
-      (d.tabs.length ? '' : '<span class="tabhint">Drop a card here to make it a tab</span>');
-    insp.classList.toggle('empty', !d.tabs.length);
-    insp.hidden = !d.tabs.length && !cardDrag;
-    $('popBtn').hidden = !d.tabs.length;
+    const L = layout(true), live = new Set();
+    const put = (col, list) => { for (const g of list) { const el = groupEl(g); live.add(g.id); col.appendChild(el); const panes = el.querySelector('.panes'); for (const k of g.tabs) panes.appendChild(toolEl[k]); } };
+    put(colL, L.l); put(colR, L.r);
+    for (const id in groupEls) if (!live.has(id)) { groupEls[id].remove(); delete groupEls[id]; }
+    for (const g of allGroups()) {
+      const el = groupEls[g.id];
+      el.querySelector('.tabs').innerHTML = g.tabs.map(k => '<button type="button" class="tab" role="tab" data-tab="' + k + '" aria-selected="false">' + TOOL_LABEL[k] + '</button>').join('');
+      el.querySelector('.popbtn').hidden = g.tabs.length < 2;
+    }
   }
   function renderCards() {
-    for (const k of ALL_TOOLS) {
-      const el = toolEl[k], open = cardOpen(k), docked = isDocked(k);
-      el.hidden = docked && !open;
-      el.querySelector('.cbody').hidden = !open;
-      el.querySelector('.cardtog').setAttribute('aria-expanded', String(open));
-      el.classList.toggle('detached', !docked);
+    for (const g of allGroups()) {
+      const el = groupEls[g.id]; if (!el) continue;
+      el.classList.toggle('folded', !g.open);
+      el.querySelector('.gfold').setAttribute('aria-expanded', String(g.open));
+      for (const t of el.querySelectorAll('.tab')) t.setAttribute('aria-selected', String(t.dataset.tab === g.active));
+      for (const k of g.tabs) { toolEl[k].hidden = k !== g.active; toolEl[k].querySelector('.cbody').hidden = false; }
     }
-    for (const t of tabsEl.querySelectorAll('.tab')) t.setAttribute('aria-selected', String(t.dataset.tab === opts.tab));
   }
-  // Coach runs while it is showing (its tab selected, or its card open); Story Mode likewise.
+  // Coach runs while it is showing; Story Mode likewise.
   function applyState() {
     coachCfg.on = cardOpen('coach');
     const r = cardOpen('review') && !sim;
     if (r !== review) { review = r; clearSel(); if (r && !focus) { const p = notables(journeys())[0]; focus = p ? p.id : null; } focusStep = null; }
     save(); render();
   }
-  function setTab(k) { opts.tab = k; applyState(); }
-  function detach(k, side, before) {
-    const d = dockState();
-    d.tabs = d.tabs.filter(x => x !== k); d.l = d.l.filter(x => x !== k); d.r = d.r.filter(x => x !== k);
-    const list = side === 'l' ? d.l : d.r, i = before ? list.indexOf(before) : -1;
-    if (i >= 0) list.splice(i, 0, k); else list.push(k);
-    opts.cards[k] = true;
-    if (opts.tab === k) opts.tab = d.tabs.includes('branches') ? 'branches' : d.tabs[0] || null;
-    placeAll(); applyState();
+  function setTab(k) { const g = groupOf(k); if (!g) return; g.active = k; g.open = true; applyState(); }
+  function removeTool(k) { for (const g of allGroups()) { const i = g.tabs.indexOf(k); if (i >= 0) { g.tabs.splice(i, 1); if (g.active === k) g.active = g.tabs[Math.min(i, g.tabs.length - 1)]; } } }
+  function prune() { const L = layout(); L.l = L.l.filter(g => g.tabs.length); L.r = L.r.filter(g => g.tabs.length); }
+  function moveTab(k, toGid, beforeKey) {
+    const to = groupById(toGid); if (!to) return;
+    removeTool(k);
+    const i = beforeKey ? to.tabs.indexOf(beforeKey) : -1;
+    if (i >= 0) to.tabs.splice(i, 0, k); else to.tabs.push(k);
+    to.active = k; to.open = true; prune();
   }
-  function dockTool(k, beforeTab) {
-    const d = dockState();
-    d.l = d.l.filter(x => x !== k); d.r = d.r.filter(x => x !== k); d.tabs = d.tabs.filter(x => x !== k);
-    const i = beforeTab ? d.tabs.indexOf(beforeTab) : -1;
-    if (i >= 0) d.tabs.splice(i, 0, k); else d.tabs.push(k);
-    opts.tab = k; placeAll(); applyState();
+  function popOut(k, side, index) {
+    removeTool(k); prune();
+    const L = layout(), g = { id: newId(), tabs: [k], active: k, open: true };
+    L[side].splice(Math.max(0, Math.min(index, L[side].length)), 0, g);
+    return g;
   }
-  function syncDockFromDom() {
-    const d = dockState(), keysIn = col => [...col.children].filter(c => c.dataset && c.dataset.card).map(c => c.dataset.card);
-    d.l = keysIn(colL); d.r = keysIn(colR);
+  function locate(id) { const L = layout(); for (const side of ['l', 'r']) { const i = L[side].findIndex(g => g.id === id); if (i >= 0) return { side, i }; } return null; }
+  function syncFromDom() {
+    const L = layout(), byId = Object.fromEntries(allGroups().map(g => [g.id, g]));
+    const ids = col => [...col.children].filter(c => c.dataset && c.dataset.group).map(c => c.dataset.group);
+    L.l = ids(colL).map(id => byId[id]).filter(Boolean); L.r = ids(colR).map(id => byId[id]).filter(Boolean);
   }
 
-  // Dragging: a tab dragged off the bar becomes a card; a card dragged onto the bar becomes a tab.
-  let cardDrag = null, tabPress = null;
-  const overBar = (x, y) => { const r = insp.querySelector('.tabbar').getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top - 14 && y <= r.bottom + 14; };
-  function startCardDrag(el, e) {
+  // --- pointer dragging ---
+  let drag = null, tabPress = null;
+  const barAt = (x, y, except) => {
+    for (const el of document.querySelectorAll('.group')) {
+      if (el === except) continue;
+      const r = el.querySelector('.tabbar').getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top - 12 && y <= r.bottom + 12) return el;
+    }
+    return null;
+  };
+  function startGroupDrag(el, e) {
     const r = el.getBoundingClientRect();
     const ph = document.createElement('div'); ph.className = 'card-ph'; ph.style.height = Math.min(r.height, 160) + 'px';
     el.parentNode.insertBefore(ph, el);
     el.classList.add('dragcard'); el.style.width = r.width + 'px'; el.style.left = r.left + 'px'; el.style.top = r.top + 'px';
     document.body.classList.add('dragging-card');
-    cardDrag = { el, ph, dx: Math.min(e.clientX - r.left, r.width - 20), dy: Math.min(e.clientY - r.top, 30), id: e.pointerId };
-    insp.hidden = false;
-    moveCardDrag(e);
+    drag = { el, ph, dx: Math.min(Math.max(8, e.clientX - r.left), r.width - 20), dy: Math.min(Math.max(8, e.clientY - r.top), 30), id: e.pointerId, over: null };
+    moveGroupDrag(e);
   }
-  function moveCardDrag(e) {
-    const { el, ph } = cardDrag;
-    el.style.left = (e.clientX - cardDrag.dx) + 'px'; el.style.top = (e.clientY - cardDrag.dy) + 'px';
-    const docking = overBar(e.clientX, e.clientY);
-    insp.classList.toggle('droptarget', docking);
-    ph.hidden = docking;
-    if (!docking) {
+  function moveGroupDrag(e) {
+    const { el, ph } = drag;
+    el.style.left = (e.clientX - drag.dx) + 'px'; el.style.top = (e.clientY - drag.dy) + 'px';
+    const over = barAt(e.clientX, e.clientY, el);
+    if (over !== drag.over) { if (drag.over) drag.over.classList.remove('droptarget'); if (over) over.classList.add('droptarget'); drag.over = over; }
+    ph.hidden = !!over;
+    if (!over) {
       const narrowView = matchMedia('(max-width: 899px)').matches;
       const col = narrowView ? (e.clientY > colR.getBoundingClientRect().top ? colR : colL) : (e.clientX >= colR.getBoundingClientRect().left - 9 ? colR : colL);
-      const list = [...col.children].filter(c => c.dataset && c.dataset.card && c !== el);
+      const list = [...col.children].filter(c => c.dataset && c.dataset.group && c !== el);
       const before = list.find(c => { const b = c.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
       if (before) col.insertBefore(ph, before); else col.appendChild(ph);
     }
     if (e.clientY < 60) window.scrollBy(0, -12); else if (e.clientY > innerHeight - 60) window.scrollBy(0, 12);
   }
-  function endCardDrag(e) {
-    const { el, ph } = cardDrag; cardDrag = null;
+  function endGroupDrag(e) {
+    const { el, ph, over } = drag; drag = null;
     el.classList.remove('dragcard'); el.style.width = el.style.left = el.style.top = '';
-    document.body.classList.remove('dragging-card'); insp.classList.remove('droptarget');
-    const k = el.dataset.card;
-    if (e && overBar(e.clientX, e.clientY)) {
+    document.body.classList.remove('dragging-card');
+    if (over) over.classList.remove('droptarget');
+    const g = groupById(el.dataset.group);
+    if (over && e && g) {
+      // merge: every tab of the dragged card joins the card it was dropped on
       ph.remove();
       const t = document.elementFromPoint(e.clientX, e.clientY), tb = t && t.closest && t.closest('.tab');
-      dockTool(k, tb ? tb.dataset.tab : null);
-      return;
+      const target = over.dataset.group, act = g.active;
+      for (const k of g.tabs.slice()) moveTab(k, target, tb ? tb.dataset.tab : null);
+      const tg = groupById(target); if (tg) tg.active = act;
+      placeAll(); applyState(); return;
     }
     ph.parentNode.insertBefore(el, ph); ph.remove();
-    const d = dockState(); d.tabs = d.tabs.filter(x => x !== k);
-    if (opts.tab === k) opts.tab = d.tabs.includes('branches') ? 'branches' : d.tabs[0] || null;
-    opts.cards[k] = opts.cards[k] !== false;
-    syncDockFromDom(); placeAll(); applyState();
+    syncFromDom(); placeAll(); applyState();
   }
   document.addEventListener('pointerdown', e => {
-    if (e.button > 0 || cardDrag) return;
-    const g = e.target.closest('.grip');
-    if (g) { e.preventDefault(); try { g.setPointerCapture(e.pointerId); } catch (_) {} startCardDrag(g.closest('[data-card]'), e); return; }
-    const t = e.target.closest('.tab');
+    if (e.button > 0 || drag) return;
+    const grip = e.target.closest('.group .grip');
+    if (grip) { e.preventDefault(); try { grip.setPointerCapture(e.pointerId); } catch (_) {} startGroupDrag(grip.closest('.group'), e); return; }
+    const t = e.target.closest('.group .tab');
     if (t) { tabPress = { k: t.dataset.tab, x: e.clientX, y: e.clientY, id: e.pointerId, moved: false }; try { t.setPointerCapture(e.pointerId); } catch (_) {} }
   });
   document.addEventListener('pointermove', e => {
-    if (cardDrag && e.pointerId === cardDrag.id) { moveCardDrag(e); return; }
+    if (drag && e.pointerId === drag.id) { moveGroupDrag(e); return; }
     if (!tabPress || e.pointerId !== tabPress.id) return;
     if (!tabPress.moved && Math.hypot(e.clientX - tabPress.x, e.clientY - tabPress.y) < 8) return;
     tabPress.moved = true;
-    if (!overBar(e.clientX, e.clientY)) {
-      // tear the tab off into a card that follows the pointer
-      const k = tabPress.k; tabPress = null;
-      const d = dockState(); d.tabs = d.tabs.filter(x => x !== k); d.r.unshift(k);
-      opts.cards[k] = true;
-      if (opts.tab === k) opts.tab = d.tabs.includes('branches') ? 'branches' : d.tabs[0] || null;
-      placeAll(); renderCards();
-      startCardDrag(toolEl[k], e);
-      cardDrag.id = e.pointerId;
+    const k = tabPress.k, home = groupOf(k), bar = barAt(e.clientX, e.clientY, null);
+    if (bar) {
+      const t = document.elementFromPoint(e.clientX, e.clientY), tb = t && t.closest && t.closest('.tab');
+      const toId = bar.dataset.group, before = tb && tb.dataset.tab !== k ? tb.dataset.tab : null;
+      if (toId !== home.id || (before && home.tabs.indexOf(before) !== home.tabs.indexOf(k) + 1)) {
+        if (toId === home.id && !before) return;
+        const fromIdx = home.tabs.indexOf(k), beforeIdx = before ? home.tabs.indexOf(before) : -1;
+        // moving rightward within the same bar inserts after the hovered tab
+        const beforeKey = toId === home.id && beforeIdx > fromIdx ? home.tabs[beforeIdx + 1] || null : before;
+        moveTab(k, toId, beforeKey); placeAll(); renderCards(); save();
+      }
       return;
     }
-    // reorder within the bar
-    const t = document.elementFromPoint(e.clientX, e.clientY), tb = t && t.closest && t.closest('.tab');
-    if (tb && tb.dataset.tab !== tabPress.k) {
-      const d = dockState(), from = d.tabs.indexOf(tabPress.k), to = d.tabs.indexOf(tb.dataset.tab);
-      d.tabs.splice(from, 1); d.tabs.splice(to, 0, tabPress.k); placeAll(); renderCards(); save();
-    }
+    // off every bar: tear the tab off into a new card that follows the pointer
+    tabPress = null;
+    const at = locate(home.id) || { side: 'r', i: 0 };
+    const g = popOut(k, at.side, at.i + 1);
+    placeAll(); renderCards();
+    startGroupDrag(groupEls[g.id], e);
+    drag.id = e.pointerId;
   });
   document.addEventListener('pointerup', e => {
-    if (cardDrag && e.pointerId === cardDrag.id) { endCardDrag(e); return; }
-    if (tabPress && e.pointerId === tabPress.id) { const p = tabPress; tabPress = null; if (!p.moved) setTab(p.k); }
+    if (drag && e.pointerId === drag.id) { endGroupDrag(e); return; }
+    if (tabPress && e.pointerId === tabPress.id) { const p = tabPress; tabPress = null; if (!p.moved) setTab(p.k); else applyState(); }
   });
-  document.addEventListener('pointercancel', () => { if (cardDrag) endCardDrag(null); tabPress = null; });
-  // buttons and keyboard
+  document.addEventListener('pointercancel', () => { if (drag) endGroupDrag(null); tabPress = null; });
+  // --- buttons and keyboard ---
   document.addEventListener('click', e => {
-    const dk = e.target.closest('.dockbtn'); if (dk) { dockTool(dk.dataset.dock); return; }
-    const t = e.target.closest('.cardtog'); if (!t) return;
-    const k = t.closest('[data-card]').dataset.card;
-    if (isDocked(k)) return;
-    opts.cards[k] = !cardOpen(k); applyState();
+    const f = e.target.closest('.group .gfold');
+    if (f) { const g = groupById(f.closest('.group').dataset.group); g.open = !g.open; applyState(); return; }
+    const p = e.target.closest('.group .popbtn');
+    if (p) { const g = groupById(p.closest('.group').dataset.group), at = locate(g.id); popOut(g.active, at.side, at.i + 1); placeAll(); applyState(); return; }
+    const t = e.target.closest('.group .tab');
+    if (t && e.detail === 0) setTab(t.dataset.tab);
   });
-  tabsEl.addEventListener('click', e => { const t = e.target.closest('.tab'); if (t && e.detail === 0) setTab(t.dataset.tab); });
-  tabsEl.addEventListener('keydown', e => {
-    const tabs = [...tabsEl.querySelectorAll('.tab')], i = tabs.findIndex(t => t.dataset.tab === opts.tab);
-    let j = null; if (e.key === 'ArrowRight') j = (i + 1) % tabs.length; else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length; else return;
-    e.preventDefault(); setTab(tabs[j].dataset.tab); tabsEl.querySelector('[data-tab="' + tabs[j].dataset.tab + '"]').focus();
-  });
-  $('popBtn').onclick = () => { if (opts.tab) detach(opts.tab, 'r', dockState().r[0]); };
   document.addEventListener('keydown', e => {
-    const g = e.target.closest && e.target.closest('.grip'); if (!g) return;
-    const el = g.closest('[data-card]'), col = el.parentNode, sibs = [...col.children].filter(c => c.dataset && c.dataset.card), i = sibs.indexOf(el);
+    const t = e.target.closest && e.target.closest('.group .tab');
+    if (t && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+      const g = groupOf(t.dataset.tab), i = g.tabs.indexOf(t.dataset.tab), j = (i + (e.key === 'ArrowRight' ? 1 : -1) + g.tabs.length) % g.tabs.length;
+      e.preventDefault(); setTab(g.tabs[j]); const nt = groupEls[g.id].querySelector('[data-tab="' + g.tabs[j] + '"]'); if (nt) nt.focus(); return;
+    }
+    const grip = e.target.closest && e.target.closest('.group .grip'); if (!grip) return;
+    const el = grip.closest('.group'), col = el.parentNode, sibs = [...col.children].filter(c => c.dataset && c.dataset.group), i = sibs.indexOf(el);
     if (e.key === 'ArrowUp' && i > 0) col.insertBefore(el, sibs[i - 1]);
     else if (e.key === 'ArrowDown' && i < sibs.length - 1) col.insertBefore(el, sibs[i + 1].nextSibling);
     else if (e.key === 'ArrowLeft' && col === colR) colL.appendChild(el);
     else if (e.key === 'ArrowRight' && col === colL) colR.appendChild(el);
     else return;
-    e.preventDefault(); syncDockFromDom(); save(); g.focus();
+    e.preventDefault(); syncFromDom(); save(); grip.focus();
   });
+
 
   $('segLen').addEventListener('click', e => { const b = e.target.closest('[data-len]'); if (b) { simCfg.len = +b.dataset.len; save(); render(); } });
   $('segPace').addEventListener('click', e => { const b = e.target.closest('[data-pace]'); if (b) { simCfg.pace = +b.dataset.pace; save(); render(); } });
@@ -2131,7 +2189,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
       if (s.migrate) { for (const m of s.migrate) if (!addChild(m, false)) break; }
       else deserialize(s);
     }
-    dockState(); placeAll();
+    layout(); placeAll();
     coachCfg.on = cardOpen('coach'); review = cardOpen('review');
     buildBoard(); render(); initEngine();
   }
