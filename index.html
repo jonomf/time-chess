@@ -256,6 +256,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .revbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .board-box { position: relative; }
+.inspect { margin: 0; font-size: 13.5px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.inspect b { font-family: var(--f-mono); }
+.inspect .w { color: var(--ctl-w); font-weight: 600; } .inspect .b { color: var(--ctl-b); font-weight: 600; }
 .overlay { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); pointer-events: none; z-index: 5; overflow: visible; }
 .overlay text { font-family: var(--f-mono); font-weight: 700; }
 .board.reviewing { border-color: var(--accent); }
@@ -313,7 +316,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   <div class="board-wrap">
     <div class="status" id="status" aria-live="polite"><span class="turn-chip w" id="chip"></span><span id="statusText">White to move</span><span class="evaltag" id="evalTag" title="Engine evaluation, in pawns, from White's side">…</span></div>
-    <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+    <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+    <p class="inspect" id="inspectNote" hidden></p>
     <div class="nav">
       <button id="navStart" type="button" aria-label="Go to start">«</button>
       <button id="navBack" type="button" aria-label="Back one move">‹</button>
@@ -689,8 +693,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   // ---------- selection ----------
-  function clearSel() { selected = null; legal = []; safety = {}; }
+  let inspectSq = null;
+  function clearSel() { selected = null; legal = []; safety = {}; inspectSq = null; }
   function select(s) {
+    inspectSq = null;
     selected = s; legal = game.moves({ square: s, verbose: true }); safety = {};
     const mover = game.get(s).color, foe = mover === 'w' ? 'b' : 'w';
     for (const m of legal) {
@@ -712,8 +718,41 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         addChild({ from: selected, to: s }, false); save(); render(); return;
       }
     }
+    if (!p) { const was = inspectSq; clearSel(); inspectSq = was === s ? null : s; render(); return; }
     if (p && p.color === game.turn() && !(botCfg.on && p.color === 'b') && !botThinking && !game.game_over() && s !== selected) select(s); else clearSel();
     render();
+  }
+
+  // ---------- inspect an empty square: who attacks it ----------
+  function attackersOf(g, sq) {
+    const [tf, tr] = sqXY(sq), ti = idx(tf, tr), out = [];
+    for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) {
+      const p = g.get(sqName(f, r)); if (!p) continue;
+      if (attacksFrom(g, f, r, p).includes(ti)) out.push({ sq: sqName(f, r), p });
+    }
+    return out;
+  }
+  function renderInspect() {
+    const svg = $('inspectLayer'), note = $('inspectNote');
+    if (!inspectSq || review) { svg.innerHTML = ''; note.hidden = true; return; }
+    const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
+    const att = attackersOf(game, inspectSq), [tx, ty] = XY(inspectSq);
+    let h = '';
+    for (const a of att) {
+      const [x, y] = XY(a.sq), col = a.p.color === 'w' ? 'var(--ctl-w)' : 'var(--ctl-b)';
+      const dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
+      h += '<line x1="' + (x + dx / L * .3) + '" y1="' + (y + dy / L * .3) + '" x2="' + (tx - dx / L * .34) + '" y2="' + (ty - dy / L * .34) + '" stroke="' + col + '" stroke-width=".1" stroke-linecap="round" opacity=".85"/>';
+      h += '<circle cx="' + x + '" cy="' + y + '" r=".44" fill="none" stroke="' + col + '" stroke-width=".08"/>';
+    }
+    h += '<rect x="' + (tx - .46) + '" y="' + (ty - .46) + '" width=".92" height=".92" rx=".08" fill="color-mix(in oklab, var(--ink) 10%, transparent)" stroke="var(--ink)" stroke-width=".06"/>';
+    const w = att.filter(a => a.p.color === 'w'), b = att.filter(a => a.p.color === 'b');
+    h += '<text x="' + tx + '" y="' + (ty + .12) + '" text-anchor="middle" font-size=".34" font-family="var(--f-mono)" font-weight="700"><tspan fill="var(--ctl-w)">' + w.length + '</tspan><tspan fill="var(--ink)">·</tspan><tspan fill="var(--ctl-b)">' + b.length + '</tspan></text>';
+    svg.innerHTML = h;
+    const list = arr => arr.map(a => PNAME[a.p.type] + ' ' + a.sq).join(', ');
+    note.innerHTML = '<b>' + inspectSq + '</b> · ' + (att.length
+      ? (w.length ? '<span class="w">White ' + w.length + '</span> (' + list(w) + ')' : '<span class="w">White 0</span>') + ' · ' + (b.length ? '<span class="b">Black ' + b.length + '</span> (' + list(b) + ')' : '<span class="b">Black 0</span>')
+      : 'Nobody attacks this square.') + ' Tap it again to clear.';
+    note.hidden = false;
   }
 
   // ---------- pointer: tap or drag ----------
@@ -1001,7 +1040,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   function render() {
-    renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach();
+    renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     pump();
