@@ -1303,6 +1303,10 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
   // ---------- review: journeys, notable pieces, turning points ----------
   let review = false, focus = null, focusStep = null;
+  let stepSliding = false;
+  document.addEventListener('pointerdown', e => { if (e.target.id === 'stepRange') stepSliding = true; });
+  const endSlide = () => { if (stepSliding) { stepSliding = false; renderReview(); } };
+  document.addEventListener('pointerup', endSlide); document.addEventListener('pointercancel', endSlide);
   const VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
   const TYPE_WORD = { P: 'pawn', N: 'knight', B: 'bishop', R: 'rook', Q: 'queen', K: 'king' };
   const START_IDS = (() => { const g = new Chess(), out = []; for (const r of [1, 0, 6, 7]) for (let f = 0; f < 8; f++) { const s = sqName(f, r), p = g.get(s); out.push(p.color + p.type.toUpperCase() + '-' + s); } return out; })();
@@ -1495,7 +1499,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
     // journey
     const jEl = $('journey'), key = storyKey(), gen = storyCache[key] || {};
-    if (focus && J[focus]) {
+    if (stepSliding) { /* leave the slider alone mid-drag */ }
+    else if (focus && J[focus]) {
       const j = J[focus], n = j.steps.length, k = focusStep == null ? n : focusStep;
       let stats = '<span class="stat">' + n + ' move' + (n === 1 ? '' : 's') + '</span><span class="stat">' + j.dist + ' squares</span>';
       if (j.kills.length) stats += '<span class="stat kill">' + j.kills.length + ' capture' + (j.kills.length > 1 ? 's' : '') + '</span>';
@@ -1509,7 +1514,14 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
         '<span class="story-src">' + (gen[j.id] ? 'Written by Claude' : 'Auto summary') + '</span><p class="story">' + esc(gen[j.id] || templateStory(j, J)) + '</p>';
       jEl.hidden = false;
       const rng = $('stepRange');
-      if (rng) rng.oninput = () => { focusStep = +rng.value; if (focusStep >= n) focusStep = null; renderReview(); const r2 = $('stepRange'); if (r2) r2.focus(); };
+      if (rng) rng.oninput = () => {
+        // update in place so the thumb stays under the finger while dragging
+        const kk = +rng.value;
+        focusStep = kk >= n ? null : kk;
+        const lab = rng.parentNode.querySelector('label');
+        lab.textContent = kk === 0 ? 'Starting square ' + j.start : 'Step ' + kk + ' of ' + n + ' · ' + mvNo(j.steps[kk - 1].ply) + (j.steps[kk - 1].ply % 2 ? '. ' : '… ') + j.steps[kk - 1].san;
+        renderOverlay(J);
+      };
     } else jEl.hidden = true;
 
     // notables
