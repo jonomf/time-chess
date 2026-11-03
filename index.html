@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Chess with square-control overlays, branching timelines, Stockfish, a coach, and a piece-by-piece review.">
+<meta name="description" content="Chess and Go with control overlays, branching timelines, engines, a coach, and a story mode.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>TIME CHESS!</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -336,6 +336,47 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 .inspector.empty .panes { display: none; }
 .devrow .note { margin: 0; font-size: 12px; }
 .devdebug { margin: 0; padding: 10px; border-radius: 6px; background: color-mix(in oklab, var(--ink) 6%, transparent); font: 500 11.5px/1.5 var(--f-mono); white-space: pre-wrap; color: var(--ink); }
+/* Go mode */
+:root { --go-wood: #dfb874; --go-line: #3b2b14; --go-coord: #6b5126; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --go-wood: #b48a4a; --go-line: #26190a; --go-coord: #3b2b14; } }
+:root[data-theme="dark"] { --go-wood: #b48a4a; --go-line: #26190a; --go-coord: #3b2b14; }
+body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { display: none !important; }
+.mode-go .board-box, .mode-go [data-card] > .cbody:not(.shared) { display: none !important; }
+.gobody { display: grid; gap: 10px; min-width: 0; }
+.ribbon-wrap .gobody { gap: 8px; }
+.panes > .ribbon-wrap .gobody > .empty, .panes > .ribbon-wrap .gobody > .alts, .panes > .ribbon-wrap .gobody > .nav { margin: 0 14px; }
+.ribbon-wrap .gobody > .empty, .ribbon-wrap .gobody > .alts, .ribbon-wrap .gobody > .nav { margin: 0 12px; }
+#goCoachBody { height: auto; min-height: 120px; }
+.goboard-box { width: 100%; max-width: 100%; }
+.goboard { display: block; width: 100%; aspect-ratio: 1; border-radius: 6px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; box-shadow: 0 2px 0 color-mix(in oklab, var(--go-line) 40%, transparent); }
+.goboard .gowood { fill: var(--go-wood); }
+.goboard .goline { stroke: var(--go-line); stroke-width: .035; }
+.goboard .gostar { fill: var(--go-line); }
+.goboard .gocoord { fill: var(--go-coord); font: 700 .3px var(--f-mono); text-anchor: middle; }
+.goboard .gostone.b { fill: #18191b; stroke: #000; stroke-width: .02; }
+.goboard .gostone.w { fill: #f8f6f0; stroke: #6f6a60; stroke-width: .035; }
+.goboard .gostone.ghost { opacity: .45; pointer-events: none; }
+.goboard .gostone.fresh { transform-box: fill-box; transform-origin: center; animation: gopop .18s ease-out; }
+@keyframes gopop { from { transform: scale(.55); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+.goboard .goterr-b { fill: #18191b; }
+.goboard .goterr-w { fill: #fbfaf6; stroke: #6f6a60; stroke-width: .025; }
+.goboard .goatari { fill: none; stroke: var(--ctl-b); stroke-width: .07; }
+.goboard .golast { fill: none; stroke-width: .06; }
+.goboard .golast.onb { stroke: #fff; } .goboard .golast.onw { stroke: #18191b; }
+.goboard .gonum { font: 700 .36px var(--f-mono); text-anchor: middle; }
+.goboard .gonum.onb { fill: #fff; } .goboard .gonum.onw { fill: #18191b; }
+.goboard .golibs { fill: var(--ctl-b); font: 700 .3px var(--f-mono); text-anchor: middle; paint-order: stroke; stroke: var(--go-wood); stroke-width: .08px; }
+.goboard .gomark { fill: color-mix(in oklab, var(--accent) 28%, transparent); stroke: var(--accent); stroke-width: .06; }
+.goboard .gomark.best { fill: color-mix(in oklab, var(--ctl-w) 35%, transparent); stroke: var(--ctl-w); stroke-width: .08; }
+.goboard .gomarkn { fill: var(--ink); font: 800 .36px var(--f-mono); text-anchor: middle; }
+.mcard .mc-stone { width: 22px; height: 22px; border-radius: 50%; margin: 3px auto 2px; }
+.mcard .mc-stone.b { background: #18191b; } .mcard .mc-stone.w { background: #f8f6f0; border: 1.5px solid #6f6a60; }
+.mcard .mc-cap { font-style: normal; color: var(--ctl-b); margin-left: 2px; font-size: 10px; }
+.gostatus { margin: 0; font-size: 14px; line-height: 1.5; }
+.modesw { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 7px; overflow: hidden; }
+.modesw button { padding: 6px 12px; border: 0; background: var(--surface); color: var(--ink); font: 700 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.modesw button + button { border-left: 1.5px solid var(--ink); }
+.modesw button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -765,7 +806,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   }
   let analyzing = null;
   function analyzeNext() {
-    if (sim || analyzing != null) return;
+    if (opts.mode === 'go' || sim || analyzing != null) return;
     const line = lineOf(cur);
     const order = [nodes[cur], ...line];
     for (const n of order) {
@@ -784,7 +825,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
   // ---------- Stockfish as Black ----------
   function maybeBotMove() {
-    if (!botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
+    if (opts.mode === 'go' || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
     if (game.turn() !== 'b' || game.game_over() || nodes[cur].children.length) return;
     botThinking = true; renderStatus();
     const L = botCfg.level, at = cur, fen = game.fen();
@@ -1300,6 +1341,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   function render() {
     renderCards();  // show the right panes first so views can measure themselves
     renderDev();
+    if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
@@ -1724,7 +1766,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 
   function humanTurnNow() { return !(botCfg.on && game.turn() === 'b') && !game.game_over() && !sim; }
   function requestCoach(n) {
-    if (!n || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
+    if (opts.mode === 'go' || !n || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
     const g = new Chess(n.fen); if (g.game_over()) return;
     n.coachPending = true;
     runEngine(n.fen, { skill: 20, ms: opts.dev.coachMs, multipv: 3 }, true).then(r => {
@@ -2175,6 +2217,775 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
   $('confirmYes').onclick = () => { if (navTimer) stopNav(); resetTree(); forkOpen = null; focus = null; review = false; prevSq = null; confirmEl.hidden = true; controlsEl.hidden = false; applyState(); };
   for (const t of document.querySelectorAll('.tog[data-opt]')) t.onclick = () => { opts[t.dataset.opt] = !opts[t.dataset.opt]; save(); render(); };
 
+  // ---------- Go rules + Monte Carlo search (runs on the page and, copied verbatim, in a worker) ----------
+  function goCoreFactory() {
+    let mark = new Int32Array(0), libMark = new Int32Array(0), gen = 1;
+    function make(N) {
+      const W = N + 2, b = new Int8Array(W * W).fill(3);
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) b[(y + 1) * W + x + 1] = 0;
+      return { N, W, b, ko: -1, turn: 1 };
+    }
+    const clone = s => ({ N: s.N, W: s.W, b: s.b.slice(), ko: s.ko, turn: s.turn });
+    const pt = (s, x, y) => (y + 1) * s.W + x + 1;
+    const xy = (s, p) => [p % s.W - 1, Math.floor(p / s.W) - 1];
+    function group(s, p, wantLibs) {
+      const b = s.b, W = s.W, c = b[p];
+      if (mark.length < b.length) { mark = new Int32Array(b.length); libMark = new Int32Array(b.length); }
+      const g = ++gen, stones = [p], libs = wantLibs ? [] : null; let nl = 0;
+      mark[p] = g;
+      for (let i = 0; i < stones.length; i++) {
+        const q = stones[i];
+        for (let k = 0; k < 4; k++) {
+          const r = k === 0 ? q + 1 : k === 1 ? q - 1 : k === 2 ? q + W : q - W, v = b[r];
+          if (v === 0) { if (libMark[r] !== g) { libMark[r] = g; nl++; if (libs) libs.push(r); } }
+          else if (v === c && mark[r] !== g) { mark[r] = g; stones.push(r); }
+        }
+      }
+      return { stones, libs: nl, libList: libs };
+    }
+    // Play the side to move at p (-1 = pass). Mutates s. Returns {captured} or null if illegal.
+    function play(s, p) {
+      if (p < 0) { s.ko = -1; s.turn = 3 - s.turn; return { captured: [] }; }
+      const b = s.b, W = s.W, c = s.turn, o = 3 - c;
+      if (b[p] !== 0 || p === s.ko) return null;
+      b[p] = c;
+      const captured = [];
+      for (let k = 0; k < 4; k++) {
+        const r = k === 0 ? p + 1 : k === 1 ? p - 1 : k === 2 ? p + W : p - W;
+        if (b[r] === o) { const g = group(s, r, false); if (g.libs === 0) for (const q of g.stones) { b[q] = 0; captured.push(q); } }
+      }
+      const me = group(s, p, false);
+      if (me.libs === 0) { b[p] = 0; return null; }   // suicide
+      s.ko = captured.length === 1 && me.stones.length === 1 && me.libs === 1 ? captured[0] : -1;
+      s.turn = o;
+      return { captured };
+    }
+    function legal(s, p) {
+      if (p < 0) return true;
+      if (s.b[p] !== 0 || p === s.ko) return false;
+      const t = clone(s); return !!play(t, p);
+    }
+    // a point surrounded by one colour that the colour should not fill in
+    function isEye(s, p, c) {
+      const b = s.b, W = s.W;
+      let edge = 0;
+      for (const r of [p + 1, p - 1, p + W, p - W]) { if (b[r] === 3) edge++; else if (b[r] !== c) return false; }
+      let bad = 0;
+      for (const r of [p + W + 1, p + W - 1, p - W + 1, p - W - 1]) if (b[r] === 3 - c) bad++;
+      return edge ? bad === 0 : bad <= 1;
+    }
+    // area score and ownership (+1 black, -1 white, 0 neutral); returns black minus white minus komi
+    function area(s, komi) {
+      const b = s.b, W = s.W, N = s.N, own = new Int8Array(b.length);
+      if (mark.length < b.length) { mark = new Int32Array(b.length); libMark = new Int32Array(b.length); }
+      let bs = 0, ws = 0;
+      const g = ++gen;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const p = (y + 1) * W + x + 1, v = b[p];
+        if (v === 1) { bs++; own[p] = 1; } else if (v === 2) { ws++; own[p] = -1; }
+        else if (mark[p] !== g) {
+          const reg = [p]; mark[p] = g; let tb = false, tw = false;
+          for (let i = 0; i < reg.length; i++) {
+            const q = reg[i];
+            for (const r of [q + 1, q - 1, q + W, q - W]) {
+              const u = b[r];
+              if (u === 0 && mark[r] !== g) { mark[r] = g; reg.push(r); }
+              else if (u === 1) tb = true; else if (u === 2) tw = true;
+            }
+          }
+          const o = tb && !tw ? 1 : tw && !tb ? -1 : 0;
+          if (o === 1) bs += reg.length; else if (o === -1) ws += reg.length;
+          for (const q of reg) own[q] = o;
+        }
+      }
+      return { diff: bs - ws - komi, own };
+    }
+    let seed = 1234567;
+    const rnd = n => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return ((seed >>> 0) % n); };
+    function randomMove(s, empties) {
+      // try random empty points first, then scan; skip own eyes
+      const n = empties.length; if (!n) return -1;
+      const start = rnd(n);
+      for (let i = 0; i < n; i++) {
+        const j = (start + i) % n, p = empties[j];
+        if (s.b[p] !== 0 || p === s.ko || isEye(s, p, s.turn)) continue;
+        if (play(s, p)) return p;
+      }
+      return -1;
+    }
+    function playout(s, komi, first) {
+      const N = s.N, W = s.W, empties = [];
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const p = (y + 1) * W + x + 1; if (s.b[p] === 0) empties.push(p); }
+      let passes = 0, moves = 0;
+      const max = N * N * 3;
+      while (passes < 2 && moves < max) {
+        // shuffle-ish: occasionally rebuild the empty list as stones come and go
+        if (moves % 12 === 0) { empties.length = 0; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const p = (y + 1) * W + x + 1; if (s.b[p] === 0) empties.push(p); } }
+        const mover = s.turn, p = randomMove(s, empties);
+        if (p < 0) { play(s, -1); passes++; } else { passes = 0; if (first && !first[p]) first[p] = mover; }
+        moves++;
+      }
+      return area(s, komi);
+    }
+    // Flat Monte Carlo with UCB1 over the root moves. Returns ranked moves, win rate for the side to move, and ownership.
+    function search(s, playouts, komi, topK) {
+      const N = s.N, W = s.W, me = s.turn, cands = [];
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const p = (y + 1) * W + x + 1;
+        if (s.b[p] === 0 && p !== s.ko && !isEye(s, p, me) && legal(s, p)) cands.push({ p, n: 0, w: 0 });
+      }
+      const ownSum = new Float32Array(s.b.length), an = new Float32Array(s.b.length), aw = new Float32Array(s.b.length), first = new Int8Array(s.b.length);
+      let total = 0, totalW = 0;
+      const K = 600;  // RAVE: moves that did well whenever they were played by us in a playout get credit early on
+      if (!cands.length) return { moves: [{ p: -1, n: 1, wr: 0.5 }], wr: 0.5, own: ownSum, total: 0 };
+      for (let it = 0; it < playouts; it++) {
+        let best = null, bestU = -1;
+        const lt = Math.log(it + 1);
+        for (const c of cands) {
+          const beta = Math.sqrt(K / (3 * c.n + K)), q = c.n ? c.w / c.n : 0.5, a = an[c.p] ? aw[c.p] / an[c.p] : 0.5;
+          const u = (1 - beta) * q + beta * a + 0.35 * Math.sqrt(lt / (c.n + 1)) + rnd(1000) * 1e-7;
+          if (u > bestU) { bestU = u; best = c; }
+        }
+        const t = clone(s); first.fill(0); play(t, best.p); first[best.p] = me;
+        const r = playout(t, komi, first);
+        const win = (r.diff > 0) === (me === 1) ? 1 : 0;
+        best.n++; best.w += win; total++; totalW += win;
+        for (let i = 0; i < first.length; i++) if (first[i] === me) { an[i]++; aw[i] += win; }
+        for (let i = 0; i < ownSum.length; i++) ownSum[i] += r.own[i];
+      }
+      cands.sort((a, b) => b.n - a.n || b.w - a.w);
+      const own = new Float32Array(N * N);
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) own[y * N + x] = ownSum[(y + 1) * W + x + 1] / Math.max(1, total);
+      // win rate of the position for the side to move ~ the best move's rate
+      const top = cands[0], wr = top.n ? top.w / top.n : totalW / Math.max(1, total);
+      return { moves: cands.slice(0, topK || 5).map(c => ({ p: c.p, n: c.n, wr: c.n ? c.w / c.n : 0 })), wr, own, total };
+    }
+    const encode = s => { let out = ''; for (let y = 0; y < s.N; y++) for (let x = 0; x < s.N; x++) out += s.b[(y + 1) * s.W + x + 1]; return out; };
+    function decode(N, str, ko, turn) { const s = make(N); for (let i = 0; i < N * N; i++) s.b[(Math.floor(i / N) + 1) * s.W + (i % N) + 1] = +str[i]; s.ko = ko; s.turn = turn; return s; }
+    return { make, clone, pt, xy, group, play, legal, isEye, area, search, encode, decode };
+  }
+
+  // ================= GO MODE =================
+  const GC = goCoreFactory();
+  const GO_STORE = 'timechess-go-v1';
+  const GO_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
+  const GO = {
+    N: 9, komi: 7.5, nextN: 9, nextKomi: 7.5,
+    nodes: null, nextId: 1, cur: 0, st: null,
+    bot: { on: true, level: 4, color: 2 },
+    simCfg: { len: 20, str: 'club', pace: 200 }, sim: null,
+    view: { territory: true, atari: true, libs: false, numbers: false },
+    thinking: false, forkOpen: null, navTimer: null, navDest: null, hover: -1, confirm: false,
+    story: {}, storyBusy: false, storyErr: null, coachText: {}, coachAsk: null
+  };
+  let goBooted = false;
+  const goEls = {};
+
+  // ---- tree ----
+  function goReset(N, komi) {
+    GO.N = N; GO.komi = komi;
+    const s = GC.make(N);
+    GO.nodes = { 0: { id: 0, parent: null, children: [], pref: 0, p: null, color: 0, ply: 0, enc: GC.encode(s), ko: -1, turn: 1, caps: [0, 0, 0], capN: 0, ev: null } };
+    GO.nextId = 1; GO.cur = 0; GO.st = s; GO.forkOpen = null; GO.story = {};
+  }
+  const goPath = id => { const p = []; for (let n = GO.nodes[id]; n; n = n.parent == null ? null : GO.nodes[n.parent]) p.push(n); return p.reverse(); };
+  function goLine(id) { const l = goPath(id); let n = GO.nodes[id]; while (n.children.length) { n = GO.nodes[n.children[Math.min(n.pref, n.children.length - 1)]]; l.push(n); } return l; }
+  const goStateOf = n => GC.decode(GO.N, n.enc, n.ko, n.turn);
+  function goGoTo(id) {
+    const path = goPath(id);
+    for (let i = 1; i < path.length; i++) { const par = GO.nodes[path[i].parent]; par.pref = par.children.indexOf(path[i].id); }
+    GO.cur = id; GO.st = goStateOf(GO.nodes[id]);
+  }
+  function goOver(n) { n = n || GO.nodes[GO.cur]; if (!n.parent && n.parent !== 0) return false; const par = GO.nodes[n.parent]; return n.p === -1 && par && par.p === -1; }
+  function goAdd(p, sim) {
+    const here = GO.nodes[GO.cur];
+    const same = here.children.map(c => GO.nodes[c]).find(c => c.p === p && !!c.sim === !!sim);
+    if (same) { goGoTo(same.id); return same; }
+    const s = goStateOf(here), mover = s.turn, r = GC.play(s, p);
+    if (!r) return null;
+    const caps = here.caps.slice(); caps[mover] += r.captured.length;
+    const n = { id: GO.nextId++, parent: here.id, children: [], pref: 0, p, color: mover, ply: here.ply + 1, enc: GC.encode(s), ko: s.ko, turn: s.turn, caps, capN: r.captured.length, sim: !!sim, ev: null };
+    GO.nodes[n.id] = n; here.children.push(n.id); here.pref = here.children.length - 1;
+    GO.cur = n.id; GO.st = s;
+    return n;
+  }
+  const goLabel = (p) => { if (p === -1) return 'Pass'; const [x, y] = GC.xy(GO.st || GC.make(GO.N), p); return GO_LETTERS[x] + (GO.N - y); };
+  const goMoveLabel = n => n.ply + '. ' + (n.color === 1 ? 'B ' : 'W ') + goLabel(n.p);
+
+  // ---- persistence ----
+  function goSave() {
+    if (!GO.nodes) return;
+    const list = Object.values(GO.nodes).filter(n => n.id).sort((a, b) => a.id - b.id).map(n => [n.id, n.parent, n.p, n.sim ? 1 : 0, n.ev ? Math.round(n.ev.wr * 1000) : null, n.ev ? Math.round(n.ev.score * 10) : null]);
+    const prefs = Object.values(GO.nodes).map(n => [n.id, n.pref]);
+    try { localStorage.setItem(GO_STORE, JSON.stringify({ v: 1, N: GO.N, komi: GO.komi, nextN: GO.nextN, nextKomi: GO.nextKomi, list, prefs, cur: GO.cur, bot: GO.bot, simCfg: GO.simCfg, view: GO.view })); } catch (e) {}
+  }
+  function goLoad() {
+    let d = null; try { d = JSON.parse(localStorage.getItem(GO_STORE) || 'null'); } catch (e) {}
+    if (!d || d.v !== 1) { goReset(9, 7.5); return; }
+    Object.assign(GO.bot, d.bot || {}); Object.assign(GO.simCfg, d.simCfg || {}); Object.assign(GO.view, d.view || {});
+    GO.nextN = d.nextN || d.N || 9; GO.nextKomi = d.nextKomi != null ? d.nextKomi : d.komi;
+    goReset(d.N || 9, d.komi != null ? d.komi : 7.5);
+    for (const [id, parent, p, sim, wr, sc] of d.list || []) {
+      if (!GO.nodes[parent]) continue;
+      GO.cur = parent; const n = goAdd(p, !!sim); if (!n) continue;
+      if (n.id !== id) { delete GO.nodes[n.id]; GO.nodes[parent].children.pop(); n.id = id; GO.nodes[id] = n; GO.nodes[parent].children.push(id); }
+      if (wr != null) n.ev = { wr: wr / 1000, score: sc / 10, own: null };
+      GO.nextId = Math.max(GO.nextId, id + 1);
+    }
+    for (const [id, pf] of d.prefs || []) if (GO.nodes[id]) GO.nodes[id].pref = pf;
+    goGoTo(GO.nodes[d.cur] ? d.cur : 0);
+  }
+
+  // ---- engine (Monte Carlo in a worker) ----
+  let goWorker = null, goJob = null; const goQueue = []; let goWorkerOk = true;
+  function goEngineStart() {
+    if (goWorker || !goWorkerOk) return;
+    try {
+      const code = 'const G = (' + goCoreFactory.toString() + ')();\nonmessage = e => { const d = e.data; const s = G.decode(d.N, d.enc, d.ko, d.turn); const r = G.search(s, d.playouts, d.komi, d.topK || 5); postMessage({ id: d.id, moves: r.moves, wr: r.wr, own: Array.from(r.own), total: r.total }); };';
+      goWorker = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })));
+      goWorker.onmessage = e => { const j = goJob; goJob = null; if (j) j.resolve(e.data); goPump(); };
+      goWorker.onerror = () => { goWorkerOk = false; goWorker = null; };
+    } catch (e) { goWorkerOk = false; }
+  }
+  function goRun(n, playouts, priority, topK) {
+    return new Promise(resolve => {
+      const job = { msg: { N: GO.N, enc: n.enc, ko: n.ko, turn: n.turn, komi: GO.komi, playouts, topK: topK || 5 }, resolve };
+      if (priority) goQueue.unshift(job); else goQueue.push(job);
+      goPump();
+    });
+  }
+  let goReq = 1;
+  function goPump() {
+    goEngineStart();
+    if (goJob) return;
+    if (!goQueue.length) { goAnalyzeNext(); if (!goQueue.length) return; }
+    if (!goWorker) {
+      // no worker available: run on the page in small steps
+      const j = goQueue.shift(); goJob = j;
+      setTimeout(() => { const s = GC.decode(j.msg.N, j.msg.enc, j.msg.ko, j.msg.turn); const r = GC.search(s, Math.min(j.msg.playouts, 400), j.msg.komi, j.msg.topK); goJob = null; j.resolve({ moves: r.moves, wr: r.wr, own: Array.from(r.own) }); goPump(); }, 0);
+      return;
+    }
+    const j = goQueue.shift(); goJob = j; j.msg.id = goReq++; goWorker.postMessage(j.msg);
+  }
+  const goScale = () => GO.N <= 9 ? 1 : GO.N <= 13 ? 0.55 : 0.3;
+  const goBotPlayouts = L => Math.round(50 * Math.pow(80, (L - 1) / 9) * goScale());
+  // The win chance shown on the graph comes from the expected score over every playout (much
+  // steadier than any single move's win rate at these playout counts).
+  const goEvFrom = (n, r) => {
+    // Random playouts don't know that moving first is worth about the komi, so komi is phased in
+    // as the board fills: an empty board reads as even, a finished one counts komi in full.
+    let sum = 0; for (const v of r.own) sum += v;
+    const s = goStateOf(n); let stones = 0; for (let i = 0; i < s.b.length; i++) if (s.b[i] === 1 || s.b[i] === 2) stones++;
+    const phase = Math.min(1, stones / (GO.N * GO.N * 0.55));
+    const score = sum - GO.komi * phase, sigma = 3.2 * GO.N / 9;
+    return { wr: 1 / (1 + Math.exp(-score / sigma)), score, own: r.own };
+  };
+  let goAnalyzing = null;
+  function goAnalyzeNext() {
+    if (!GO.nodes || opts.mode !== 'go' || GO.sim || goAnalyzing != null || GO.navTimer) return;
+    const order = [GO.nodes[GO.cur], ...goLine(GO.cur)];
+    for (const n of order) {
+      if (n.ev && n.ev.own) continue;
+      if (n.ev && !n.ev.own && n.id !== GO.cur) continue;   // restored from storage: fine for the graph
+      goAnalyzing = n.id;
+      goRun(n, Math.max(120, Math.round(500 * goScale())), false).then(r => {
+        goAnalyzing = null;
+        if (GO.nodes[n.id] && GO.nodes[n.id] === n) { n.ev = goEvFrom(n, r); goSave(); }
+        goRender(true);
+      });
+      return;
+    }
+  }
+
+  // ---- bot and simulation ----
+  function goBotPick(n, r) {
+    let m = r.moves[0];
+    const par = n.parent != null ? GO.nodes[n.parent] : null;
+    const myColor = n.turn;
+    let sum = 0; for (const v of r.own) sum += v;
+    const est = sum - GO.komi, winning = myColor === 1 ? est > 0 : est < 0;
+    if (!m || m.p < 0) return -1;
+    if (n.p === -1 && winning) return -1;                         // opponent passed and we are ahead
+    if (n.ply > GO.N * GO.N * 1.4) return -1;                      // the game has run very long
+    if (m.wr < 0.03 && n.ply > GO.N * GO.N * 0.5) return -1;        // nothing left worth playing
+    return m.p;
+  }
+  function goMaybeBot() {
+    if (opts.mode !== 'go' || !GO.bot.on || GO.thinking || GO.sim || GO.navTimer) return;
+    const n = GO.nodes[GO.cur];
+    if (n.turn !== GO.bot.color || n.children.length || goOver(n)) return;
+    GO.thinking = true; goRender();
+    const at = GO.cur, t0 = Date.now();
+    goRun(n, goBotPlayouts(GO.bot.level), true, 3).then(r => {
+      setTimeout(() => {
+        GO.thinking = false;
+        if (GO.cur !== at || !GO.bot.on || opts.mode !== 'go') { goRender(); return; }
+        if (!n.ev) n.ev = goEvFrom(n, r);
+        goAdd(goBotPick(n, r), false); goSave(); goRender();
+      }, Math.max(0, opts.dev.botDelay - (Date.now() - t0)));
+    });
+  }
+  const GO_STRENGTH = { strong: 3000, club: 900, casual: 150 };
+  async function goStartSim() {
+    if (GO.sim || goOver()) return;
+    GO.sim = { left: GO.simCfg.len, total: GO.simCfg.len, stop: false }; goRender();
+    while (GO.sim && !GO.sim.stop && GO.sim.left > 0 && !goOver()) {
+      const n = GO.nodes[GO.cur];
+      const r = await goRun(n, Math.round(GO_STRENGTH[GO.simCfg.str] * goScale()), true, 3);
+      if (!GO.sim || GO.sim.stop) break;
+      if (!n.ev) n.ev = goEvFrom(n, r);
+      if (!goAdd(goBotPick(n, r), true)) break;
+      GO.sim.left--; goSave(); goRender();
+      if (GO.simCfg.pace && GO.sim && !GO.sim.stop) await new Promise(res => setTimeout(res, GO.simCfg.pace));
+    }
+    GO.sim = null; goSave(); goRender();
+  }
+
+  // ---- scoring ----
+  function goResult(n) {
+    n = n || GO.nodes[GO.cur];
+    const s = goStateOf(n), own = n.ev && n.ev.own;
+    // remove stones the analysis judges dead, then count area
+    if (own) for (let y = 0; y < GO.N; y++) for (let x = 0; x < GO.N; x++) {
+      const p = GC.pt(s, x, y), v = s.b[p], o = own[y * GO.N + x];
+      if ((v === 1 && o < -0.5) || (v === 2 && o > 0.5)) s.b[p] = 0;
+    }
+    const d = GC.area(s, GO.komi).diff;
+    return { diff: d, text: (d > 0 ? 'Black' : 'White') + ' wins by ' + Math.abs(d) };
+  }
+  const goEvText = ev => !ev ? '…' : (ev.wr >= 0.5 ? 'B ' + Math.round(ev.wr * 100) : 'W ' + Math.round((1 - ev.wr) * 100)) + '%';
+  const goEvVal = ev => ev ? ev.wr * 2 - 1 : null;
+  function goQuality(n) {
+    if (!n || !n.parent && n.parent !== 0) return null;
+    const a = goEvVal((GO.nodes[n.parent] || {}).ev), b = goEvVal(n.ev); if (a == null || b == null) return null;
+    const fm = n.color === 1 ? b - a : a - b;
+    return fm <= -0.5 ? ['blunder', '??'] : fm <= -0.25 ? ['mistake', '?'] : fm >= 0.3 ? ['great', '!'] : null;
+  }
+
+  // ---- move explanations (read off the position) ----
+  function goExplain(n, p) {
+    if (p < 0) return ['every point that matters is settled, so passing is fine'];
+    const s = goStateOf(n), me = s.turn, opp = 3 - me, W = s.W, out = [];
+    const nbrs = q => [q + 1, q - 1, q + W, q - W];
+    const before = {}; for (const r of nbrs(p)) if (s.b[r] === 1 || s.b[r] === 2) { const g = GC.group(s, r, false); before[r] = g; }
+    const t = GC.clone(s), res = GC.play(t, p); if (!res) return [];
+    if (res.captured.length) out.push('it captures ' + res.captured.length + ' stone' + (res.captured.length > 1 ? 's' : ''));
+    for (const r of nbrs(p)) if (s.b[r] === me && before[r].libs === 1) { out.push('it rescues your group in atari'); break; }
+    for (const r of nbrs(p)) if (t.b[r] === opp) { const g = GC.group(t, r, false); if (g.libs === 1) { out.push('it puts ' + g.stones.length + ' opposing stone' + (g.stones.length > 1 ? 's' : '') + ' in atari'); break; } }
+    const mine = new Set(); for (const r of nbrs(p)) if (s.b[r] === me) mine.add(GC.group(s, r, false).stones[0]);
+    const roots = new Set([...mine].map(q => { const g = GC.group(s, q, false); return Math.min(...g.stones); }));
+    if (roots.size >= 2) out.push('it connects your stones into one stronger group');
+    const [x, y] = GC.xy(s, p), N = GO.N, edge = Math.min(x, y, N - 1 - x, N - 1 - y);
+    let stones = 0; for (let i = 0; i < s.b.length; i++) if (s.b[i] === 1 || s.b[i] === 2) stones++;
+    if (stones < N * 0.8) {
+      const cz = N <= 9 ? 3 : 5, corner = Math.min(x, N - 1 - x) <= cz && Math.min(y, N - 1 - y) <= cz && (edge === 2 || edge === 3);
+      if (N <= 9 && x === 4 && y === 4) out.push('it takes the center point, which radiates influence on a small board');
+      else if (corner) out.push('it claims a corner, the easiest place to make territory');
+      else if (edge === 2 || (N >= 13 && edge === 3)) out.push('it takes a big point on the side');
+      else if (N <= 9 && edge >= 3) out.push('it builds influence toward the center');
+    }
+    if (!out.length) {
+      const g = GC.group(t, p, false);
+      if (g.libs >= 4) out.push('it keeps your stones free with plenty of liberties');
+      for (const r of nbrs(p)) if (s.b[r] === opp) { out.push('it presses against the opposing stones and takes away their room'); break; }
+    }
+    return [...new Set(out)].slice(0, 3);
+  }
+  const goJoin = rs => rs.length ? (rs.length === 1 ? rs[0] : rs.slice(0, -1).join(', ') + ' and ' + rs[rs.length - 1]) : 'it wins the most playouts for the engine';
+  function goAtariNotes(n) {
+    const s = goStateOf(n), me = s.turn, notes = [], seen = new Set();
+    for (let y = 0; y < GO.N; y++) for (let x = 0; x < GO.N; x++) {
+      const p = GC.pt(s, x, y), v = s.b[p]; if (!v || seen.has(p)) continue;
+      const g = GC.group(s, p, true); g.stones.forEach(q => seen.add(q));
+      if (g.libs === 1) {
+        const at = goLabel(g.libList[0]);
+        notes.push(v === me ? 'Heads up: your ' + (g.stones.length > 1 ? g.stones.length + ' stones' : 'stone') + ' near ' + goLabel(g.stones[0]) + ' ' + (g.stones.length > 1 ? 'are' : 'is') + ' in atari. Escape or connect at ' + at + '.'
+          : 'You can capture ' + g.stones.length + ' stone' + (g.stones.length > 1 ? 's' : '') + ' at ' + at + '.');
+      }
+    }
+    return notes.slice(0, 2);
+  }
+
+  // ---- markup ----
+  const GO_PIP = document.querySelector('.pip') ? document.querySelector('.pip').outerHTML : '';
+  function goBuildDom() {
+    // board
+    const box = document.createElement('div'); box.className = 'goboard-box'; box.id = 'goBoardBox';
+    box.innerHTML = '<svg class="goboard" id="goBoard" role="grid" aria-label="Go board"></svg>';
+    document.querySelector('.o-board').appendChild(box);
+    // header mode switch
+    const sw = document.createElement('div'); sw.className = 'modesw'; sw.setAttribute('role', 'group'); sw.setAttribute('aria-label', 'Game');
+    sw.innerHTML = '<button type="button" data-mode="chess">Chess</button><button type="button" data-mode="go">Go</button>';
+    document.querySelector('.hdr-right').prepend(sw);
+    // a Go body for every tool
+    const body = {
+      timeline: '<div class="ribbon" id="goRibbon"><div class="rib-inner" id="goRibInner"></div></div><p class="empty" id="goRibEmpty">No moves yet. Black plays first: tap an intersection.</p><div class="alts" id="goAlts" hidden></div><div class="nav"><button id="goNavStart" type="button" aria-label="Go to start">«</button><button id="goNavBack" type="button" aria-label="Back one move">‹</button><button id="goNavFwd" type="button" aria-label="Forward one move">›</button><button id="goNavEnd" type="button" aria-label="Go to end of this line">»</button></div>',
+      branches: '<div class="tree" id="goTree"></div><div class="branches" id="goBranchNote"></div>',
+      coach: '<div class="coach">' + GO_PIP + '<div class="bubble"><div class="c-tools"><button type="button" class="mini" id="goCoachMarks" aria-pressed="true" title="Show suggested points on the board">Marks</button></div><div class="c-body" id="goCoachBody"></div></div></div>',
+      review: '<p class="label">Turning points</p><div class="turns" id="goTurns"></div><p class="label">Biggest captures</p><div class="turns" id="goCaps"></div><p class="label">The story so far</p><p class="story" id="goStory"></p><button class="btn simgo" id="goStoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="goStoryNote" hidden></p>',
+      sim: '<div class="simrow"><div class="seg" id="goSegLen"><span class="label">Length</span><button type="button" data-len="20">10 moves</button><button type="button" data-len="60">30 moves</button><button type="button" data-len="400">To the end</button></div><div class="seg" id="goSegStr"><span class="label">Strength</span><button type="button" data-str="strong">Strong</button><button type="button" data-str="club">Club</button><button type="button" data-str="casual">Casual</button></div><div class="seg" id="goSegPace"><span class="label">Speed</span><button type="button" data-pace="0">Fastest</button><button type="button" data-pace="200">Fast</button><button type="button" data-pace="700">Normal</button><button type="button" data-pace="1600">Slow</button></div><button class="btn simgo" id="goSimBtn" type="button">Simulate from here</button></div>',
+      game: '<p class="gostatus" id="goStatus"></p><div class="seg" id="goSegSize"><span class="label">Board</span><button type="button" data-size="9">9×9</button><button type="button" data-size="13">13×13</button><button type="button" data-size="19">19×19</button></div><div class="seg" id="goSegKomi"><span class="label">Komi</span><button type="button" data-komi="5.5">5.5</button><button type="button" data-komi="6.5">6.5</button><button type="button" data-komi="7.5">7.5</button></div><p class="note" id="goNextNote" hidden>Board size and komi apply when you start a new game.</p><div class="seg" id="goSegOpp"><span class="label">White</span><button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Computer</button></div><div class="diff" id="goDiffRow"><div class="diffhead"><label for="goDiff">Difficulty</label><span id="goDiffName"></span></div><input type="range" id="goDiff" min="1" max="10" step="1"><div class="diffscale"><span>Beginner</span><span>Strongest</span></div></div><div class="controls" id="goControls"><button class="btn" id="goPass" type="button">Pass</button><button class="btn danger" id="goNew" type="button">New game</button></div><div class="confirm" id="goConfirm" hidden><button class="btn primary" id="goConfirmYes" type="button">Start new game</button><button class="btn" id="goConfirmNo" type="button">Keep playing</button></div>',
+      settings: '<div class="toggles"><button class="tog" data-gov="territory" type="button"><span>Territory map<small>Shade each point by who is likely to own it at the end, from the engine’s playouts. Small squares on stones mark ones that look dead.</small></span><span class="sw2"></span></button><button class="tog" data-gov="atari" type="button"><span>Atari warnings<small>Red ring on any group down to its last liberty.</small></span><span class="sw2"></span></button><button class="tog" data-gov="libs" type="button"><span>Liberty counts<small>Number of liberties on each group with three or fewer.</small></span><span class="sw2"></span></button><button class="tog" data-gov="numbers" type="button"><span>Move numbers<small>Number every stone by the move it was played.</small></span><span class="sw2"></span></button></div><div class="seg" id="goSegSpeed"><span class="label">Replay</span><button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button></div>'
+    };
+    for (const k in body) {
+      const el = document.querySelector('[data-card="' + k + '"]'); if (!el) continue;
+      const g = document.createElement('div'); g.className = 'gobody'; g.innerHTML = body[k];
+      el.appendChild(g);
+    }
+    const dv = document.querySelector('[data-card="dev"] > .cbody'); if (dv) dv.classList.add('shared');
+  }
+
+  // ---- board rendering ----
+  let goPrevCur = null;
+  function goRenderBoard() {
+    const svg = $('goBoard'), N = GO.N, n = GO.nodes[GO.cur], s = GO.st;
+    const M = 0.9, size = N - 1 + 2 * M, X = x => M + x, Y = y => M + y;
+    svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
+    let h = '<rect x="0" y="0" width="' + size + '" height="' + size + '" rx=".25" class="gowood"/>';
+    for (let i = 0; i < N; i++) {
+      h += '<line x1="' + X(0) + '" y1="' + Y(i) + '" x2="' + X(N - 1) + '" y2="' + Y(i) + '" class="goline"/><line x1="' + X(i) + '" y1="' + Y(0) + '" x2="' + X(i) + '" y2="' + Y(N - 1) + '" class="goline"/>';
+      h += '<text x="' + X(i) + '" y="' + (M * 0.42) + '" class="gocoord">' + GO_LETTERS[i] + '</text><text x="' + (M * 0.38) + '" y="' + (Y(i) + 0.11) + '" class="gocoord">' + (N - i) + '</text>';
+    }
+    const stars = N === 9 ? [2, 6] : N === 13 ? [3, 9] : [3, 9, 15];
+    for (const a of stars) for (const b of stars) h += '<circle cx="' + X(a) + '" cy="' + Y(b) + '" r=".09" class="gostar"/>';
+    if (N === 9 || N === 13) h += '<circle cx="' + X((N - 1) / 2) + '" cy="' + Y((N - 1) / 2) + '" r=".09" class="gostar"/>';
+    // territory estimate
+    const ev = n.ev && n.ev.own ? n.ev : null;
+    if (GO.view.territory && ev) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const o = ev.own[y * N + x], v = s.b[GC.pt(s, x, y)];
+      if (Math.abs(o) < 0.25) continue;
+      if ((v === 1 && o > 0) || (v === 2 && o < 0)) continue;
+      const sz = 0.18 + Math.min(1, Math.abs(o)) * 0.2;
+      h += '<rect x="' + (X(x) - sz) + '" y="' + (Y(y) - sz) + '" width="' + (2 * sz) + '" height="' + (2 * sz) + '" rx=".04" class="' + (o > 0 ? 'goterr-b' : 'goterr-w') + '" opacity="' + (0.35 + Math.min(1, Math.abs(o)) * 0.55).toFixed(2) + '"/>';
+    }
+    // move numbers
+    const num = {}; if (GO.view.numbers) for (const m of goPath(GO.cur)) if (m.p != null && m.p >= 0) num[m.p] = m.ply;
+    // stones
+    const groupsDone = new Set(), last = n.p != null && n.p >= 0 ? n.p : -1;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const p = GC.pt(s, x, y), v = s.b[p]; if (!v) continue;
+      h += '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r=".46" class="gostone ' + (v === 1 ? 'b' : 'w') + (p === last && goPrevCur !== GO.cur ? ' fresh' : '') + '"/>';
+      if (GO.view.territory && ev) { const o = ev.own[y * N + x]; if ((v === 1 && o < -0.5) || (v === 2 && o > 0.5)) h += '<rect x="' + (X(x) - .14) + '" y="' + (Y(y) - .14) + '" width=".28" height=".28" class="' + (o > 0 ? 'goterr-b' : 'goterr-w') + '"/>'; }
+      if (num[p]) h += '<text x="' + X(x) + '" y="' + (Y(y) + .13) + '" class="gonum ' + (v === 1 ? 'onb' : 'onw') + '">' + num[p] + '</text>';
+      else if (p === last) h += '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r=".17" class="golast ' + (v === 1 ? 'onb' : 'onw') + '"/>';
+      if ((GO.view.atari || GO.view.libs) && !groupsDone.has(p)) {
+        const g = GC.group(s, p, false); g.stones.forEach(q => groupsDone.add(q));
+        if (GO.view.atari && g.libs === 1) for (const q of g.stones) { const [qx, qy] = GC.xy(s, q); h += '<circle cx="' + X(qx) + '" cy="' + Y(qy) + '" r=".5" class="goatari"/>'; }
+        if (GO.view.libs && g.libs <= 3) { const [qx, qy] = GC.xy(s, g.stones[0]); h += '<text x="' + (X(qx) + .3) + '" y="' + (Y(qy) - .22) + '" class="golibs">' + g.libs + '</text>'; }
+      }
+    }
+    // coach marks
+    if (goCoachVisible() && goHumanTurn() && n.coach && GO.view.marks !== false) {
+      n.coach.moves.slice(0, 3).forEach((m, i) => {
+        if (m.p < 0) return; const [x, y] = GC.xy(s, m.p);
+        h += '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r=".36" class="gomark' + (i === 0 ? ' best' : '') + '"/><text x="' + X(x) + '" y="' + (Y(y) + .14) + '" class="gomarkn">' + (i + 1) + '</text>';
+      });
+    }
+    // hover preview
+    if (GO.hover >= 0 && goHumanTurn() && !s.b[GO.hover] && GC.legal(s, GO.hover)) { const [x, y] = GC.xy(s, GO.hover); h += '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r=".46" class="gostone ' + (s.turn === 1 ? 'b' : 'w') + ' ghost"/>'; }
+    svg.innerHTML = h;
+    goPrevCur = GO.cur;
+  }
+  function goPointAt(e) {
+    const svg = $('goBoard'), r = svg.getBoundingClientRect(), N = GO.N, M = 0.9, size = N - 1 + 2 * M;
+    const x = Math.round((e.clientX - r.left) / r.width * size - M), y = Math.round((e.clientY - r.top) / r.height * size - M);
+    return x >= 0 && y >= 0 && x < N && y < N ? GC.pt(GO.st, x, y) : -1;
+  }
+  const goHumanTurn = () => !GO.sim && !GO.thinking && !goOver() && !(GO.bot.on && GO.st.turn === GO.bot.color);
+  const goCoachVisible = () => cardOpen('coach');
+
+  // ---- timeline ribbon + branch tree ----
+  let goRibCam = null, goTreeCam = null;
+  function goRenderRibbon() {
+    const line = goLine(GO.cur), L = line.length, ci = line.findIndex(n => n.id === GO.cur), rib = $('goRibbon');
+    const W = L * SLOT, xs = i => i * SLOT + SLOT / 2, pad = 6, ys = v => GH / 2 - v * (GH / 2 - pad);
+    let g = '<svg class="rgraph" width="' + W + '" height="' + GH + '" viewBox="0 0 ' + W + ' ' + GH + '" role="img" aria-label="Win chance over this line. Tap to jump to a move.">';
+    g += '<line x1="0" x2="' + W + '" y1="' + GH / 2 + '" y2="' + GH / 2 + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>';
+    const simStart = line.findIndex(n => n.sim);
+    if (simStart > 0) g += '<rect x="' + (xs(simStart) - SLOT / 2) + '" y="0" width="' + (W - xs(simStart) + SLOT / 2) + '" height="' + GH + '" fill="color-mix(in oklab, var(--sim) 12%, transparent)"/>';
+    let seg = []; const flush = () => { if (seg.length > 1) { const pts = seg.map(([x, y]) => x.toFixed(1) + ',' + y.toFixed(1)).join(' '); g += '<polygon points="' + seg[0][0] + ',' + GH / 2 + ' ' + pts + ' ' + seg[seg.length - 1][0] + ',' + GH / 2 + '" fill="color-mix(in oklab, var(--accent) 18%, transparent)"/><polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>'; } seg = []; };
+    line.forEach((n, i) => { const v = goEvVal(n.ev); if (v == null) flush(); else seg.push([xs(i), ys(v)]); }); flush();
+    line.forEach((n, i) => { const v = goEvVal(n.ev); if (v == null) return; const q = i ? goQuality(n) : null; g += '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="' + (i === ci ? 4.5 : q ? 3.5 : 2.2) + '" fill="' + (q ? (q[0] === 'great' ? 'var(--ctl-w)' : q[0] === 'blunder' ? 'var(--ctl-b)' : 'var(--ctl-c)') : i === ci ? 'var(--ink)' : 'var(--accent)') + '" stroke="var(--surface)" stroke-width="1.5"/>'; });
+    g += '<text x="4" y="11">Black ahead</text><text x="4" y="' + (GH - 4) + '">White ahead</text></svg>';
+    let c = '<div class="rail" style="width:' + W + 'px"></div><div class="slots">';
+    line.forEach((n, i) => {
+      const cls = ['mcard']; if (i === ci) cls.push('cur'); if (i > ci) cls.push('after'); if (n.sim) cls.push('sim');
+      let inner;
+      if (i === 0) inner = '<span class="mc-n">Start</span><span class="mc-g">○</span><span class="mc-san">' + GO.N + '×' + GO.N + '</span>';
+      else { const q = goQuality(n); if (q) cls.push(q[0]); cls.push(n.color === 1 ? 'b' : 'w'); inner = '<span class="mc-n">' + n.ply + '.' + (q ? '<b>' + q[1] + '</b>' : '') + '</span><span class="mc-stone ' + (n.color === 1 ? 'b' : 'w') + '"></span><span class="mc-san">' + goLabel(n.p) + (n.capN ? '<i class="mc-cap">×' + n.capN + '</i>' : '') + '</span>'; }
+      inner += '<span class="mc-ev">' + goEvText(n.ev) + '</span>';
+      const par = i ? GO.nodes[n.parent] : null;
+      const fork = par && par.children.length > 1 ? '<button type="button" class="fork" data-gofork="' + par.id + '" aria-expanded="' + (GO.forkOpen === par.id) + '">' + FORK_SVG + par.children.length + '</button>' : '';
+      c += '<div class="slot">' + fork + '<button type="button" class="' + cls.join(' ') + '" data-gogo="' + n.id + '">' + inner + '</button></div>';
+    });
+    c += '</div>';
+    $('goRibInner').style.width = W + 'px';
+    $('goRibInner').style.marginRight = Math.max(0, rib.clientWidth / 2 - SLOT) + 'px';
+    $('goRibInner').innerHTML = g + c;
+    $('goRibEmpty').hidden = L > 1;
+    goRibCam = goRibCam || makeCam(rib);
+    const di = GO.navDest != null ? line.findIndex(n => n.id === GO.navDest) : -1;
+    goRibCam.follow(xs(di >= 0 ? di : ci) + 12 - rib.clientWidth / 2, null, di >= 0 ? GO.navDest : GO.cur);
+    const alts = $('goAlts');
+    if (GO.forkOpen != null && GO.nodes[GO.forkOpen] && GO.nodes[GO.forkOpen].children.length > 1) {
+      const par = GO.nodes[GO.forkOpen];
+      alts.innerHTML = '<span class="label">After ' + (par.id === 0 ? 'the start' : goMoveLabel(par)) + '</span>' + par.children.map((cid, k) => { const ch = GO.nodes[cid]; return '<button type="button" class="chip' + (ch.sim ? ' sim' : '') + (k === par.pref ? ' cur' : '') + '" data-gogo="' + cid + '">' + goLabel(ch.p) + (ch.sim ? ' · sim' : '') + '</button>'; }).join('');
+      alts.hidden = false;
+    } else { alts.hidden = true; GO.forkOpen = null; }
+    $('goNavStart').disabled = $('goNavBack').disabled = GO.cur === 0 || !!GO.sim;
+    $('goNavFwd').disabled = $('goNavEnd').disabled = !GO.nodes[GO.cur].children.length || !!GO.sim;
+  }
+  function goRenderTree() {
+    const wrap = $('goTree'), any = GO.nodes[0].children.length > 0;
+    $('goBranchNote').innerHTML = any ? '' : '<span class="empty">Your moves will grow into a tree here. Go back to any move and play somewhere else to start a new branch.</span>';
+    wrap.hidden = !any; if (!any) return;
+    const DX = 26, DY = 32, PX = 20, PY = 30, lane = {}; let next = 0, maxPly = 0;
+    (function dfs(id, l) { lane[id] = l; maxPly = Math.max(maxPly, GO.nodes[id].ply); GO.nodes[id].children.forEach((c, k) => dfs(c, k === 0 ? l : ++next)); })(0, 0);
+    const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
+    const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / 2 - 40), H = PY + next * DY + 30;
+    const onLine = new Set(goLine(GO.cur).map(n => n.id));
+    let edges = '', dots = '', labels = '';
+    for (let m = 10; m <= maxPly; m += 10) { const x = PX + m * DX; labels += '<text x="' + x + '" y="11" text-anchor="middle">' + m + '</text><line x1="' + x + '" x2="' + x + '" y1="15" y2="' + (H - 4) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>'; }
+    for (const id in GO.nodes) {
+      const n = GO.nodes[id]; if (n.parent == null) continue;
+      const p = GO.nodes[n.parent], x1 = X(p), y1 = Y(p), x2 = X(n), y2 = Y(n), hot = onLine.has(n.id) && onLine.has(p.id);
+      const col = hot ? 'var(--accent)' : n.sim ? 'var(--sim)' : 'color-mix(in oklab, var(--ink) 35%, transparent)';
+      const d = y1 === y2 ? 'M' + x1 + ' ' + y1 + 'H' + x2 : 'M' + x1 + ' ' + y1 + 'C' + (x1 + DX * .7) + ' ' + y1 + ',' + (x1 + DX * .3) + ' ' + y2 + ',' + x2 + ' ' + y2;
+      edges += '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="' + (hot ? 3 : 2) + '"' + (n.sim && !hot ? ' stroke-dasharray="4 3"' : '') + ' stroke-linecap="round"/>';
+    }
+    for (const id in GO.nodes) {
+      const n = GO.nodes[id], x = X(n), y = Y(n), isCur = n.id === GO.cur, q = n.id ? goQuality(n) : null;
+      const ring = q ? (q[0] === 'blunder' ? 'var(--ctl-b)' : q[0] === 'mistake' ? 'var(--ctl-c)' : 'var(--ctl-w)') : isCur ? 'var(--accent)' : onLine.has(n.id) ? 'var(--accent)' : 'var(--muted)';
+      const label = n.id ? goMoveLabel(n) : 'Start';
+      dots += '<g data-gonode="' + n.id + '" role="button" tabindex="0" aria-label="' + esc(label) + '"><title>' + esc(label) + (n.ev ? ' (' + goEvText(n.ev) + ')' : '') + '</title><circle cx="' + x + '" cy="' + y + '" r="12" fill="transparent"/>' +
+        (n.id === 0 ? '<rect x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" fill="' + (isCur ? 'var(--accent)' : 'var(--ink)') + '"/>'
+          : n.p === -1 ? '<circle cx="' + x + '" cy="' + y + '" r="' + (isCur ? 9 : 7) + '" fill="var(--surface)" stroke="' + ring + '" stroke-width="2" stroke-dasharray="2 2"/>'
+          : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 10 : 7.5) + '" fill="' + (n.color === 1 ? '#1c2320' : '#f6f4ee') + '" stroke="' + (isCur ? 'var(--ink)' : ring) + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
+      if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + goLabel(n.p) + '</text>';
+    }
+    wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a stone to jump to that move.">' + labels + edges + dots + '</svg>';
+    wrap.style.height = Math.min(H + 2, 260) + 'px'; wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
+    goTreeCam = goTreeCam || makeCam(wrap);
+    const fid = GO.navDest != null && GO.nodes[GO.navDest] ? GO.navDest : GO.cur, cn = GO.nodes[fid];
+    goTreeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, fid);
+  }
+
+  // ---- coach ----
+  function goRequestCoach(n) {
+    if (!n || n.coach || n.coachPending || goOver(n)) return;
+    n.coachPending = true;
+    goRun(n, Math.round(2500 * goScale()), true, 4).then(r => { n.coachPending = false; n.coach = { moves: r.moves, wr: r.wr }; if (!n.ev || !n.ev.own) n.ev = goEvFrom(n, r); goSave(); goRender(); });
+  }
+  function goRenderCoach() {
+    if (!goCoachVisible()) return;
+    const n = GO.nodes[GO.cur]; let h = '';
+    // verdict on the last move by the side that is not the computer
+    let vn = n; if (GO.bot.on) { while (vn && vn.id !== 0 && vn.color === GO.bot.color) vn = GO.nodes[vn.parent]; }
+    if (vn && vn.id) {
+      const par = GO.nodes[vn.parent], a = goEvVal(par.ev), b = goEvVal(vn.ev);
+      if (a != null && b != null) {
+        const fm = vn.color === 1 ? b - a : a - b, best = par.coach && par.coach.moves[0], isBest = best && best.p === vn.p;
+        const [label, cls] = isBest ? ['Best move', 'great'] : fm >= -0.06 ? ['Good move', 'good'] : fm >= -0.2 ? ['Inaccuracy', 'meh'] : fm >= -0.45 ? ['Mistake', 'bad'] : ['Blunder', 'bad'];
+        h += '<p class="c-verdict"><span class="pill ' + cls + '">' + label + '</span> ' + goMoveLabel(vn) + (best && !isBest && (cls === 'meh' || cls === 'bad') ? '. Stronger was <b>' + goLabel(best.p) + '</b>, because ' + esc(goJoin(goExplain(par, best.p))) + '.' : '') + '</p>';
+      }
+    }
+    let acts = '';
+    if (goOver()) h += '<p class="c-main">Both players passed. ' + goResult().text + '. Open Story Mode for the turning points.</p>';
+    else if (GO.sim) h += '<p class="c-main muted">Watching the simulation.</p>';
+    else if (!goHumanTurn()) h += '<p class="c-main muted">The computer is choosing its move…</p>';
+    else {
+      let stones = 0; for (let i = 0; i < GO.st.b.length; i++) if (GO.st.b[i] === 1 || GO.st.b[i] === 2) stones++;
+      if (stones < 4) h += '<p class="c-open"><span class="label">Opening</span> Corners first, then sides, then the center. Corners need the fewest stones to make territory.</p>';
+      if (!n.coach) { goRequestCoach(n); h += '<p class="c-main muted">Reading the board…</p>'; }
+      else {
+        const best = n.coach.moves[0];
+        h += '<p class="c-main">Try <b>' + goLabel(best.p) + '</b>, because ' + esc(goJoin(goExplain(n, best.p))) + '.</p>';
+        const alts = n.coach.moves.slice(1, 3).filter(m => m.p >= 0).map(m => goLabel(m.p) + ' <small>' + Math.round(m.wr * 100) + '%</small>');
+        if (alts.length) h += '<p class="c-alts">Also playable: ' + alts.join(' · ') + '</p>';
+        if (GO.coachText[GO.cur]) h += '<p class="c-claude">' + esc(GO.coachText[GO.cur]) + '</p>';
+        else if (sampler) acts += '<button type="button" class="cbtn" id="goAskClaude"' + (GO.coachAsk === GO.cur ? ' disabled' : '') + '>' + (GO.coachAsk === GO.cur ? 'Claude is thinking…' : 'Ask Claude to explain') + '</button>';
+      }
+      const notes = goAtariNotes(n);
+      if (notes.length) h += '<ul class="c-tips">' + notes.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>';
+    }
+    $('goCoachBody').innerHTML = h + (acts ? '<div class="c-acts">' + acts + '</div>' : '');
+    $('goCoachMarks').setAttribute('aria-pressed', String(GO.view.marks !== false));
+  }
+  async function goAskClaude() {
+    const id = GO.cur, n = GO.nodes[id]; if (!sampler || !n.coach || GO.coachAsk != null) return;
+    GO.coachAsk = id; goRenderCoach();
+    const rows = []; for (let y = 0; y < GO.N; y++) { let r = ''; for (let x = 0; x < GO.N; x++) { const v = GO.st.b[GC.pt(GO.st, x, y)]; r += v === 1 ? 'X' : v === 2 ? 'O' : '.'; } rows.push((GO.N - y + '').padStart(2) + ' ' + r); }
+    const prompt = 'You are a friendly Go (baduk/weiqi) coach for a beginner. In 2 to 3 short sentences, explain why the suggested move is good and what it aims for. Plain language, no lists, do not invent tactics the data does not support.\n\n' +
+      'Board ' + GO.N + 'x' + GO.N + ', columns ' + GO_LETTERS.slice(0, GO.N) + ' left to right, X = Black, O = White:\n' + rows.join('\n') + '\n' +
+      (GO.st.turn === 1 ? 'Black' : 'White') + ' to move. Suggested move: ' + goLabel(n.coach.moves[0].p) + '. Position-based reasons: ' + goJoin(goExplain(n, n.coach.moves[0].p));
+    try { const r = await sampler(prompt, { cache: { gcTime: 86400000 } }); GO.coachText[id] = r.text.trim(); }
+    catch (e) { if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(e && e.code)) sampler = null; }
+    GO.coachAsk = null; goRenderCoach();
+  }
+
+  // ---- story mode ----
+  function goRenderStory() {
+    if (!cardOpen('review')) return;
+    const line = goLine(GO.cur), tps = [];
+    let pending = 0;
+    for (let i = 1; i < line.length; i++) { const n = line[i], a = goEvVal(line[i - 1].ev), b = goEvVal(n.ev); if (a == null || b == null) { pending++; continue; } tps.push({ n, p: line[i - 1], mag: Math.abs(b - a), fm: n.color === 1 ? b - a : a - b }); }
+    tps.sort((a, b) => b.mag - a.mag);
+    const top = tps.filter(t => t.mag >= 0.2).slice(0, 5);
+    $('goTurns').innerHTML = top.length ? top.map(t => {
+      const kind = t.fm <= -0.45 ? ['bad', 'Blunder'] : t.fm <= -0.2 ? ['bad', 'Mistake'] : t.fm >= 0.2 ? ['good', 'Seized the chance'] : ['neutral', 'Big swing'];
+      return '<div class="turn"><span class="mv">' + t.n.ply + '. ' + goLabel(t.n.p) + '</span><span class="kind ' + kind[0] + '">' + kind[1] + '</span><span class="desc">' + (t.n.color === 1 ? 'Black' : 'White') + ' played and the win chance went from ' + goEvText(t.p.ev) + ' to ' + goEvText(t.n.ev) + '.</span><div class="acts"><button type="button" class="br-go" data-gobranch="' + t.p.id + '">Branch from here</button><button type="button" data-goview="' + t.n.id + '">View move</button></div></div>';
+    }).join('') : '<span class="empty">' + (pending ? 'Still analyzing ' + pending + ' position' + (pending > 1 ? 's' : '') + '.' : line.length > 1 ? 'No big swings yet.' : 'Nothing to review yet.') + '</span>';
+    const caps = line.filter(n => n.capN).sort((a, b) => b.capN - a.capN).slice(0, 5);
+    $('goCaps').innerHTML = caps.length ? caps.map(n => '<div class="turn"><span class="mv">' + n.ply + '. ' + goLabel(n.p) + '</span><span class="kind neutral">' + (n.color === 1 ? 'Black' : 'White') + ' took ' + n.capN + '</span><div class="acts"><button type="button" data-goview="' + n.id + '">View move</button></div></div>').join('') : '<span class="empty">No captures yet.</span>';
+    const end = line[line.length - 1];
+    const key = line.slice(1).map(n => n.p).join(',');
+    let story = GO.story[key];
+    if (!story) {
+      const parts = [];
+      if (line.length <= 1) parts.push('The board is still empty.');
+      else {
+        parts.push('This line runs ' + (line.length - 1) + ' moves on a ' + GO.N + '×' + GO.N + ' board.');
+        parts.push('Black has captured ' + end.caps[1] + ' stone' + (end.caps[1] === 1 ? '' : 's') + ' and White ' + end.caps[2] + '.');
+        if (top[0]) parts.push('The biggest turn came at move ' + top[0].n.ply + ', when ' + (top[0].n.color === 1 ? 'Black' : 'White') + ' played ' + goLabel(top[0].n.p) + ' and the balance moved from ' + goEvText(top[0].p.ev) + ' to ' + goEvText(top[0].n.ev) + '.');
+        if (goOver(end)) parts.push('Both players passed: ' + goResult(end).text + '.');
+        else if (end.ev) parts.push('Right now the engine gives ' + goEvText(end.ev) + ', with an estimated margin of ' + Math.abs(end.ev.score).toFixed(1) + ' points for ' + (end.ev.score > 0 ? 'Black' : 'White') + '.');
+      }
+      story = parts.join(' ');
+    }
+    $('goStory').textContent = story;
+    const sb = $('goStoryBtn'); sb.hidden = !sampler || line.length < 6 || !!GO.story[key]; sb.disabled = GO.storyBusy; sb.textContent = GO.storyBusy ? 'Claude is writing…' : 'Tell the story with Claude';
+    $('goStoryNote').hidden = !GO.storyErr; $('goStoryNote').textContent = GO.storyErr || '';
+  }
+  async function goWriteStory() {
+    if (!sampler || GO.storyBusy) return;
+    const line = goLine(GO.cur), key = line.slice(1).map(n => n.p).join(',');
+    GO.storyBusy = true; GO.storyErr = null; goRenderStory();
+    const moves = line.slice(1).map(n => n.ply + '.' + (n.color === 1 ? 'B ' : 'W ') + goLabel(n.p) + (n.capN ? ' (captures ' + n.capN + ')' : '') + (n.ev ? ' [' + goEvText(n.ev) + ']' : '')).join(', ');
+    const prompt = 'Write a short, vivid chronicle (90 to 130 words, past tense, no lists) of this Go game on a ' + GO.N + 'x' + GO.N + ' board, like a commentator. Use ONLY the moves and win chances given; do not invent events. Mention the turning point and how it stands now.\n\nMoves with Black/White win chance after each: ' + moves + '\nKomi ' + GO.komi + '.';
+    try { const r = await sampler(prompt, { cache: { gcTime: 86400000 } }); GO.story[key] = r.text.trim(); }
+    catch (e) { const code = e && e.code; if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(code)) { sampler = null; GO.storyErr = 'Claude-written stories aren’t available here.'; } else if (code !== 'cancelled') GO.storyErr = 'The story didn’t come through. Try again.'; }
+    GO.storyBusy = false; goRenderStory();
+  }
+
+  // ---- game / settings / simulate panels ----
+  function goRenderPanels() {
+    const n = GO.nodes[GO.cur], s = GO.st;
+    let st;
+    if (goOver()) st = '<b>Game over.</b> ' + goResult().text + '.';
+    else if (GO.sim) st = 'Simulating · ' + (GO.sim.total - GO.sim.left) + ' of ' + GO.sim.total + ' moves';
+    else if (GO.thinking) st = 'The computer is thinking…';
+    else st = '<b>' + (s.turn === 1 ? 'Black' : 'White') + '</b> to move' + (n.p === -1 ? ' · ' + (n.color === 1 ? 'Black' : 'White') + ' passed' : '');
+    st += ' · Captures: Black ' + n.caps[1] + ', White ' + n.caps[2] + ' · Komi ' + GO.komi;
+    $('goStatus').innerHTML = st;
+    for (const b of document.querySelectorAll('#goSegSize button')) b.setAttribute('aria-pressed', String(+b.dataset.size === GO.nextN));
+    for (const b of document.querySelectorAll('#goSegKomi button')) b.setAttribute('aria-pressed', String(+b.dataset.komi === GO.nextKomi));
+    $('goNextNote').hidden = GO.nextN === GO.N && GO.nextKomi === GO.komi;
+    for (const b of document.querySelectorAll('#goSegOpp button')) b.setAttribute('aria-pressed', String((b.dataset.opp === 'bot') === GO.bot.on));
+    $('goDiffRow').hidden = !GO.bot.on; $('goDiff').value = GO.bot.level;
+    $('goDiffName').textContent = GO.bot.level + ' · ' + goBotPlayouts(GO.bot.level) + ' playouts';
+    $('goPass').disabled = !goHumanTurn();
+    $('goConfirm').hidden = !GO.confirm; $('goControls').hidden = GO.confirm;
+    for (const b of document.querySelectorAll('[data-gov]')) b.setAttribute('aria-pressed', String(!!GO.view[b.dataset.gov]));
+    for (const b of document.querySelectorAll('#goSegSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
+    for (const b of document.querySelectorAll('#goSegLen button')) b.setAttribute('aria-pressed', String(+b.dataset.len === GO.simCfg.len));
+    for (const b of document.querySelectorAll('#goSegStr button')) b.setAttribute('aria-pressed', String(b.dataset.str === GO.simCfg.str));
+    for (const b of document.querySelectorAll('#goSegPace button')) b.setAttribute('aria-pressed', String(+b.dataset.pace === GO.simCfg.pace));
+    const sb = $('goSimBtn'); sb.textContent = GO.sim ? 'Stop simulation' : goOver() ? 'Game is over here' : 'Simulate from here'; sb.disabled = !GO.sim && goOver();
+  }
+
+  function goRender(light) {
+    if (opts.mode !== 'go' || !GO.nodes) return;
+    goRenderBoard();
+    goRenderRibbon(); goRenderTree();
+    if (!light) { goRenderPanels(); }
+    goRenderCoach(); goRenderStory();
+    if (light) goRenderPanels();
+    setTimeout(goMaybeBot, 0);
+    goPump();
+  }
+
+  // ---- navigation with replay ----
+  function goStepsBetween(a, b) {
+    const pa = goPath(a).map(n => n.id), pb = goPath(b).map(n => n.id);
+    let k = 0; while (k < pa.length && k < pb.length && pa[k] === pb[k]) k++;
+    return [...pa.slice(k - 1, pa.length - 1).reverse(), ...pb.slice(k)];
+  }
+  function goStopNav() { clearTimeout(GO.navTimer); GO.navTimer = null; GO.navDest = null; goSave(); }
+  function goNavTo(id) {
+    if (GO.sim || !GO.nodes[id]) return;
+    if (GO.navTimer) goStopNav();
+    const steps = goStepsBetween(GO.cur, id);
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (steps.length <= 1 || reduce || !opts.replay) { goGoTo(id); goSave(); goRender(); return; }
+    GO.navDest = id;
+    const per = Math.max(opts.replay / 16, Math.min(opts.replay / 5, opts.replay / steps.length));
+    let i = 0;
+    const tick = () => { goGoTo(steps[i++]); if (i >= steps.length) { GO.navTimer = null; GO.navDest = null; goRender(); goSave(); return; } GO.navTimer = setTimeout(tick, per); goRender(true); };
+    tick();
+  }
+
+  // ---- events ----
+  function goWire() {
+    const svg = $('goBoard');
+    svg.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const p = goPointAt(e); if (p !== GO.hover) { GO.hover = p; goRenderBoard(); } });
+    svg.addEventListener('pointerleave', () => { if (GO.hover !== -1) { GO.hover = -1; goRenderBoard(); } });
+    svg.addEventListener('click', e => {
+      if (GO.navTimer) goStopNav();
+      if (!goHumanTurn()) return;
+      const p = goPointAt(e); if (p < 0 || !GC.legal(GO.st, p)) return;
+      GO.hover = -1; goAdd(p, false); goSave(); goRender();
+    });
+    $('goRibInner').addEventListener('click', e => {
+      if (GO.sim) return;
+      const f = e.target.closest('[data-gofork]'); if (f) { const id = +f.dataset.gofork; GO.forkOpen = GO.forkOpen === id ? null : id; goRender(); return; }
+      const g = e.target.closest('[data-gogo]'); if (g) { goNavTo(+g.dataset.gogo); return; }
+      const sv = e.target.closest('.rgraph'); if (sv) { const line = goLine(GO.cur), i = Math.min(line.length - 1, Math.max(0, Math.floor((e.clientX - sv.getBoundingClientRect().left) / SLOT))); goNavTo(line[i].id); }
+    });
+    $('goAlts').addEventListener('click', e => { const g = e.target.closest('[data-gogo]'); if (g && !GO.sim) goNavTo(+g.dataset.gogo); });
+    $('goTree').addEventListener('click', e => { const g = e.target.closest('[data-gonode]'); if (g && !GO.sim) goNavTo(+g.dataset.gonode); });
+    dragScroll($('goRibbon')); dragScroll($('goTree'));
+    $('goNavStart').onclick = () => goNavTo(0);
+    $('goNavBack').onclick = () => { if (GO.navTimer) goStopNav(); if (GO.cur) { goGoTo(GO.nodes[GO.cur].parent); goSave(); goRender(); } };
+    $('goNavFwd').onclick = () => { if (GO.navTimer) goStopNav(); const n = GO.nodes[GO.cur]; if (n.children.length) { goGoTo(n.children[Math.min(n.pref, n.children.length - 1)]); goSave(); goRender(); } };
+    $('goNavEnd').onclick = () => { const l = goLine(GO.cur); goNavTo(l[l.length - 1].id); };
+    $('goPass').onclick = () => { if (!goHumanTurn()) return; goAdd(-1, false); goSave(); goRender(); };
+    $('goNew').onclick = () => { if (GO.sim) return; GO.confirm = true; goRender(); $('goConfirmNo').focus(); };
+    $('goConfirmNo').onclick = () => { GO.confirm = false; goRender(); };
+    $('goConfirmYes').onclick = () => { GO.confirm = false; if (GO.navTimer) goStopNav(); goReset(GO.nextN, GO.nextKomi); goPrevCur = null; goSave(); goRender(); };
+    $('goSegSize').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (!b) return; GO.nextN = +b.dataset.size; if (GO.nodes[0].children.length === 0) goReset(GO.nextN, GO.nextKomi); goSave(); goRender(); });
+    $('goSegKomi').addEventListener('click', e => { const b = e.target.closest('[data-komi]'); if (!b) return; GO.nextKomi = +b.dataset.komi; if (GO.nodes[0].children.length === 0) goReset(GO.nextN, GO.nextKomi); goSave(); goRender(); });
+    $('goSegOpp').addEventListener('click', e => { const b = e.target.closest('[data-opp]'); if (b) { GO.bot.on = b.dataset.opp === 'bot'; goSave(); goRender(); } });
+    $('goDiff').addEventListener('input', e => { GO.bot.level = +e.target.value; goSave(); goRenderPanels(); });
+    $('goSegLen').addEventListener('click', e => { const b = e.target.closest('[data-len]'); if (b) { GO.simCfg.len = +b.dataset.len; goSave(); goRender(); } });
+    $('goSegStr').addEventListener('click', e => { const b = e.target.closest('[data-str]'); if (b) { GO.simCfg.str = b.dataset.str; goSave(); goRender(); } });
+    $('goSegPace').addEventListener('click', e => { const b = e.target.closest('[data-pace]'); if (b) { GO.simCfg.pace = +b.dataset.pace; goSave(); goRender(); } });
+    $('goSegSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); goRender(); } });
+    $('goSimBtn').onclick = () => { if (GO.sim) GO.sim.stop = true; else goStartSim(); };
+    for (const b of document.querySelectorAll('[data-gov]')) b.onclick = () => { GO.view[b.dataset.gov] = !GO.view[b.dataset.gov]; goSave(); goRender(); };
+    $('goCoachMarks').onclick = () => { GO.view.marks = GO.view.marks === false; goSave(); goRender(); };
+    document.querySelector('[data-card="coach"]').addEventListener('click', e => { if (e.target.closest('#goAskClaude')) goAskClaude(); });
+    $('goStoryBtn').onclick = goWriteStory;
+    document.querySelector('[data-card="review"]').addEventListener('click', e => {
+      const b = e.target.closest('[data-gobranch]'); if (b) { goNavTo(+b.dataset.gobranch); return; }
+      const v = e.target.closest('[data-goview]'); if (v) goNavTo(+v.dataset.goview);
+    });
+    document.querySelector('.modesw').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); });
+  }
+
+  function setMode(m) {
+    opts.mode = m; save();
+    document.body.classList.toggle('mode-go', m === 'go');
+    for (const b of document.querySelectorAll('.modesw button')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
+    document.title = m === 'go' ? 'TIME GO!' : 'TIME CHESS!';
+    const h1 = document.querySelector('h1'); if (h1) h1.innerHTML = 'Time <span>' + (m === 'go' ? 'Go!' : 'Chess!') + '</span>';
+    if (m === 'go') { goEnsure(); render(); goRender(); } else { render(); }
+  }
+  function goEnsure() { if (!goBooted) { goBooted = true; goLoad(); goEngineStart(); } }
+  function goBoot() {
+    goBuildDom(); goWire();
+    setMode(opts.mode === 'go' ? 'go' : 'chess');
+  }
+
   // ---------- boot ----------
   function start(data) {
     const s = (data && data.v === 2) ? data : load();
@@ -2192,6 +3003,7 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
     layout(); placeAll();
     coachCfg.on = cardOpen('coach'); review = cardOpen('review');
     buildBoard(); render(); initEngine();
+    goBoot();
   }
   if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(serialize);
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);

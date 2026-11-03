@@ -9,4 +9,6 @@ Chess in the browser with visual overlays and branching timelines.
 - **Coach mode**: Coach Pip names your opening and offers book moves, gives a nudge or the engine's best move with a plain-language reason, grades your last move, and flags pieces in danger.
 - **Story Mode**: trace any piece's path through the game, see the standout pieces and their stories, and jump to the biggest turning points to branch from them.
 
-It's a single `index.html` with no build step. Chess rules come from [chess.js](https://github.com/jhlywa/chess.js) and the engine is [Stockfish.js](https://github.com/nmrugg/stockfish.js), both loaded from cdnjs.
+- **Go mode**: switch to Go from the header and get the same tools for Go: 9×9, 13×13 or 19×19 boards, a Monte Carlo computer opponent, a territory map, atari warnings, win-chance timeline, branch tree, coach, story mode and simulation.
+
+It's a single `index.html` with no build step. Chess rules come from [chess.js](https://github.com/jhlywa/chess.js) and the engine is [Stockfish.js](https://github.com/nmrugg/stockfish.js), both loaded from cdnjs. The Go engine is a small Monte Carlo search built into the page.
