@@ -377,6 +377,30 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .modesw button { padding: 6px 12px; border: 0; background: var(--surface); color: var(--ink); font: 700 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .modesw button + button { border-left: 1.5px solid var(--ink); }
 .modesw button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+/* Skin: Neon. Black bodies, glowing outlines: cyan for White, magenta for Black. */
+:root { --neon-w: #22f0ff; --neon-b: #ff2fd6; --neon-fill: #06070a; }
+.skin-neon .pc.w, .skin-neon .pc.b { color: var(--neon-fill); paint-order: normal; }
+.skin-neon .pc.w { -webkit-text-stroke: .3cqi var(--neon-w); filter: drop-shadow(0 0 .4cqi var(--neon-w)) drop-shadow(0 0 1.3cqi color-mix(in oklab, var(--neon-w) 60%, transparent)); }
+.skin-neon .pc.b { -webkit-text-stroke: .3cqi var(--neon-b); filter: drop-shadow(0 0 .4cqi var(--neon-b)) drop-shadow(0 0 1.3cqi color-mix(in oklab, var(--neon-b) 60%, transparent)); }
+.skin-neon .ghost.w, .skin-neon .ghost.b { color: var(--neon-fill) !important; paint-order: normal; }
+.skin-neon .ghost.w { -webkit-text-stroke: 2px var(--neon-w) !important; filter: drop-shadow(0 0 4px var(--neon-w)) drop-shadow(0 8px 10px rgb(0 0 0 / .4)); }
+.skin-neon .ghost.b { -webkit-text-stroke: 2px var(--neon-b) !important; filter: drop-shadow(0 0 4px var(--neon-b)) drop-shadow(0 8px 10px rgb(0 0 0 / .4)); }
+.skin-neon .roster button.w, .skin-neon .roster button.b, .skin-neon .promo button.w, .skin-neon .promo button.b, .skin-neon .mcard .mc-g.w, .skin-neon .mcard .mc-g.b, .skin-neon .notable h3 .g { color: var(--neon-fill); paint-order: normal; }
+.skin-neon .roster button.w, .skin-neon .promo button.w, .skin-neon .mcard .mc-g.w, .skin-neon .notable h3 .g.w { -webkit-text-stroke: 1px var(--neon-w); filter: drop-shadow(0 0 3px var(--neon-w)); }
+.skin-neon .roster button.b, .skin-neon .promo button.b, .skin-neon .mcard .mc-g.b, .skin-neon .notable h3 .g.b { -webkit-text-stroke: 1px var(--neon-b); filter: drop-shadow(0 0 3px var(--neon-b)); }
+.skin-neon .tree text.pg.w { fill: var(--neon-fill); stroke: var(--neon-w); stroke-width: .9px; paint-order: normal; }
+.skin-neon .tree text.pg.b { fill: var(--neon-fill); stroke: var(--neon-b); stroke-width: .9px; paint-order: normal; }
+.skin-neon .goboard .gostone.b { fill: var(--neon-fill); stroke: var(--neon-b); stroke-width: .055; filter: url(#gglowB); }
+.skin-neon .goboard .gostone.w { fill: var(--neon-fill); stroke: var(--neon-w); stroke-width: .055; filter: url(#gglowW); }
+.skin-neon .goboard .gostone.gohover { filter: none; }
+.skin-neon .goboard .goterr-b { fill: var(--neon-b); stroke: none; }
+.skin-neon .goboard .goterr-w { fill: var(--neon-w); stroke: none; }
+.skin-neon .goboard .golast.onb { stroke: var(--neon-b); } .skin-neon .goboard .golast.onw { stroke: var(--neon-w); }
+.skin-neon .goboard .gonum.onb { fill: var(--neon-b); } .skin-neon .goboard .gonum.onw { fill: var(--neon-w); }
+.skin-neon .mcard .mc-stone.b { background: var(--neon-fill); border: 1.5px solid var(--neon-b); box-shadow: 0 0 6px var(--neon-b); }
+.skin-neon .mcard .mc-stone.w { background: var(--neon-fill); border: 1.5px solid var(--neon-w); box-shadow: 0 0 6px var(--neon-w); }
+.skin-neon .tree circle.gs-b { fill: var(--neon-fill); stroke: var(--neon-b); }
+.skin-neon .tree circle.gs-w { fill: var(--neon-fill); stroke: var(--neon-w); }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -559,6 +583,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     <section class="o-set card settings" id="settingsCard" data-card="settings">
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
+      <div class="seg segSkin"><span class="label">Skin</span><button type="button" data-skin="classic">Classic</button><button type="button" data-skin="neon">Neon</button></div>
       <div class="diff"><div class="diffhead"><label for="checkerRange">Checkerboard</label><span id="checkerVal">100%</span></div><input type="range" id="checkerRange" min="0" max="100" step="5" value="100"><div class="diffscale"><span>Hidden</span><span>Full</span></div></div>
       <div class="seg" id="segSpeed"><span class="label">Replay</span>
         <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
@@ -609,7 +634,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
   const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1339,6 +1364,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   }
 
   function render() {
+    applySkin();
     renderCards();  // show the right panes first so views can measure themselves
     renderDev();
     if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
@@ -1975,6 +2001,15 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       w.dataset.armed = '1'; w.textContent = 'Tap again to clear everything';
       setTimeout(() => { delete w.dataset.armed; w.textContent = 'Clear saved data'; }, 3000);
     }
+  });
+  function applySkin() {
+    document.body.classList.toggle('skin-neon', opts.skin === 'neon');
+    for (const b of document.querySelectorAll('[data-skin]')) b.setAttribute('aria-pressed', String(b.dataset.skin === (opts.skin || 'classic')));
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-skin]'); if (!b) return;
+    opts.skin = b.dataset.skin; save(); applySkin(); render();
+    if (opts.mode === 'go' && GO.nodes) goRender();
   });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
   // ---------- tab groups: every panel is a card with one or more tabs ----------
@@ -2634,7 +2669,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       review: '<p class="label">Turning points</p><div class="turns" id="goTurns"></div><p class="label">Biggest captures</p><div class="turns" id="goCaps"></div><p class="label">The story so far</p><p class="story" id="goStory"></p><button class="btn simgo" id="goStoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="goStoryNote" hidden></p>',
       sim: '<div class="simrow"><div class="seg" id="goSegLen"><span class="label">Length</span><button type="button" data-len="20">10 moves</button><button type="button" data-len="60">30 moves</button><button type="button" data-len="400">To the end</button></div><div class="seg" id="goSegStr"><span class="label">Strength</span><button type="button" data-str="strong">Strong</button><button type="button" data-str="club">Club</button><button type="button" data-str="casual">Casual</button></div><div class="seg" id="goSegPace"><span class="label">Speed</span><button type="button" data-pace="0">Fastest</button><button type="button" data-pace="200">Fast</button><button type="button" data-pace="700">Normal</button><button type="button" data-pace="1600">Slow</button></div><button class="btn simgo" id="goSimBtn" type="button">Simulate from here</button></div>',
       game: '<p class="gostatus" id="goStatus"></p><div class="seg" id="goSegSize"><span class="label">Board</span><button type="button" data-size="9">9×9</button><button type="button" data-size="13">13×13</button><button type="button" data-size="19">19×19</button></div><div class="seg" id="goSegKomi"><span class="label">Komi</span><button type="button" data-komi="5.5">5.5</button><button type="button" data-komi="6.5">6.5</button><button type="button" data-komi="7.5">7.5</button></div><p class="note" id="goNextNote" hidden>Board size and komi apply when you start a new game.</p><div class="seg" id="goSegOpp"><span class="label">White</span><button type="button" data-opp="human">Friend, hotseat</button><button type="button" data-opp="bot">Computer</button></div><div class="diff" id="goDiffRow"><div class="diffhead"><label for="goDiff">Difficulty</label><span id="goDiffName"></span></div><input type="range" id="goDiff" min="1" max="10" step="1"><div class="diffscale"><span>Beginner</span><span>Strongest</span></div></div><div class="controls" id="goControls"><button class="btn" id="goPass" type="button">Pass</button><button class="btn" id="goResign" type="button">Resign</button><button class="btn danger" id="goNew" type="button">New game</button></div><div class="confirm" id="goConfirm" hidden><button class="btn primary" id="goConfirmYes" type="button">Start new game</button><button class="btn" id="goConfirmNo" type="button">Keep playing</button></div>',
-      settings: '<div class="toggles"><button class="tog" data-gov="territory" type="button"><span>Territory map<small>Shade each point by who is likely to own it at the end, from the engine’s playouts. Small squares on stones mark ones that look dead.</small></span><span class="sw2"></span></button><button class="tog" data-gov="atari" type="button"><span>Atari warnings<small>Red ring on any group down to its last liberty.</small></span><span class="sw2"></span></button><button class="tog" data-gov="libs" type="button"><span>Liberty counts<small>Number of liberties on each group with three or fewer.</small></span><span class="sw2"></span></button><button class="tog" data-gov="numbers" type="button"><span>Move numbers<small>Number every stone by the move it was played.</small></span><span class="sw2"></span></button></div><div class="seg" id="goSegSpeed"><span class="label">Replay</span><button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button></div>'
+      settings: '<div class="seg segSkin"><span class="label">Skin</span><button type="button" data-skin="classic">Classic</button><button type="button" data-skin="neon">Neon</button></div><div class="toggles"><button class="tog" data-gov="territory" type="button"><span>Territory map<small>Shade each point by who is likely to own it at the end, from the engine’s playouts. Small squares on stones mark ones that look dead.</small></span><span class="sw2"></span></button><button class="tog" data-gov="atari" type="button"><span>Atari warnings<small>Red ring on any group down to its last liberty.</small></span><span class="sw2"></span></button><button class="tog" data-gov="libs" type="button"><span>Liberty counts<small>Number of liberties on each group with three or fewer.</small></span><span class="sw2"></span></button><button class="tog" data-gov="numbers" type="button"><span>Move numbers<small>Number every stone by the move it was played.</small></span><span class="sw2"></span></button></div><div class="seg" id="goSegSpeed"><span class="label">Replay</span><button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button></div>'
     };
     for (const k in body) {
       const el = document.querySelector('[data-card="' + k + '"]'); if (!el) continue;
@@ -2655,6 +2690,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       h += '<line x1="' + X(0) + '" y1="' + Y(i) + '" x2="' + X(N - 1) + '" y2="' + Y(i) + '" class="goline"/><line x1="' + X(i) + '" y1="' + Y(0) + '" x2="' + X(i) + '" y2="' + Y(N - 1) + '" class="goline"/>';
       h += '<text x="' + X(i) + '" y="' + (M * 0.42) + '" class="gocoord">' + GO_LETTERS[i] + '</text><text x="' + (M * 0.38) + '" y="' + (Y(i) + 0.11) + '" class="gocoord">' + (N - i) + '</text>';
     }
+    h += '<defs>' + [['gglowB', '#ff2fd6'], ['gglowW', '#22f0ff']].map(([id, c]) => '<filter id="' + id + '" x="-60%" y="-60%" width="220%" height="220%"><feFlood flood-color="' + c + '" result="c"/><feComposite in="c" in2="SourceAlpha" operator="in" result="s"/><feGaussianBlur in="s" stdDeviation=".09" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>').join('') + '</defs>';
     const stars = N === 9 ? [2, 6] : N === 13 ? [3, 9] : [3, 9, 15];
     for (const a of stars) for (const b of stars) h += '<circle cx="' + X(a) + '" cy="' + Y(b) + '" r=".09" class="gostar"/>';
     if (N === 9 || N === 13) h += '<circle cx="' + X((N - 1) / 2) + '" cy="' + Y((N - 1) / 2) + '" r=".09" class="gostar"/>';
@@ -2774,7 +2810,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
         (n.id === 0 ? '<rect x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" fill="' + (isCur ? 'var(--accent)' : 'var(--ink)') + '"/>'
           : n.p === -2 ? '<rect x="' + (x - 7) + '" y="' + (y - 7) + '" width="14" height="14" rx="3" fill="var(--ctl-b)" stroke="' + (isCur ? 'var(--ink)' : 'none') + '" stroke-width="2"/>'
           : n.p === -1 ? '<circle cx="' + x + '" cy="' + y + '" r="' + (isCur ? 9 : 7) + '" fill="var(--surface)" stroke="' + ring + '" stroke-width="2" stroke-dasharray="2 2"/>'
-          : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 10 : 7.5) + '" fill="' + (n.color === 1 ? '#1c2320' : '#f6f4ee') + '" stroke="' + (isCur ? 'var(--ink)' : ring) + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
+          : '<circle class="dot ' + (n.color === 1 ? 'gs-b' : 'gs-w') + '" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 10 : 7.5) + '" fill="' + (n.color === 1 ? '#1c2320' : '#f6f4ee') + '" stroke="' + (isCur ? 'var(--ink)' : ring) + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
       if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + goLabel(n.p) + '</text>';
     }
     wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a stone to jump to that move.">' + labels + edges + dots + '</svg>';
