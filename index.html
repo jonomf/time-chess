@@ -402,6 +402,9 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .skin-neon .tree circle.gs-b { fill: var(--neon-fill); stroke: var(--neon-b); }
 .skin-neon .tree circle.gs-w { fill: var(--neon-fill); stroke: var(--neon-w); }
 /* Online */
+#netBody { display: grid; gap: 10px; min-width: 0; }
+#netBody > .btn { justify-self: start; min-width: 160px; }
+#netBody > .label { margin-top: 6px; }
 .netcode { margin: 0; font: 800 34px var(--f-mono); letter-spacing: .18em; color: var(--ink); }
 .netjoin { display: flex; gap: 8px; }
 .netjoin input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); font: 600 15px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
