@@ -1587,6 +1587,20 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const glyphOf = j => GLYPH[(j.promo || j.type).toLowerCase()];
 
+  // Story Mode board: 'final' shows the line's last position with the path drawn over it;
+  // 'follow' moves the whole board to the moment of the step on the slider.
+  function storyPly(j, k) {
+    if (!j || !j.steps.length) return null;
+    if (k == null || k >= j.steps.length) return null;            // end of the line
+    return k === 0 ? Math.max(0, j.steps[0].ply - 1) : j.steps[k - 1].ply;
+  }
+  function storySync(J) {
+    const line = reviewLine(), end = line[line.length - 1];
+    let target = end;
+    if (opts.storyBoard === 'follow' && focus && J[focus]) { const ply = storyPly(J[focus], focusStep); if (ply != null && line[ply]) target = line[ply]; }
+    if (target.id === cur) return false;
+    goTo(target.id); return true;
+  }
   function renderReview() {
     boardEl.classList.toggle('reviewing', review);
     if (!review) { $('reviewLabel').textContent = 'Story Mode'; renderCoachArrows(); return; }
@@ -1611,7 +1625,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       stats += j.death ? '<span class="stat dead">Captured move ' + mvNo(j.death.ply) + '</span>' : '<span class="stat">On the board</span>';
       const stepTxt = k === 0 ? 'Starting square ' + j.start : 'Step ' + k + ' of ' + n + ' · ' + mvNo(j.steps[k - 1].ply) + (j.steps[k - 1].ply % 2 ? '. ' : '… ') + j.steps[k - 1].san;
       jEl.innerHTML = '<h3>' + esc(pieceName(j.id)) + '</h3><div class="stats">' + stats + '</div>' +
-        (n ? '<div class="stepper"><label for="stepRange">' + esc(stepTxt) + '</label><input type="range" id="stepRange" min="0" max="' + n + '" value="' + k + '"></div>' : '') +
+        (n ? '<div class="stepper"><label for="stepRange">' + esc(stepTxt) + '</label><input type="range" id="stepRange" min="0" max="' + n + '" value="' + k + '"></div>' +
+          '<div class="seg"><span class="label">Board</span><button type="button" data-storyboard="final" aria-pressed="' + (opts.storyBoard !== 'follow') + '">Final position</button><button type="button" data-storyboard="follow" aria-pressed="' + (opts.storyBoard === 'follow') + '">Follow slider</button></div>' : '') +
         '<span class="story-src">' + (gen[j.id] ? 'Written by Claude' : 'Auto summary') + '</span><p class="story">' + esc(gen[j.id] || templateStory(j, J)) + '</p>';
       jEl.hidden = false;
       const rng = $('stepRange');
@@ -1621,6 +1636,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
         focusStep = kk >= n ? null : kk;
         const lab = rng.parentNode.querySelector('label');
         lab.textContent = kk === 0 ? 'Starting square ' + j.start : 'Step ' + kk + ' of ' + n + ' · ' + mvNo(j.steps[kk - 1].ply) + (j.steps[kk - 1].ply % 2 ? '. ' : '… ') + j.steps[kk - 1].san;
+        if (opts.storyBoard === 'follow' && storySync(J)) renderBoard();
         renderOverlay(J);
       };
     } else jEl.hidden = true;
@@ -1655,7 +1671,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   function setReview(on) { review = on; clearSel(); if (on && !focus) { const p = notables(journeys())[0]; focus = p ? p.id : null; } focusStep = null; render(); }
   $('storyBtn').onclick = writeStories;
   $('reviewCard').addEventListener('click', e => {
-    const p = e.target.closest('[data-piece]'); if (p) { focus = focus === p.dataset.piece && !p.classList.contains('notable') ? null : p.dataset.piece; focusStep = null; renderReview(); return; }
+    const sb = e.target.closest('[data-storyboard]'); if (sb) { opts.storyBoard = sb.dataset.storyboard; save(); storySync(journeys()); render(); return; }
+    const p = e.target.closest('[data-piece]'); if (p) { focus = focus === p.dataset.piece && !p.classList.contains('notable') ? null : p.dataset.piece; focusStep = null; if (opts.storyBoard === 'follow' && storySync(journeys())) renderBoard(); renderReview(); return; }
     const b = e.target.closest('[data-branch]');
     if (b) { goTo(+b.dataset.branch); review = false; save(); render(); document.querySelector('.simrow').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
     const v = e.target.closest('[data-view]'); if (v) navTo(+v.dataset.view);
