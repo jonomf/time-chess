@@ -447,7 +447,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .stat.kill { border-color: var(--ctl-b); color: var(--ctl-b); }
 .stat.dead { background: var(--ctl-b); color: #fff; border-color: var(--ctl-b); }
 .stat.mate { background: var(--ctl-w); color: #fff; border-color: var(--ctl-w); }
-.stepper { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; font: 500 13px var(--f-mono); }
+.stepper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; font: 500 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+.stepper label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stepper input { width: 100%; accent-color: var(--accent); }
 .story { margin: 0; max-width: 65ch; line-height: 1.55; }
 .story-src { font: 600 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
