@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Chess and Go with control overlays, branching timelines, engines, a coach, and a story mode. Play a friend online.">
+<meta name="description" content="Chess, Go, Solitaire and Sudoku with overlays, branching timelines, engines, a coach, and a story mode.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>TIME CHESS!</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -341,7 +341,8 @@ body.dragging-card, body.dragging-card * { cursor: grabbing !important; user-sel
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --go-wood: #b48a4a; --go-line: #26190a; --go-coord: #3b2b14; } }
 :root[data-theme="dark"] { --go-wood: #b48a4a; --go-line: #26190a; --go-coord: #3b2b14; }
 body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { display: none !important; }
-.mode-go .board-box, .mode-go [data-card] > .cbody:not(.shared) { display: none !important; }
+.nonchess .board-box, .nonchess [data-card] > .cbody:not(.shared) { display: none !important; }
+body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { display: none !important; }
 .gobody { display: grid; gap: 10px; min-width: 0; }
 .ribbon-wrap .gobody { gap: 8px; }
 .panes > .ribbon-wrap .gobody > .empty, .panes > .ribbon-wrap .gobody > .alts, .panes > .ribbon-wrap .gobody > .nav { margin: 0 14px; }
@@ -377,6 +378,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .modesw button { padding: 6px 12px; border: 0; background: var(--surface); color: var(--ink); font: 700 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .modesw button + button { border-left: 1.5px solid var(--ink); }
 .modesw button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+@media (max-width: 640px) { .hdr-right { width: 100%; flex-wrap: wrap; justify-content: space-between; row-gap: 8px; } .modesw { order: -1; width: 100%; } .modesw button { flex: 1 1 0; min-width: 0; padding: 7px 2px; font-size: 11px; letter-spacing: .04em; } }
 /* Skin: Neon. Black bodies, glowing outlines: cyan for White, magenta for Black. */
 :root { --neon-w: #22f0ff; --neon-b: #ff2fd6; --neon-fill: #06070a; }
 .skin-neon .pc.w, .skin-neon .pc.b { color: var(--neon-fill); paint-order: normal; }
@@ -418,6 +420,90 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .netchip::before { content: ""; background: var(--ctl-c); }
 .netchip.mine { border-color: var(--ctl-w); } .netchip.mine::before { background: var(--ctl-w); }
 .netchip.theirs::before { background: var(--muted); }
+/* Puzzle modes: shared */
+.pzbody { display: grid; gap: 10px; min-width: 0; }
+.ribbon-wrap .pzbody { gap: 8px; }
+.ribbon-wrap .pzbody > .empty, .ribbon-wrap .pzbody > .alts, .ribbon-wrap .pzbody > .nav { margin: 0 12px; }
+.panes > .ribbon-wrap .pzbody > .empty, .panes > .ribbon-wrap .pzbody > .alts, .panes > .ribbon-wrap .pzbody > .nav { margin: 0 14px; }
+.pzbody .c-body { height: auto; min-height: 110px; }
+.pzboard-box { width: 100%; max-width: 100%; }
+.tree rect.pzdot { fill: var(--surface); }
+.tree rect.pzdot.pzd-home { fill: color-mix(in oklab, var(--ctl-w) 45%, var(--surface)); }
+.tree rect.pzdot.pzd-flip { fill: color-mix(in oklab, var(--accent) 40%, var(--surface)); }
+.tree rect.pzdot.pzd-draw { fill: color-mix(in oklab, var(--muted) 30%, var(--surface)); }
+.tree rect.pzdot.pzd-note { fill: color-mix(in oklab, var(--sim) 25%, var(--surface)); }
+.mcard .mc-cardg { margin: 3px auto 2px; padding: 2px 4px; border-radius: 4px; border: 1.5px solid #c9cbc6; background: #fdfcf8; color: #1c2320; font: 700 14px var(--f-body); line-height: 1.1; }
+.mcard .mc-cardg.red { color: #c4302b; }
+.mcard .mc-digit { font: 800 22px var(--f-body); line-height: 1.1; color: var(--accent); }
+.mcard .mc-digit.note { font-size: 15px; color: var(--muted); }
+.mcard .mc-digit.wrong { color: var(--ctl-b); }
+/* Solitaire */
+:root { --felt: #2f6b4f; --felt-line: rgb(255 255 255 / .22); --card: #fdfcf8; --card-edge: #c9cbc6; --card-red: #c4302b; --card-black: #1c2320; --back1: #2b5d88; --back2: #214a6e; --glow: #ffd34d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --felt: #1d4535; --card: #ecebe5; --card-edge: #9da39e; --back1: #3a6f9e; --back2: #2a557c; } }
+:root[data-theme="dark"] { --felt: #1d4535; --card: #ecebe5; --card-edge: #9da39e; --back1: #3a6f9e; --back2: #2a557c; }
+.solwrap { container-type: inline-size; width: 100%; }
+.solboard { position: relative; width: 100%; border-radius: 8px; background: var(--felt); user-select: none; -webkit-user-select: none; touch-action: none; overflow: hidden; }
+.sslot, .scard { position: absolute; width: 12.6cqi; height: 17.6cqi; border-radius: 1.2cqi; box-sizing: border-box; }
+.sslot { border: .35cqi dashed var(--felt-line); color: var(--felt-line); display: grid; place-items: center; font-size: 6cqi; }
+.sslot.stock { cursor: pointer; }
+.scard { background: var(--card); border: .25cqi solid var(--card-edge); box-shadow: 0 .3cqi .7cqi rgb(0 0 0 / .28); color: var(--card-black); cursor: grab; }
+.scard.red { color: var(--card-red); }
+.scard .cr { position: absolute; left: .8cqi; top: .6cqi; display: flex; align-items: baseline; gap: .3cqi; font: 800 3.7cqi/1 var(--f-body); letter-spacing: -.03em; white-space: nowrap; }
+.scard .cr i { font-style: normal; font-weight: 400; font-size: 3.3cqi; }
+.scard .cc { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 3.5cqi; font-size: 7.6cqi; line-height: 1; }
+.scard.down { background: repeating-linear-gradient(45deg, var(--back1) 0 1cqi, var(--back2) 1cqi 2cqi); border-color: color-mix(in oklab, var(--back2) 55%, #000); cursor: default; }
+.scard[data-pile="S"] { cursor: pointer; }
+.scard.can { box-shadow: 0 0 0 .45cqi color-mix(in oklab, var(--glow) 80%, transparent), 0 .3cqi .7cqi rgb(0 0 0 / .28); }
+.scard.hintsrc { box-shadow: 0 0 0 .7cqi var(--ctl-w), 0 0 2cqi var(--ctl-w); }
+.scard.hintdst, .sslot.hintdst { box-shadow: 0 0 0 .7cqi #fff, 0 0 2cqi #fff; }
+.scard.anim { z-index: 200 !important; }
+.scount { position: absolute; min-width: 3.6cqi; height: 3.6cqi; padding: 0 .6cqi; border-radius: 1.8cqi; background: rgb(0 0 0 / .55); color: #fff; font: 700 2.3cqi/3.6cqi var(--f-mono); text-align: center; z-index: 120; pointer-events: none; }
+.scount.hid { background: color-mix(in oklab, var(--back1) 85%, #000); }
+.solwin { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 300; display: grid; gap: 1cqi; justify-items: center; padding: 3cqi 6cqi; border-radius: 2cqi; background: rgb(0 0 0 / .72); color: #fff; font-family: var(--f-display); text-transform: uppercase; letter-spacing: .04em; pointer-events: none; }
+.solwin b { font-size: 9cqi; line-height: 1; } .solwin span { font-size: 3.6cqi; }
+.sghost { position: fixed; height: 0; container-type: inline-size; pointer-events: none; z-index: 60; }
+.sghost .scard { box-shadow: 0 1.5cqi 3cqi rgb(0 0 0 / .4); }
+/* Sudoku */
+.sudwrap { container-type: inline-size; width: 100%; display: grid; gap: 12px; }
+.sudgrid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--line); gap: 1px; }
+.scell { position: relative; border: 0; padding: 0; margin: 0; background: var(--surface); color: var(--ink); font: 500 6.4cqi var(--f-body); display: grid; place-items: center; cursor: pointer; min-width: 0; }
+.scell.bR { box-shadow: inset -2px 0 0 var(--ink); } .scell.bB { box-shadow: inset 0 -2px 0 var(--ink); } .scell.bR.bB { box-shadow: inset -2px 0 0 var(--ink), inset 0 -2px 0 var(--ink); }
+.scell.given { font-weight: 800; }
+.scell.user { color: var(--accent); font-weight: 600; }
+.scell.wrong { color: var(--ctl-b); }
+.scell.conflict::after { content: ""; position: absolute; left: 30%; right: 30%; bottom: 12%; height: 3px; border-radius: 2px; background: var(--ctl-b); }
+.scell.peer { background: color-mix(in oklab, var(--accent) 8%, var(--surface)); }
+.scell.same { background: color-mix(in oklab, var(--accent) 24%, var(--surface)); }
+.scell.hintunit { background: color-mix(in oklab, var(--ctl-w) 12%, var(--surface)); }
+.scell.hint { background: color-mix(in oklab, var(--ctl-w) 30%, var(--surface)); }
+.scell.sel { background: color-mix(in oklab, var(--accent) 38%, var(--surface)); outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1; }
+.scell.fresh { animation: sudpop .22s ease-out; }
+@keyframes sudpop { from { transform: scale(.6); } to { transform: scale(1); } }
+.scell .notes { position: absolute; inset: 6%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font: 600 2.2cqi var(--f-mono); color: var(--muted); }
+.scell .notes i { font-style: normal; display: grid; place-items: center; }
+.scell .notes.auto { color: color-mix(in oklab, var(--muted) 70%, transparent); font-weight: 500; }
+.sudpad { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; }
+.sudpad button { position: relative; aspect-ratio: 1 / 1.1; min-width: 0; padding: 0; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 clamp(14px, 4.4cqi, 22px) var(--f-body); cursor: pointer; }
+.sudpad button small { position: absolute; right: 3px; bottom: 1px; font: 600 9px var(--f-mono); color: var(--muted); }
+.sudpad button.done { opacity: .35; }
+.sudpad button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+@media (prefers-reduced-motion: reduce) { .scell.fresh { animation: none; } }
+/* Neon skin for cards and grid */
+.skin-neon .solboard { background: #090a10; }
+.skin-neon .sslot { border-color: color-mix(in oklab, var(--neon-w) 40%, transparent); color: color-mix(in oklab, var(--neon-w) 45%, transparent); }
+.skin-neon .scard.up { background: var(--neon-fill); border: .3cqi solid var(--neon-w); color: var(--neon-w); box-shadow: 0 0 1.4cqi color-mix(in oklab, var(--neon-w) 55%, transparent); text-shadow: 0 0 1cqi var(--neon-w); }
+.skin-neon .scard.up.red { border-color: var(--neon-b); color: var(--neon-b); box-shadow: 0 0 1.4cqi color-mix(in oklab, var(--neon-b) 55%, transparent); text-shadow: 0 0 1cqi var(--neon-b); }
+.skin-neon .scard.down { background: var(--neon-fill) repeating-linear-gradient(45deg, transparent 0 1.2cqi, color-mix(in oklab, var(--neon-b) 40%, transparent) 1.2cqi 1.5cqi); border-color: var(--neon-b); }
+.skin-neon .scard.can { box-shadow: 0 0 0 .45cqi #fff, 0 0 1.6cqi #fff; }
+.skin-neon .mcard .mc-cardg { background: var(--neon-fill); border-color: var(--neon-w); color: var(--neon-w); }
+.skin-neon .mcard .mc-cardg.red { border-color: var(--neon-b); color: var(--neon-b); }
+.skin-neon .sudgrid { background: color-mix(in oklab, var(--neon-w) 25%, #000); border-color: var(--neon-w); box-shadow: 0 0 10px color-mix(in oklab, var(--neon-w) 50%, transparent); }
+.skin-neon .scell { background: var(--neon-fill); color: #d9dee8; }
+.skin-neon .scell.bR { box-shadow: inset -2px 0 0 var(--neon-w); } .skin-neon .scell.bB { box-shadow: inset 0 -2px 0 var(--neon-w); } .skin-neon .scell.bR.bB { box-shadow: inset -2px 0 0 var(--neon-w), inset 0 -2px 0 var(--neon-w); }
+.skin-neon .scell.given { color: var(--neon-w); text-shadow: 0 0 6px var(--neon-w); }
+.skin-neon .scell.user { color: var(--neon-b); text-shadow: 0 0 6px var(--neon-b); }
+.skin-neon .scell.peer { background: #10131c; } .skin-neon .scell.same { background: #1b1430; } .skin-neon .scell.sel { background: #24183d; outline-color: var(--neon-b); }
+.skin-neon .scell.hint, .skin-neon .scell.hintunit { background: #0e2420; }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -855,7 +941,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   }
   let analyzing = null;
   function analyzeNext() {
-    if (opts.mode === 'go' || sim || analyzing != null) return;
+    if (opts.mode !== 'chess' || sim || analyzing != null) return;
     const line = lineOf(cur);
     const order = [nodes[cur], ...line];
     for (const n of order) {
@@ -874,7 +960,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 
   // ---------- Stockfish as Black ----------
   function maybeBotMove() {
-    if (online.active || opts.mode === 'go' || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
+    if (online.active || opts.mode !== 'chess' || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
     if (game.turn() !== 'b' || game.game_over() || nodes[cur].children.length) return;
     botThinking = true; renderStatus();
     const L = botCfg.level, at = cur, fen = game.fen();
@@ -1393,6 +1479,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     renderCards();  // show the right panes first so views can measure themselves
     renderDev();
     if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
+    if (typeof puzzleModes !== 'undefined' && puzzleModes[opts.mode]) setTimeout(() => puzzleModes[opts.mode].render(true), 0);
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
@@ -1834,7 +1921,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 
   function humanTurnNow() { return !(botCfg.on && game.turn() === 'b') && !game.game_over() && !sim; }
   function requestCoach(n) {
-    if (opts.mode === 'go' || !n || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
+    if (opts.mode !== 'chess' || !n || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
     const g = new Chess(n.fen); if (g.game_over()) return;
     n.coachPending = true;
     runEngine(n.fen, { skill: 20, ms: opts.dev.coachMs, multipv: 3 }, true).then(r => {
@@ -2723,7 +2810,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     document.querySelector('.o-board').appendChild(box);
     // header mode switch
     const sw = document.createElement('div'); sw.className = 'modesw'; sw.setAttribute('role', 'group'); sw.setAttribute('aria-label', 'Game');
-    sw.innerHTML = '<button type="button" data-mode="chess">Chess</button><button type="button" data-mode="go">Go</button>';
+    sw.innerHTML = '<button type="button" data-mode="chess">Chess</button><button type="button" data-mode="go">Go</button><button type="button" data-mode="sol">Solitaire</button><button type="button" data-mode="sud">Sudoku</button>';
     document.querySelector('.hdr-right').prepend(sw);
     // a Go body for every tool
     const body = {
@@ -3092,18 +3179,24 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     document.querySelector('.modesw').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); });
   }
 
+  const MODE_NAMES = { chess: 'Chess', go: 'Go', sol: 'Solitaire', sud: 'Sudoku' };
   function setMode(m) {
+    if (!MODE_NAMES[m]) m = 'chess';
     opts.mode = m; save();
-    document.body.classList.toggle('mode-go', m === 'go');
+    for (const x in MODE_NAMES) document.body.classList.toggle('mode-' + x, m === x);
+    document.body.classList.toggle('nonchess', m !== 'chess');
     for (const b of document.querySelectorAll('.modesw button')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
-    document.title = m === 'go' ? 'TIME GO!' : 'TIME CHESS!';
-    const h1 = document.querySelector('h1'); if (h1) h1.innerHTML = 'Time <span>' + (m === 'go' ? 'Go!' : 'Chess!') + '</span>';
-    if (m === 'go') { goEnsure(); render(); goRender(); } else { render(); }
+    document.title = 'TIME ' + MODE_NAMES[m].toUpperCase() + '!';
+    const h1 = document.querySelector('h1'); if (h1) h1.innerHTML = 'Time <span>' + MODE_NAMES[m] + '!</span>';
+    if (m === 'go') { goEnsure(); render(); goRender(); }
+    else if (puzzleModes[m]) { puzzleModes[m].ensure(); render(); puzzleModes[m].render(); }
+    else render();
   }
   function goEnsure() { if (!goBooted) { goBooted = true; goLoad(); goEngineStart(); } }
   function goBoot() {
     goBuildDom(); goWire();
-    setMode(opts.mode === 'go' ? 'go' : 'chess');
+    makePuzzleMode(SOL).build(); makePuzzleMode(SUD).build();
+    setMode(opts.mode);
   }
 
   // ================= ONLINE: peer-to-peer play over WebRTC (PeerJS handles the handshake) =================
@@ -3317,6 +3410,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     let h = '';
     if (!netOK) {
       h = '<p class="note">Online play connects two browsers directly, which this page can’t do inside Claude. Open the GitHub Pages version to play a friend online:</p><p><a class="src" href="https://jonomf.github.io/time-chess/" target="_blank" rel="noopener">jonomf.github.io/time-chess</a></p>';
+    } else if (!online.active && (opts.mode === 'sol' || opts.mode === 'sud')) {
+      h = '<p class="note">' + MODE_NAMES[opts.mode] + ' is a one-player game. Online play is for chess and Go: switch at the top to host or join a game.</p>';
     } else if (!online.active) {
       const side = online.hostColor, goGame = opts.mode === 'go';
       h = '<p class="note">Play a friend over the internet. Your browsers connect directly; nobody else sees the game.</p>' +
@@ -3365,6 +3460,921 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     }
     netRender();
   }
+
+  // ================= PUZZLE MODES (Solitaire, Sudoku): shared timeline, branches, coach, story, simulate =================
+  const puzzleModes = {};
+  function makePuzzleMode(M) {
+    const k = M.key, $k = id => document.getElementById(k + id);
+    const P = { nodes: null, nextId: 1, cur: 0, st: null, root: null, sim: null, navTimer: null, navDest: null, forkOpen: null,
+      view: Object.assign({ marks: true }, M.defaultView), cfg: Object.assign({}, M.defaultCfg), simCfg: { len: 20, pace: 200 },
+      story: {}, storyBusy: false, storyErr: null, confirm: false, booted: false, ribCam: null, treeCam: null, ui: {} };
+    const node = id => P.nodes[id];
+    const api = { P, M, key: k, $k };
+
+    // ---- tree ----
+    function reset(root) {
+      P.root = root; const s = M.initial(root);
+      P.nodes = { 0: { id: 0, parent: null, children: [], pref: 0, move: null, ply: 0, enc: M.enc(s), info: {}, ev: M.progress(s, root) } };
+      P.nextId = 1; P.cur = 0; P.st = s; P.forkOpen = null; P.story = {}; P.ui = {};
+    }
+    const path = id => { const p = []; for (let n = node(id); n; n = n.parent == null ? null : node(n.parent)) p.push(n); return p.reverse(); };
+    function line(id) { const l = path(id); let n = node(id); while (n.children.length) { n = node(n.children[Math.min(n.pref, n.children.length - 1)]); l.push(n); } return l; }
+    const stateOf = n => M.dec(n.enc, P.root);
+    function goTo(id) {
+      const p = path(id);
+      for (let i = 1; i < p.length; i++) { const par = node(p[i].parent); par.pref = par.children.indexOf(p[i].id); }
+      P.cur = id; P.st = stateOf(node(id));
+    }
+    function add(mv, sim) {
+      const here = node(P.cur);
+      const same = here.children.map(node).find(c => c.move === mv && !!c.sim === !!sim);
+      if (same) { goTo(same.id); return same; }
+      const r = M.apply(stateOf(here), mv, P.root); if (!r) return null;
+      const n = { id: P.nextId++, parent: here.id, children: [], pref: 0, move: mv, ply: here.ply + 1, enc: M.enc(r.state), info: r.info || {}, sim: !!sim, ev: M.progress(r.state, P.root) };
+      P.nodes[n.id] = n; here.children.push(n.id); here.pref = here.children.length - 1;
+      P.cur = n.id; P.st = r.state;
+      return n;
+    }
+    const over = n => M.over(n ? stateOf(n) : P.st, P.root);
+    const quality = n => n && n.id ? M.quality(api, n) : null;
+    function getHint(n) { if (n.hint === undefined) n.hint = over(n) ? null : M.hint(api, stateOf(n), n); return n.hint; }
+    Object.assign(api, { node, path, line, stateOf, goTo, add, over, quality, getHint });
+
+    // ---- persistence ----
+    function save() {
+      if (!P.nodes) return;
+      const list = Object.values(P.nodes).filter(n => n.id).sort((a, b) => a.id - b.id).map(n => [n.id, n.parent, n.move, n.sim ? 1 : 0]);
+      const prefs = Object.values(P.nodes).map(n => [n.id, n.pref]);
+      try { localStorage.setItem(M.store, JSON.stringify({ v: 1, root: P.root, cfg: P.cfg, view: P.view, simCfg: P.simCfg, list, prefs, cur: P.cur })); } catch (e) {}
+    }
+    function load() {
+      let d = null; try { d = JSON.parse(localStorage.getItem(M.store) || 'null'); } catch (e) {}
+      if (d && d.v === 1 && d.root) {
+        Object.assign(P.cfg, d.cfg || {}); Object.assign(P.view, d.view || {}); Object.assign(P.simCfg, d.simCfg || {});
+        reset(d.root);
+        for (const [id, parent, mv, sim] of d.list || []) {
+          if (!node(parent)) continue;
+          P.cur = parent; const n = add(mv, !!sim); if (!n) continue;
+          if (n.id !== id) { delete P.nodes[n.id]; node(parent).children.pop(); n.id = id; P.nodes[id] = n; node(parent).children.push(id); }
+          P.nextId = Math.max(P.nextId, id + 1);
+        }
+        for (const [id, pf] of d.prefs || []) if (node(id)) node(id).pref = pf;
+        goTo(node(d.cur) ? d.cur : 0);
+      } else reset(M.newRoot(api));
+    }
+    api.save = save;
+
+    // ---- navigation with replay ----
+    function stepsBetween(a, b) {
+      const pa = path(a).map(n => n.id), pb = path(b).map(n => n.id);
+      let i = 0; while (i < pa.length && i < pb.length && pa[i] === pb[i]) i++;
+      return [...pa.slice(i - 1, pa.length - 1).reverse(), ...pb.slice(i)];
+    }
+    function stopNav() { clearTimeout(P.navTimer); P.navTimer = null; P.navDest = null; save(); }
+    function navTo(id) {
+      if (P.sim || !node(id)) return;
+      if (P.navTimer) stopNav();
+      const steps = stepsBetween(P.cur, id);
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (steps.length <= 1 || reduce || !opts.replay) { goTo(id); save(); render(); return; }
+      P.navDest = id;
+      const per = Math.max(opts.replay / 16, Math.min(opts.replay / 5, opts.replay / steps.length));
+      let i = 0;
+      const tick = () => { goTo(steps[i++]); if (i >= steps.length) { P.navTimer = null; P.navDest = null; render(); save(); return; } P.navTimer = setTimeout(tick, per); render(true); };
+      tick();
+    }
+    function play(mv) {
+      if (P.navTimer) stopNav();
+      if (P.sim) return null;
+      const n = add(mv, false); if (n) { save(); render(); } return n;
+    }
+    Object.assign(api, { navTo, stopNav, play });
+
+    // ---- markup ----
+    function build() {
+      const box = document.createElement('div'); box.className = 'pzboard-box'; box.dataset.for = k; box.id = k + 'Board';
+      document.querySelector('.o-board').appendChild(box);
+      const pip = document.querySelector('.pip') ? document.querySelector('.pip').outerHTML : '';
+      const settings = (M.settings || []).map(([key, label, desc]) => '<button class="tog" data-pzv="' + key + '" type="button"><span>' + label + '<small>' + desc + '</small></span><span class="sw2"></span></button>').join('');
+      const body = {
+        timeline: '<div class="ribbon" id="' + k + 'Ribbon"><div class="rib-inner" id="' + k + 'RibInner"></div></div><p class="empty" id="' + k + 'RibEmpty">' + M.emptyText + '</p><div class="alts" id="' + k + 'Alts" hidden></div><div class="nav"><button data-pznav="start" type="button" aria-label="Go to start">«</button><button data-pznav="back" type="button" aria-label="Back one move">‹</button><button data-pznav="fwd" type="button" aria-label="Forward one move">›</button><button data-pznav="end" type="button" aria-label="Go to end of this line">»</button></div>',
+        branches: '<div class="tree" id="' + k + 'Tree"></div><div class="branches" id="' + k + 'BranchNote"></div>',
+        coach: '<div class="coach">' + pip + '<div class="bubble"><div class="c-tools"><button type="button" class="mini" data-pzv="marks" aria-pressed="true" title="Show the hint on the board">Marks</button></div><div class="c-body" id="' + k + 'CoachBody"></div></div></div>',
+        review: '<p class="label">The story so far</p><p class="story" id="' + k + 'Story"></p><button class="btn simgo" id="' + k + 'StoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="' + k + 'StoryNote" hidden></p><div id="' + k + 'StorySections"></div><p class="label">Mistakes</p><div class="turns" id="' + k + 'Mistakes"></div>',
+        sim: '<div class="simrow"><div class="seg"><span class="label">Length</span><button type="button" data-pzlen="20">20 moves</button><button type="button" data-pzlen="60">60 moves</button><button type="button" data-pzlen="999">To the end</button></div><div class="seg"><span class="label">Speed</span><button type="button" data-pzpace="0">Fastest</button><button type="button" data-pzpace="200">Fast</button><button type="button" data-pzpace="700">Normal</button><button type="button" data-pzpace="1600">Slow</button></div><button class="btn simgo" id="' + k + 'SimBtn" type="button">Simulate from here</button><p class="note">' + M.simNote + '</p></div>',
+        game: '<p class="gostatus" id="' + k + 'Status"></p>' + (M.gameHtml || '') + '<div class="controls" id="' + k + 'Controls">' + (M.gameButtons || '') + '<button class="btn danger" data-pznew="ask" type="button">New game</button></div><div class="confirm" id="' + k + 'Confirm" hidden><button class="btn primary" data-pznew="yes" type="button">Start new game</button><button class="btn" data-pznew="no" type="button">Keep playing</button></div>',
+        settings: '<div class="seg segSkin"><span class="label">Skin</span><button type="button" data-skin="classic">Classic</button><button type="button" data-skin="neon">Neon</button></div><div class="toggles">' + settings + '</div><div class="seg"><span class="label">Replay</span><button type="button" data-pzspeed="0">Instant</button><button type="button" data-pzspeed="220">Fast</button><button type="button" data-pzspeed="440">Normal</button><button type="button" data-pzspeed="1100">Slow</button></div>'
+      };
+      for (const t in body) {
+        const el = document.querySelector('[data-card="' + t + '"]'); if (!el) continue;
+        const g = document.createElement('div'); g.className = 'pzbody'; g.dataset.for = k; g.innerHTML = body[t];
+        el.appendChild(g); g.addEventListener('click', onClick);
+      }
+      dragScroll($k('Ribbon')); dragScroll($k('Tree'));
+      M.buildBoard(api, box);
+    }
+
+    function onClick(e) {
+      const t = e.target;
+      const go = t.closest('[data-pzgo]'); if (go && !P.sim) { navTo(+go.dataset.pzgo); return; }
+      const fk = t.closest('[data-pzfork]'); if (fk) { const id = +fk.dataset.pzfork; P.forkOpen = P.forkOpen === id ? null : id; render(); return; }
+      const nd = t.closest('[data-pznode]'); if (nd && !P.sim) { navTo(+nd.dataset.pznode); return; }
+      const nv = t.closest('[data-pznav]');
+      if (nv && !P.sim) {
+        const a = nv.dataset.pznav, n = node(P.cur);
+        if (a === 'start') navTo(0);
+        else if (a === 'end') { const l = line(P.cur); navTo(l[l.length - 1].id); }
+        else { if (P.navTimer) stopNav(); if (a === 'back' && P.cur) goTo(n.parent); else if (a === 'fwd' && n.children.length) goTo(n.children[Math.min(n.pref, n.children.length - 1)]); save(); render(); }
+        return;
+      }
+      const sv = t.closest('.rgraph'); if (sv && !P.sim) { const l = line(P.cur), i = Math.min(l.length - 1, Math.max(0, Math.floor((e.clientX - sv.getBoundingClientRect().left) / SLOT))); navTo(l[i].id); return; }
+      const ln = t.closest('[data-pzlen]'); if (ln) { P.simCfg.len = +ln.dataset.pzlen; save(); render(); return; }
+      const pc = t.closest('[data-pzpace]'); if (pc) { P.simCfg.pace = +pc.dataset.pzpace; save(); render(); return; }
+      const sp = t.closest('[data-pzspeed]'); if (sp) { opts.replay = +sp.dataset.pzspeed; save(); render(); return; }
+      const v = t.closest('[data-pzv]'); if (v) { P.view[v.dataset.pzv] = !P.view[v.dataset.pzv]; save(); render(); return; }
+      if (t.closest('#' + k + 'SimBtn')) { if (P.sim) P.sim.stop = true; else startSim(); return; }
+      const nw = t.closest('[data-pznew]');
+      if (nw) {
+        const a = nw.dataset.pznew;
+        if (a === 'ask') { if (P.sim) return; P.confirm = true; render(); }
+        else if (a === 'no') { P.confirm = false; render(); }
+        else { P.confirm = false; if (P.navTimer) stopNav(); reset(M.newRoot(api)); save(); render(); }
+        return;
+      }
+      if (t.closest('#' + k + 'StoryBtn')) { writeStory(); return; }
+      const br = t.closest('[data-pzbranch]'); if (br) { navTo(+br.dataset.pzbranch); return; }
+      const vw = t.closest('[data-pzview]'); if (vw) { navTo(+vw.dataset.pzview); return; }
+      const pl = t.closest('[data-pzplay]'); if (pl) { const h = getHint(node(P.cur)); if (h && h.move) play(h.move); return; }
+      if (M.onClick) M.onClick(api, e);
+    }
+
+    // ---- timeline ribbon ----
+    function renderRibbon() {
+      const ln = line(P.cur), L = ln.length, ci = ln.findIndex(n => n.id === P.cur), rib = $k('Ribbon');
+      const W = L * SLOT, xs = i => i * SLOT + SLOT / 2, pad = 7, ys = v => GH - pad - v * (GH - 2 * pad);
+      let g = '<svg class="rgraph" width="' + W + '" height="' + GH + '" viewBox="0 0 ' + W + ' ' + GH + '" role="img" aria-label="Progress over this line. Tap to jump to a move.">';
+      g += '<line x1="0" x2="' + W + '" y1="' + ys(0) + '" y2="' + ys(0) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/><line x1="0" x2="' + W + '" y1="' + ys(1) + '" y2="' + ys(1) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>';
+      const simStart = ln.findIndex(n => n.sim);
+      if (simStart > 0) g += '<rect x="' + (xs(simStart) - SLOT / 2) + '" y="0" width="' + (W - xs(simStart) + SLOT / 2) + '" height="' + GH + '" fill="color-mix(in oklab, var(--sim) 12%, transparent)"/>';
+      const pts = ln.map((n, i) => xs(i).toFixed(1) + ',' + ys(n.ev).toFixed(1)).join(' ');
+      if (L > 1) g += '<polygon points="' + xs(0) + ',' + ys(0) + ' ' + pts + ' ' + xs(L - 1) + ',' + ys(0) + '" fill="color-mix(in oklab, var(--accent) 18%, transparent)"/><polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>';
+      ln.forEach((n, i) => { const q = quality(n); g += '<circle cx="' + xs(i) + '" cy="' + ys(n.ev) + '" r="' + (i === ci ? 4.5 : q ? 3.5 : 2.2) + '" fill="' + (q ? (q[0] === 'great' ? 'var(--ctl-w)' : q[0] === 'blunder' ? 'var(--ctl-b)' : 'var(--ctl-c)') : i === ci ? 'var(--ink)' : 'var(--accent)') + '" stroke="var(--surface)" stroke-width="1.5"/>'; });
+      g += '<text x="4" y="11">' + M.graphTop + '</text><text x="4" y="' + (GH - 4) + '">Start</text></svg>';
+      let c = '<div class="rail" style="width:' + W + 'px"></div><div class="slots">';
+      ln.forEach((n, i) => {
+        const cls = ['mcard']; if (i === ci) cls.push('cur'); if (i > ci) cls.push('after'); if (n.sim) cls.push('sim');
+        const q = quality(n); if (q) cls.push(q[0]);
+        const inner = (i === 0 ? M.startCard(api) : '<span class="mc-n">' + n.ply + '.' + (q ? '<b>' + q[1] + '</b>' : '') + '</span>' + M.cardInner(api, n)) + '<span class="mc-ev">' + Math.round(n.ev * 100) + '%</span>';
+        const par = i ? node(n.parent) : null;
+        const fork = par && par.children.length > 1 ? '<button type="button" class="fork" data-pzfork="' + par.id + '" aria-expanded="' + (P.forkOpen === par.id) + '">' + FORK_SVG + par.children.length + '</button>' : '';
+        c += '<div class="slot">' + fork + '<button type="button" class="' + cls.join(' ') + '" data-pzgo="' + n.id + '" aria-label="' + esc(i ? n.ply + '. ' + M.label(api, n) : 'Start') + '">' + inner + '</button></div>';
+      });
+      c += '</div>';
+      $k('RibInner').style.width = W + 'px';
+      $k('RibInner').style.marginRight = Math.max(0, rib.clientWidth / 2 - SLOT) + 'px';
+      $k('RibInner').innerHTML = g + c;
+      $k('RibEmpty').hidden = L > 1;
+      P.ribCam = P.ribCam || makeCam(rib);
+      const di = P.navDest != null ? ln.findIndex(n => n.id === P.navDest) : -1;
+      P.ribCam.follow(xs(di >= 0 ? di : ci) + 12 - rib.clientWidth / 2, null, di >= 0 ? P.navDest : P.cur);
+      const alts = $k('Alts');
+      if (P.forkOpen != null && node(P.forkOpen) && node(P.forkOpen).children.length > 1) {
+        const par = node(P.forkOpen);
+        alts.innerHTML = '<span class="label">After ' + (par.id === 0 ? 'the start' : 'move ' + par.ply) + '</span>' + par.children.map((cid, j) => { const ch = node(cid); return '<button type="button" class="chip' + (ch.sim ? ' sim' : '') + (j === par.pref ? ' cur' : '') + '" data-pzgo="' + cid + '">' + esc(M.label(api, ch)) + (ch.sim ? ' · sim' : '') + '</button>'; }).join('');
+        alts.hidden = false;
+      } else { alts.hidden = true; P.forkOpen = null; }
+      const navs = document.querySelectorAll('[data-for="' + k + '"] [data-pznav]');
+      for (const b of navs) b.disabled = !!P.sim || ((b.dataset.pznav === 'start' || b.dataset.pznav === 'back') ? P.cur === 0 : !node(P.cur).children.length);
+    }
+
+    // ---- branch tree ----
+    function renderTree() {
+      const wrap = $k('Tree'), any = node(0).children.length > 0;
+      $k('BranchNote').innerHTML = any ? '' : '<span class="empty">Your moves grow into a tree here. Go back to any move and try something else to start a new branch.</span>';
+      wrap.hidden = !any; if (!any) return;
+      const DX = 26, DY = 32, PX = 20, PY = 30, lane = {}; let next = 0, maxPly = 0;
+      (function dfs(id, l) { lane[id] = l; maxPly = Math.max(maxPly, node(id).ply); node(id).children.forEach((c, j) => dfs(c, j === 0 ? l : ++next)); })(0, 0);
+      const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
+      const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / 2 - 40), H = PY + next * DY + 30;
+      const onLine = new Set(line(P.cur).map(n => n.id));
+      let edges = '', dots = '', labels = '';
+      for (let m = 10; m <= maxPly; m += 10) { const x = PX + m * DX; labels += '<text x="' + x + '" y="11" text-anchor="middle">' + m + '</text><line x1="' + x + '" x2="' + x + '" y1="15" y2="' + (H - 4) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>'; }
+      for (const id in P.nodes) {
+        const n = P.nodes[id]; if (n.parent == null) continue;
+        const p = node(n.parent), x1 = X(p), y1 = Y(p), x2 = X(n), y2 = Y(n), hot = onLine.has(n.id) && onLine.has(p.id);
+        const col = hot ? 'var(--accent)' : n.sim ? 'var(--sim)' : 'color-mix(in oklab, var(--ink) 35%, transparent)';
+        const d = y1 === y2 ? 'M' + x1 + ' ' + y1 + 'H' + x2 : 'M' + x1 + ' ' + y1 + 'C' + (x1 + DX * .7) + ' ' + y1 + ',' + (x1 + DX * .3) + ' ' + y2 + ',' + x2 + ' ' + y2;
+        edges += '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="' + (hot ? 3 : 2) + '"' + (n.sim && !hot ? ' stroke-dasharray="4 3"' : '') + ' stroke-linecap="round"/>';
+      }
+      for (const id in P.nodes) {
+        const n = P.nodes[id], x = X(n), y = Y(n), isCur = n.id === P.cur, q = quality(n);
+        const ring = q ? (q[0] === 'blunder' ? 'var(--ctl-b)' : q[0] === 'mistake' ? 'var(--ctl-c)' : 'var(--ctl-w)') : isCur ? 'var(--ink)' : onLine.has(n.id) ? 'var(--accent)' : 'var(--muted)';
+        const label = n.id ? n.ply + '. ' + M.label(api, n) : 'Start';
+        const r = isCur ? 9 : 6.5;
+        dots += '<g data-pznode="' + n.id + '" role="button" tabindex="0" aria-label="' + esc(label) + '"><title>' + esc(label) + ' (' + Math.round(n.ev * 100) + '%)</title><circle cx="' + x + '" cy="' + y + '" r="12" fill="transparent"/>' +
+          (n.id === 0 ? '<rect x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" fill="' + (isCur ? 'var(--accent)' : 'var(--ink)') + '"/>'
+            : '<rect class="pzdot ' + (M.dotClass ? M.dotClass(api, n) : '') + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + 2 * r + '" height="' + 2 * r + '" rx="' + (r * .35) + '" stroke="' + ring + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
+        if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + esc(M.shortLabel ? M.shortLabel(api, n) : M.label(api, n)) + '</text>';
+      }
+      wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a move to jump there.">' + labels + edges + dots + '</svg>';
+      wrap.style.height = Math.min(H + 2, 260) + 'px'; wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
+      P.treeCam = P.treeCam || makeCam(wrap);
+      const fid = P.navDest != null && node(P.navDest) ? P.navDest : P.cur, cn = node(fid);
+      P.treeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, fid);
+    }
+
+    // ---- coach ----
+    function renderCoach() {
+      const body = $k('CoachBody'); if (!body) return;
+      for (const b of document.querySelectorAll('[data-for="' + k + '"] [data-pzv="marks"]')) b.setAttribute('aria-pressed', String(P.view.marks !== false));
+      if (!cardOpen('coach')) return;
+      const n = node(P.cur); let h = '';
+      if (n.id) { const v = M.verdict(api, n); if (v) h += '<p class="c-verdict"><span class="pill ' + v.cls + '">' + v.label + '</span> ' + v.text + '</p>'; }
+      const o = over();
+      if (o) h += '<p class="c-main">' + esc(o) + ' Open Story Mode to see how it went.</p>';
+      else if (P.sim) h += '<p class="c-main muted">Watching the simulation.</p>';
+      else {
+        const hint = getHint(n);
+        if (hint) h += '<p class="c-main">' + hint.html + '</p>' + (hint.move ? '<div class="c-acts"><button type="button" class="cbtn" data-pzplay="1">Play it</button></div>' : '');
+        const tips = M.tips ? M.tips(api) : [];
+        if (tips.length) h += '<ul class="c-tips">' + tips.map(t => '<li>' + t + '</li>').join('') + '</ul>';
+      }
+      body.innerHTML = h;
+    }
+    api.hintMark = () => (cardOpen('coach') && P.view.marks !== false && !P.sim && !over()) ? getHint(node(P.cur)) : null;
+
+    // ---- story ----
+    function storyKey(ln) { return ln.slice(1).map(n => n.move).join(','); }
+    function renderStory() {
+      if (!cardOpen('review')) return;
+      const ln = line(P.cur), key = storyKey(ln);
+      $k('Story').innerHTML = P.story[key] ? esc(P.story[key]) : M.storySummary(api, ln);
+      const sb = $k('StoryBtn'); sb.hidden = !sampler || ln.length < 6 || !!P.story[key]; sb.disabled = P.storyBusy; sb.textContent = P.storyBusy ? 'Claude is writing…' : 'Tell the story with Claude';
+      $k('StoryNote').hidden = !P.storyErr; $k('StoryNote').textContent = P.storyErr || '';
+      $k('StorySections').innerHTML = M.storySections ? M.storySections(api, ln) : '';
+      const ms = ln.filter(n => n.id && quality(n) && quality(n)[0] !== 'great').slice(-6);
+      $k('Mistakes').innerHTML = ms.length ? ms.map(n => '<div class="turn"><span class="mv">' + n.ply + '. ' + esc(M.shortLabel ? M.shortLabel(api, n) : M.label(api, n)) + '</span><span class="kind bad">' + (quality(n)[0] === 'blunder' ? 'Blunder' : 'Mistake') + '</span><span class="desc">' + (M.mistakeText ? M.mistakeText(api, n) : '') + '</span><div class="acts"><button type="button" class="br-go" data-pzbranch="' + n.parent + '">Branch from here</button><button type="button" data-pzview="' + n.id + '">View move</button></div></div>').join('') : '<span class="empty">' + (ln.length > 1 ? 'No mistakes on this line.' : 'Nothing to review yet.') + '</span>';
+    }
+    async function writeStory() {
+      if (!sampler || P.storyBusy) return;
+      const ln = line(P.cur), key = storyKey(ln);
+      P.storyBusy = true; P.storyErr = null; renderStory();
+      try { const r = await sampler(M.storyPrompt(api, ln), { cache: { gcTime: 86400000 } }); P.story[key] = r.text.trim(); }
+      catch (e) { const code = e && e.code; if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(code)) { sampler = null; P.storyErr = 'Claude-written stories aren’t available here.'; } else if (code !== 'cancelled') P.storyErr = 'The story didn’t come through. Try again.'; }
+      P.storyBusy = false; renderStory();
+    }
+
+    // ---- simulate ----
+    async function startSim() {
+      if (P.sim || over()) return;
+      if (P.navTimer) stopNav();
+      const ctx = { visited: new Set([node(P.cur).enc]), draws: 0 };
+      P.sim = { left: P.simCfg.len, total: P.simCfg.len, stop: false }; P.simNote = ''; render();
+      while (P.sim && !P.sim.stop && P.sim.left > 0 && !over()) {
+        const mv = M.simMove(api, P.st, ctx);
+        if (!mv) { P.simNote = M.simStuck || 'Nothing useful left to play from here.'; break; }
+        const n = add(mv, true); if (!n) break;
+        ctx.visited.add(n.enc); P.sim.left--; save(); render();
+        await new Promise(r => setTimeout(r, P.simCfg.pace || 0));
+      }
+      P.sim = null; save(); render();
+    }
+
+    // ---- panels ----
+    function renderPanels() {
+      $k('Status').innerHTML = M.status(api) + (P.simNote ? ' · ' + esc(P.simNote) : '');
+      $k('Confirm').hidden = !P.confirm; $k('Controls').hidden = P.confirm;
+      const scope = '[data-for="' + k + '"] ';
+      for (const b of document.querySelectorAll(scope + '[data-pzlen]')) b.setAttribute('aria-pressed', String(+b.dataset.pzlen === P.simCfg.len));
+      for (const b of document.querySelectorAll(scope + '[data-pzpace]')) b.setAttribute('aria-pressed', String(+b.dataset.pzpace === P.simCfg.pace));
+      for (const b of document.querySelectorAll(scope + '[data-pzspeed]')) b.setAttribute('aria-pressed', String(+b.dataset.pzspeed === opts.replay));
+      for (const b of document.querySelectorAll(scope + '.toggles [data-pzv]')) b.setAttribute('aria-pressed', String(!!P.view[b.dataset.pzv]));
+      const sb = $k('SimBtn'); sb.textContent = P.sim ? 'Stop simulation' : over() ? 'Game is over here' : 'Simulate from here'; sb.disabled = !P.sim && !!over();
+      if (M.renderGame) M.renderGame(api);
+    }
+
+    function render(light) {
+      if (opts.mode !== k || !P.nodes) return;
+      M.renderBoard(api, $k('Board'), light);
+      renderRibbon(); renderTree(); renderPanels(); renderCoach(); renderStory();
+      if (typeof netRender === 'function') netRender();
+    }
+    api.render = render;
+
+    function ensure() { if (!P.booted) { P.booted = true; load(); } }
+    function onKey(e) {
+      if (opts.mode !== k || !P.nodes) return;
+      const tag = (e.target && e.target.tagName) || ''; if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault(); if (P.sim) return; if (P.navTimer) stopNav();
+        const n = node(P.cur);
+        if (e.shiftKey) { if (n.children.length) goTo(n.children[Math.min(n.pref, n.children.length - 1)]); } else if (P.cur) goTo(n.parent);
+        save(); render(); return;
+      }
+      if (M.onKey) M.onKey(api, e);
+    }
+    document.addEventListener('keydown', onKey);
+    const mode = { key: k, build, ensure, render, api };
+    puzzleModes[k] = mode;
+    return mode;
+  }
+
+  // ================= SOLITAIRE (Klondike) =================
+  const SUITS = ['♠', '♥', '♦', '♣'], SUIT_NAMES = ['spades', 'hearts', 'diamonds', 'clubs'];
+  const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  const cSuit = c => Math.floor(c / 13), cRank = c => c % 13, cRed = c => { const s = cSuit(c); return s === 1 || s === 2; };
+  const cName = c => RANKS[cRank(c)] + SUITS[cSuit(c)];
+  function solRng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function solDeal(root) {
+    const rnd = solRng(root.seed), deck = Array.from({ length: 52 }, (_, i) => i);
+    for (let i = 51; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    const tab = [];
+    for (let i = 0; i < 7; i++) { const p = []; for (let j = 0; j <= i; j++) p.push({ c: deck.pop(), up: j === i }); tab.push(p); }
+    return { stock: deck, waste: [], found: [[], [], [], []], tab, draw: root.draw || 1, passes: 0 };
+  }
+  const solClone = s => ({ stock: s.stock.slice(), waste: s.waste.slice(), found: s.found.map(f => f.slice()), tab: s.tab.map(p => p.map(x => ({ c: x.c, up: x.up }))), draw: s.draw, passes: s.passes });
+  const solCh = c => String.fromCharCode(65 + c), solUn = ch => ch.charCodeAt(0) - 65;
+  function solEnc(s) {
+    const cs = a => a.map(solCh).join('');
+    return s.draw + '|' + cs(s.stock) + '|' + cs(s.waste) + '|' + s.found.map(cs).join(',') + '|' + s.tab.map(p => p.filter(x => !x.up).length + ':' + p.map(x => solCh(x.c)).join('')).join(',') + '|' + s.passes;
+  }
+  function solDec(e) {
+    const [d, st, wa, fo, ta, pa] = e.split('|'), cs = str => str ? str.split('').map(solUn) : [];
+    return { draw: +d, stock: cs(st), waste: cs(wa), found: fo.split(',').map(cs), tab: ta.split(',').map(p => { const [down, cards] = p.split(':'); return cs(cards).map((c, i) => ({ c, up: i >= +down })); }), passes: +pa };
+  }
+  const solFitsF = (s, c) => s.found[cSuit(c)].length === cRank(c);
+  const solFitsT = (pile, c) => { const top = pile[pile.length - 1]; return !top ? cRank(c) === 12 : top.up && cRed(top.c) !== cRed(c) && cRank(top.c) === cRank(c) + 1; };
+  function solApply(s0, mv) {
+    const s = solClone(s0), info = {};
+    if (mv === 'D') {
+      if (s.stock.length) { const n = Math.min(s.draw, s.stock.length); for (let i = 0; i < n; i++) s.waste.push(s.stock.pop()); info.draw = n; }
+      else if (s.waste.length) { s.stock = s.waste.reverse(); s.waste = []; s.passes++; info.recycle = true; }
+      else return null;
+      return { state: s, info };
+    }
+    const m = mv.match(/^(W|F(\d)|T(\d)(?:\.(\d+))?)>(F|T(\d))$/); if (!m) return null;
+    let cards;
+    if (m[1] === 'W') { if (!s.waste.length) return null; cards = [s.waste[s.waste.length - 1]]; }
+    else if (m[2] != null) { const f = s.found[+m[2]]; if (!f.length) return null; cards = [f[f.length - 1]]; }
+    else { const t = s.tab[+m[3]], j = m[4] != null ? +m[4] : t.length - 1; if (j < 0 || j >= t.length || !t[j].up) return null; cards = t.slice(j).map(x => x.c); }
+    if (m[5] === 'F') { if (cards.length !== 1 || !solFitsF(s, cards[0])) return null; }
+    else { if (m[3] != null && m[3] === m[6]) return null; if (!solFitsT(s.tab[+m[6]], cards[0])) return null; }
+    if (m[1] === 'W') s.waste.pop();
+    else if (m[2] != null) s.found[+m[2]].pop();
+    else { const t = s.tab[+m[3]]; t.length -= cards.length; if (t.length && !t[t.length - 1].up) { t[t.length - 1].up = true; info.flip = t[t.length - 1].c; } if (!t.length) info.emptied = +m[3]; }
+    if (m[5] === 'F') { s.found[cSuit(cards[0])].push(cards[0]); info.toF = cards[0]; }
+    else { const t = s.tab[+m[6]]; info.onto = t.length ? t[t.length - 1].c : null; t.push(...cards.map(c => ({ c, up: true }))); }
+    info.cards = cards; info.to = m[5] === 'F' ? 'F' : 'T' + m[6];
+    return { state: s, info };
+  }
+  function solMoves(s, all) {
+    const out = [], tryAdd = mv => { const r = solApply(s, mv); if (r) out.push({ mv, r }); };
+    if (s.stock.length || s.waste.length) tryAdd('D');
+    if (s.waste.length) { tryAdd('W>F'); for (let t = 0; t < 7; t++) tryAdd('W>T' + t); }
+    for (let i = 0; i < 7; i++) {
+      const t = s.tab[i]; if (!t.length) continue;
+      tryAdd('T' + i + '>F');
+      for (let j = 0; j < t.length; j++) if (t[j].up) for (let q = 0; q < 7; q++) if (q !== i) { if (!all && j === 0 && !s.tab[q].length) continue; tryAdd('T' + i + '.' + j + '>T' + q); }
+    }
+    if (all) for (let f = 0; f < 4; f++) for (let q = 0; q < 7; q++) tryAdd('F' + f + '>T' + q);
+    return out;
+  }
+  const solHidden = s => s.tab.reduce((a, p) => a + p.filter(x => !x.up).length, 0);
+  const solHome = s => s.found.reduce((a, f) => a + f.length, 0);
+  // heuristic value of a move (higher is better), following common Klondike priorities
+  function solScore(s, mv, r) {
+    if (mv === 'D') return 20;
+    const info = r.info, c = info.cards[0];
+    if (info.toF != null) {
+      const opp = cRed(c) ? [0, 3] : [1, 2];
+      let sc = cRank(c) <= 1 ? 100 : (s.found[opp[0]].length >= cRank(c) && s.found[opp[1]].length >= cRank(c)) ? 90 : 62;
+      if (info.flip != null) sc += 15;
+      return sc;
+    }
+    if (mv[0] === 'F') return 3;
+    if (mv[0] === 'W') return cRank(c) === 12 ? 45 : 50;
+    const i = +mv[1], t = s.tab[i], j = t.length - info.cards.length;
+    if (info.flip != null) return 80 + t.filter(x => !x.up).length * 2;
+    if (j === 0) {
+      const kingWaiting = (s.waste.length && cRank(s.waste[s.waste.length - 1]) === 12) || s.tab.some((p, pi) => { const u = p.findIndex(x => x.up); return pi !== i && u > 0 && cRank(p[u].c) === 12; });
+      return kingWaiting ? 55 : 8;
+    }
+    const below = t[j - 1]; if (below && below.up && solFitsF(s, below.c)) return 70;
+    return 5;
+  }
+  function solLabelFor(info, mv) {
+    if (mv === 'D') return info.recycle ? 'Recycle stock' : 'Draw ' + info.draw;
+    const c = info.cards[0], extra = info.cards.length > 1 ? ' +' + (info.cards.length - 1) : '';
+    return cName(c) + extra + ' → ' + (info.to === 'F' ? 'home' : info.onto != null ? cName(info.onto) : 'col ' + (+info.to.slice(1) + 1));
+  }
+  function solExplain(s, mv, r) {
+    const info = r.info;
+    if (mv === 'D') return info.recycle ? 'there’s nothing better on the table, so turn the waste back over and go through the stock again' : 'there’s nothing better on the table, so turn over ' + (info.draw === 1 ? 'a card' : info.draw + ' cards') + ' from the stock';
+    const c = info.cards[0];
+    if (info.toF != null) return 'it sends the ' + cName(c) + ' home to its foundation' + (info.flip != null ? ' and uncovers a hidden card' : '') + (cRank(c) <= 1 ? '. Aces and twos are always safe to send home' : '');
+    if (mv[0] === 'F') return 'it brings the ' + cName(c) + ' back down to help build a column';
+    if (mv[0] === 'W') return 'it plays the ' + cName(c) + ' from the waste onto ' + (info.onto != null ? 'the ' + cName(info.onto) : 'the empty column');
+    const i = +mv[1], t = s.tab[i], j = t.length - info.cards.length, many = info.cards.length > 1 ? ' (and the ' + (info.cards.length - 1) + ' card' + (info.cards.length > 2 ? 's' : '') + ' on it)' : '';
+    if (info.flip != null) return 'moving the ' + cName(c) + many + ' uncovers a hidden card in column ' + (i + 1) + (t.filter(x => !x.up).length > 1 ? ', where ' + (t.filter(x => !x.up).length - 1) + ' more are still hidden' : '');
+    if (j === 0) return 'it empties column ' + (i + 1) + ' so a King can move in';
+    const below = t[j - 1]; if (below && solFitsF(s, below.c)) return 'it frees the ' + cName(below.c) + ' so it can go home';
+    return 'it moves the ' + cName(c) + many + ' onto ' + (info.onto != null ? 'the ' + cName(info.onto) : 'the empty column');
+  }
+  function solRanked(s) { return solMoves(s, false).map(x => ({ mv: x.mv, r: x.r, score: solScore(s, x.mv, x.r) })).sort((a, b) => b.score - a.score); }
+  // can any card in the stock/waste cycle ever be played as things stand?
+  function solStockUseful(s) {
+    let t = solClone(s); const total = t.stock.length + t.waste.length;
+    for (let i = 0; i <= total * 2 + 2; i++) {
+      if (t.waste.length) { const c = t.waste[t.waste.length - 1]; if (solFitsF(t, c) || t.tab.some(p => solFitsT(p, c))) return true; }
+      const r = solApply(t, 'D'); if (!r) return false; t = r.state;
+    }
+    return false;
+  }
+  function solStuck(s) {
+    if (solHome(s) === 52) return false;
+    if (solRanked(s).some(x => x.mv !== 'D' && x.score > 5)) return false;
+    return !solStockUseful(s);
+  }
+  function solSafeFinish(s) { return !s.stock.length && !s.waste.length && solHidden(s) === 0; }
+
+  const SOL = {
+    key: 'sol', store: 'timechess-sol-v1', graphTop: 'Solved',
+    emptyText: 'No moves yet. Tap a card to move it, drag it, or tap the deck to draw.',
+    simNote: 'The simulator plays by the same rules of thumb as the coach. It can’t see face-down cards.',
+    defaultView: { playable: true, hidden: true }, defaultCfg: { draw: 1 },
+    settings: [['playable', 'Highlight playable cards', 'Glow on every card that has a legal move right now.'], ['hidden', 'Hidden card counts', 'A badge on each column showing how many cards are still face down.']],
+    gameHtml: '<div class="seg" data-solseg="draw"><span class="label">Draw</span><button type="button" data-soldraw="1">1 card</button><button type="button" data-soldraw="3">3 cards</button></div><p class="note" id="solDrawNote" hidden>The draw setting applies when you start a new game.</p>',
+    gameButtons: '<button class="btn" id="solFinish" type="button" hidden>Finish</button>',
+    newRoot: api => ({ seed: (Math.random() * 2 ** 31) >>> 0, draw: api.P.cfg.draw }),
+    initial: root => solDeal(root),
+    enc: solEnc, dec: e => solDec(e),
+    apply: (s, mv) => solApply(s, mv),
+    progress: s => (solHome(s) * 2 + (21 - solHidden(s))) / (104 + 21),
+    over: s => solHome(s) === 52 ? 'Solved! Every card is home.' : solStuck(s) ? 'No moves left that can help. Rewind on the timeline or branches and try another line.' : null,
+    label: (api, n) => solLabelFor(n.info, n.move),
+    shortLabel: (api, n) => n.move === 'D' ? (n.info.recycle ? 'Recycle' : 'Draw') : cName(n.info.cards[0]),
+    dotClass: (api, n) => n.move === 'D' ? 'pzd-draw' : n.info.toF != null ? 'pzd-home' : n.info.flip != null ? 'pzd-flip' : '',
+    startCard: api => '<span class="mc-n">Start</span><span class="mc-g">♠</span><span class="mc-san">Deal ' + (api.P.root.seed % 10000) + '</span>',
+    cardInner: (api, n) => {
+      if (n.move === 'D') return '<span class="mc-g">' + (n.info.recycle ? '↻' : '▤') + '</span><span class="mc-san">' + (n.info.recycle ? 'Recycle' : 'Draw') + '</span>';
+      const c = n.info.cards[0];
+      return '<span class="mc-cardg' + (cRed(c) ? ' red' : '') + '">' + cName(c) + '</span><span class="mc-san">' + (n.info.to === 'F' ? 'home' : n.info.onto != null ? '→' + cName(n.info.onto) : '→col ' + (+n.info.to.slice(1) + 1)) + '</span>';
+    },
+    quality(api, n) {
+      if (n._q !== undefined) return n._q;
+      const ps = api.stateOf(api.node(n.parent)), ranked = solRanked(ps), best = ranked[0];
+      const me = solApply(ps, n.move), my = me ? solScore(ps, n.move, me) : 0;
+      n._q = best && best.score - my >= 55 ? ['mistake', '?'] : null;
+      return n._q;
+    },
+    verdict(api, n) {
+      const q = SOL.quality(api, n);
+      if (q) { const ps = api.stateOf(api.node(n.parent)), b = solRanked(ps)[0]; return { label: 'Missed chance', cls: 'meh', text: 'Better was <b>' + esc(solLabelFor(b.r.info, b.mv)) + '</b>: ' + esc(solExplain(ps, b.mv, b.r)) + '.' }; }
+      if (n.info.flip != null) return { label: 'Nice', cls: 'great', text: 'You uncovered the ' + cName(n.info.flip) + '.' };
+      if (n.info.toF != null) return { label: 'Home', cls: 'good', text: 'The ' + cName(n.info.toF) + ' is on its foundation.' };
+      return null;
+    },
+    hint(api, s) {
+      const ranked = solRanked(s), b = ranked[0];
+      if (!b) return { html: 'No moves at all from here. Rewind and try another line.' };
+      if (solSafeFinish(s)) return { move: b.mv, src: solSrcOf(s, b.mv), dst: b.r.info.to, html: 'Every card is face up, so this deal is won. Tap <b>Finish</b> in the Game tab to send everything home, or try <b>' + esc(solLabelFor(b.r.info, b.mv)) + '</b>.' };
+      if (b.mv === 'D' && !solStockUseful(s) && !ranked.some(x => x.mv !== 'D' && x.score > 5)) return { html: 'Nothing on the table or in the stock can be played. This line is stuck: rewind on the timeline and branch off somewhere earlier.' };
+      return { move: b.mv, src: solSrcOf(s, b.mv), dst: b.mv === 'D' ? null : b.r.info.to, html: 'Try <b>' + esc(solLabelFor(b.r.info, b.mv)) + '</b>: ' + esc(solExplain(s, b.mv, b.r)) + '.' };
+    },
+    tips(api) {
+      const s = api.P.st, t = [];
+      const kingless = s.tab.findIndex(p => !p.length);
+      if (kingless >= 0) t.push('Column ' + (kingless + 1) + ' is empty. Only a King can go there, so save it for one that frees hidden cards.');
+      if (s.draw === 3 && s.passes >= 3) t.push('You’ve been through the stock ' + s.passes + ' times. If nothing is changing, rewind to an earlier choice.');
+      return t;
+    },
+    simMove(api, s, ctx) {
+      const total = s.stock.length + s.waste.length;
+      for (const x of solRanked(s)) {
+        if (x.mv !== 'D' && x.score <= 5) continue;
+        if (x.mv === 'D') { if (ctx.draws > total + 2) return null; ctx.draws++; return 'D'; }
+        if (ctx.visited.has(solEnc(x.r.state))) continue;
+        ctx.draws = 0; return x.mv;
+      }
+      return null;
+    },
+    simStuck: 'The simulator ran out of useful moves.',
+    status(api) {
+      const P = api.P, s = P.st;
+      return '<b>' + solHome(s) + '</b>/52 home · <b>' + solHidden(s) + '</b> hidden · ' + api.node(P.cur).ply + ' moves · draw ' + s.draw + ' · deal ' + (P.root.seed % 10000);
+    },
+    renderGame(api) {
+      const P = api.P;
+      for (const b of document.querySelectorAll('[data-soldraw]')) b.setAttribute('aria-pressed', String(+b.dataset.soldraw === P.cfg.draw));
+      $('solDrawNote').hidden = P.cfg.draw === P.root.draw;
+      $('solFinish').hidden = !(solSafeFinish(P.st) && solHome(P.st) < 52);
+    },
+    onClick(api, e) {
+      const d = e.target.closest('[data-soldraw]');
+      if (d) { const P = api.P; P.cfg.draw = +d.dataset.soldraw; if (!api.node(0).children.length) { P.root.draw = P.cfg.draw; P.st = solDeal(P.root); api.node(0).enc = solEnc(P.st); } api.save(); api.render(); return; }
+      if (e.target.closest('#solFinish')) solFinish(api);
+    },
+    storySummary(api, ln) {
+      const P = api.P, end = api.stateOf(ln[ln.length - 1]), flips = ln.filter(n => n.info.flip != null).length;
+      const draws = ln.filter(n => n.move === 'D').length, lead = end.found.map((f, i) => [f.length, i]).sort((a, b) => b[0] - a[0])[0];
+      if (ln.length <= 1) return 'A fresh deal: 28 cards in seven columns, 21 of them face down, and 24 in the stock.';
+      let txt = 'Deal ' + (P.root.seed % 10000) + ', draw ' + end.draw + '. This line runs ' + (ln.length - 1) + ' moves, ' + draws + ' of them draws from the stock. ';
+      txt += solHome(end) + ' of 52 cards are home and ' + flips + ' of 21 hidden cards have been uncovered. ';
+      if (lead[0]) txt += 'The ' + SUIT_NAMES[lead[1]] + ' lead with ' + lead[0] + ' on their foundation. ';
+      if (solHome(end) === 52) txt += 'The deal is solved.';
+      else if (solStuck(end)) txt += 'The line ends stuck, with nothing left that helps.';
+      return esc(txt);
+    },
+    storySections(api, ln) {
+      const flips = ln.filter(n => n.info.flip != null);
+      const items = flips.slice(0, 8).map(n => '<div class="turn"><span class="mv">' + n.ply + '. ' + cName(n.info.cards[0]) + '</span><span class="kind good">Uncovered ' + cName(n.info.flip) + '</span><div class="acts"><button type="button" data-pzview="' + n.id + '">View move</button></div></div>').join('');
+      return '<p class="label">Hidden cards uncovered</p><div class="turns">' + (items || '<span class="empty">None yet.</span>') + '</div>';
+    },
+    mistakeText(api, n) { const ps = api.stateOf(api.node(n.parent)), b = solRanked(ps)[0]; return b ? 'Better was ' + esc(solLabelFor(b.r.info, b.mv)) + '.' : ''; },
+    storyPrompt(api, ln) {
+      const end = api.stateOf(ln[ln.length - 1]);
+      const moves = ln.slice(1).map(n => n.ply + '. ' + solLabelFor(n.info, n.move) + (n.info.flip != null ? ' (uncovers ' + cName(n.info.flip) + ')' : '') + (n.sim ? ' [simulated]' : '')).join('; ');
+      return 'Write a short, lively chronicle (90 to 130 words, past tense, no lists) of this game of Klondike solitaire, like a sports commentator. Use ONLY the moves given; do not invent events. Mention key uncoverings and how it stands now.\n\nDraw ' + end.draw + '. Moves: ' + moves + '\nNow: ' + solHome(end) + '/52 cards home, ' + solHidden(end) + ' still face down' + (solHome(end) === 52 ? ', solved.' : '.');
+    },
+
+    // ---- board ----
+    buildBoard(api, box) {
+      box.innerHTML = '<div class="solwrap"><div class="solboard" id="solBoardEl"></div></div>';
+      const el = $('solBoardEl');
+      new ResizeObserver(() => { if (opts.mode === 'sol') SOL.renderBoard(api, box, true); }).observe(box);
+      solWire(api, el);
+    },
+    renderBoard(api, box) { solDraw(api, $('solBoardEl')); }
+  };
+
+  function solSrcOf(s, mv) {
+    if (mv === 'D') return 'S';
+    const m = mv.match(/^(W|F(\d)|T(\d)(?:\.(\d+))?)>/); if (!m) return null;
+    if (m[1] === 'W') return 'W'; if (m[2] != null) return 'F' + m[2];
+    return 'T' + m[3] + '.' + (m[4] != null ? m[4] : s.tab[+m[3]].length - 1);
+  }
+  async function solFinish(api) {
+    const P = api.P; let guard = 0;
+    while (solHome(P.st) < 52 && guard++ < 60) {
+      const b = solRanked(P.st).find(x => x.r.info.toF != null); if (!b) break;
+      api.add(b.mv, false); api.save(); api.render();
+      await new Promise(r => setTimeout(r, 60));
+    }
+  }
+
+  // card geometry in container units (percent of board width)
+  const SOLG = { cw: 12.6, ch: 17.6, top: 2, gapDown: 2.5, gapUp: 5.4 };
+  SOLG.gap = (100 - 7 * SOLG.cw) / 8; SOLG.x = i => SOLG.gap + i * (SOLG.cw + SOLG.gap); SOLG.tabY = SOLG.top + SOLG.ch + 4;
+  function solCardHtml(c, up, pile, idx, x, y, z, cls) {
+    if (!up) return '<div class="scard down' + (cls || '') + '" data-pile="' + pile + '" data-idx="' + idx + '" data-cid="' + c + '" style="left:' + x + 'cqi;top:' + y + 'cqi;z-index:' + z + '"></div>';
+    return '<div class="scard up' + (cRed(c) ? ' red' : '') + (cls || '') + '" data-pile="' + pile + '" data-idx="' + idx + '" data-cid="' + c + '" style="left:' + x + 'cqi;top:' + y + 'cqi;z-index:' + z + '"><span class="cr">' + RANKS[cRank(c)] + '<i>' + SUITS[cSuit(c)] + '</i></span><span class="cc">' + SUITS[cSuit(c)] + '</span></div>';
+  }
+  function solDraw(api, el) {
+    if (!el) return;
+    const P = api.P, s = P.st, G = SOLG;
+    // which cards can move right now, and the coach's hint
+    const can = new Set();
+    if (P.view.playable && !P.sim) for (const x of solMoves(s, false)) if (x.mv !== 'D') { const src = solSrcOf(s, x.mv); can.add(src); }
+    const hint = api.hintMark(), hsrc = hint && hint.src, hdst = hint && hint.dst;
+    const old = {}; for (const c of el.querySelectorAll('.scard')) { const r = c.getBoundingClientRect(); old[c.dataset.cid] = { x: r.left, y: r.top, up: c.classList.contains('up') }; }
+    let h = '', maxY = G.tabY + G.ch;
+    // stock
+    h += '<div class="sslot stock' + (hsrc === 'S' ? ' hintdst' : '') + '" data-pile="S" style="left:' + G.x(0) + 'cqi;top:' + G.top + 'cqi">' + (s.stock.length ? '' : s.waste.length ? '↻' : '') + '</div>';
+    s.stock.forEach((c, i) => { if (i >= s.stock.length - 3) h += solCardHtml(c, false, 'S', i, G.x(0) + (i - Math.max(0, s.stock.length - 3)) * .25, G.top - (i - Math.max(0, s.stock.length - 3)) * .25, 2 + i, hsrc === 'S' && i === s.stock.length - 1 ? ' hintsrc' : ''); });
+    if (s.stock.length) h += '<span class="scount" style="left:' + (G.x(0) + G.cw - 3.6) + 'cqi;top:' + (G.top + G.ch - 4) + 'cqi">' + s.stock.length + '</span>';
+    // waste (fanned for draw 3)
+    const wShow = s.draw === 3 ? 3 : 2, wFrom = Math.max(0, s.waste.length - wShow);
+    for (let i = wFrom; i < s.waste.length; i++) {
+      const top = i === s.waste.length - 1, off = s.draw === 3 ? (i - wFrom) * 3.2 : 0, c = s.waste[i];
+      h += solCardHtml(c, true, top ? 'W' : 'Wx', i, G.x(1) + off, G.top, 10 + i, (top && can.has('W') ? ' can' : '') + (top && hsrc === 'W' ? ' hintsrc' : ''));
+    }
+    // foundations
+    for (let f = 0; f < 4; f++) {
+      const x = G.x(3 + f), fd = s.found[f];
+      h += '<div class="sslot found' + (hdst === 'F' && hint.move && solApply(s, hint.move) && cSuit(solApply(s, hint.move).info.cards[0]) === f ? ' hintdst' : '') + '" data-pile="F' + f + '" style="left:' + x + 'cqi;top:' + G.top + 'cqi">' + SUITS[f] + '</div>';
+      for (let i = Math.max(0, fd.length - 2); i < fd.length; i++) h += solCardHtml(fd[i], true, 'F' + f, i, x, G.top, 10 + i, (i === fd.length - 1 && can.has('F' + f) ? ' can' : ''));
+    }
+    // tableau
+    for (let t = 0; t < 7; t++) {
+      const x = G.x(t), p = s.tab[t]; let y = G.tabY;
+      h += '<div class="sslot' + (hdst === 'T' + t && !p.length ? ' hintdst' : '') + '" data-pile="T' + t + '" style="left:' + x + 'cqi;top:' + y + 'cqi"></div>';
+      const firstUp = p.findIndex(q => q.up);
+      p.forEach((q, i) => {
+        let cls = '';
+        if (q.up && can.has('T' + t + '.' + i)) cls += ' can';
+        if (hsrc && hsrc[0] === 'T' && hsrc.split('.')[0] === 'T' + t && i >= +hsrc.split('.')[1]) cls += ' hintsrc';
+        if (hdst === 'T' + t && i === p.length - 1) cls += ' hintdst';
+        h += solCardHtml(q.c, q.up, 'T' + t, i, x, y, 10 + i, cls);
+        if (i < p.length - 1) y += q.up ? G.gapUp : G.gapDown;
+      });
+      maxY = Math.max(maxY, y + G.ch);
+      const down = firstUp < 0 ? p.length : firstUp;
+      if (P.view.hidden && down > 0) h += '<span class="scount hid" style="left:' + (x + G.cw - 3.6) + 'cqi;top:' + (G.tabY - 3.2) + 'cqi">' + down + '</span>';
+    }
+    if (solHome(s) === 52) h += '<div class="solwin"><b>Solved!</b><span>' + api.node(P.cur).ply + ' moves</span></div>';
+    el.style.height = 'calc(' + (maxY + 3) + ' * 1cqi)';
+    el.innerHTML = h;
+    // slide cards from where they were (and flip ones that turned face up)
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) for (const c of el.querySelectorAll('.scard')) {
+      const o = old[c.dataset.cid]; if (!o) continue;
+      const r = c.getBoundingClientRect(), dx = o.x - r.left, dy = o.y - r.top, flip = !o.up && c.classList.contains('up');
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && !flip) continue;
+      c.classList.add('anim');
+      const a = c.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' + (flip ? ' scaleX(.05)' : '') }, { transform: 'none' }], { duration: P.navTimer ? 90 : opts.dev.animMs + 40, easing: 'cubic-bezier(.3,.7,.2,1)' });
+      a.onfinish = a.oncancel = () => c.classList.remove('anim');
+    }
+  }
+  function solWire(api, el) {
+    const P = api.P; let press = null, ghost = null;
+    const srcFrom = card => {
+      const pile = card.dataset.pile, idx = +card.dataset.idx;
+      if (!card.classList.contains('up')) return null;
+      if (pile === 'W') return { pile: 'W', idx };
+      if (pile[0] === 'F' && idx === P.st.found[+pile[1]].length - 1) return { pile, idx };
+      if (pile[0] === 'T') return { pile, idx };
+      return null;
+    };
+    const build = (src, dst) => {
+      const tgt = dst[0] === 'F' ? 'F' : dst;
+      if (src.pile === 'W') return 'W>' + tgt;
+      if (src.pile[0] === 'F') return tgt === 'F' ? null : src.pile + '>' + tgt;
+      const i = src.pile.slice(1), t = P.st.tab[+i];
+      if (tgt === 'F') return src.idx === t.length - 1 ? 'T' + i + '>F' : null;
+      return 'T' + i + '.' + src.idx + '>' + tgt;
+    };
+    // tap: send the card to its best spot (home first, then the best column)
+    const autoMove = src => {
+      const s = P.st, cands = [];
+      for (const dst of ['F', 'T0', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6']) { const mv = build(src, dst); if (!mv) continue; const r = solApply(s, mv); if (r) cands.push({ mv, sc: solScore(s, mv, r) + (dst === 'F' && src.pile !== 'F' ? 30 : 0) }); }
+      if (!cands.length) return false;
+      cands.sort((a, b) => b.sc - a.sc); api.play(cands[0].mv); return true;
+    };
+    const wiggle = card => { card.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-1.2cqi)' }, { transform: 'translateX(1.2cqi)' }, { transform: 'translateX(0)' }], { duration: 220 }); };
+    el.addEventListener('pointerdown', e => {
+      if (e.button > 0 || P.sim) return;
+      const card = e.target.closest('.scard'), slot = e.target.closest('.sslot');
+      if ((card && card.dataset.pile === 'S') || (slot && slot.dataset.pile === 'S')) { press = { stock: true, id: e.pointerId }; return; }
+      if (!card) return;
+      const src = srcFrom(card); if (!src) return;
+      press = { src, card, x: e.clientX, y: e.clientY, id: e.pointerId, drag: false };
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    el.addEventListener('pointermove', e => {
+      if (!press || press.stock || e.pointerId !== press.id) return;
+      if (!press.drag) {
+        if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < 7) return;
+        press.drag = true;
+        const br = el.getBoundingClientRect();
+        ghost = document.createElement('div'); ghost.className = 'sghost';
+        ghost.style.cssText = 'left:' + br.left + 'px;top:' + br.top + 'px;width:' + br.width + 'px';
+        const stack = [...el.querySelectorAll('.scard')].filter(c => c.dataset.pile === press.src.pile && +c.dataset.idx >= press.src.idx);
+        for (const c of stack) { const cl = c.cloneNode(true); cl.classList.remove('can', 'hintsrc', 'hintdst'); cl.classList.add('lifted'); ghost.appendChild(cl); c.style.visibility = 'hidden'; }
+        press.stack = stack; press.br = br; document.body.appendChild(ghost);
+      }
+      ghost.style.transform = 'translate(' + (e.clientX - press.x) + 'px,' + (e.clientY - press.y) + 'px)';
+    });
+    const end = e => {
+      if (!press || e.pointerId !== press.id) return;
+      const p = press; press = null;
+      if (p.stock) { if (e.type === 'pointerup') api.play('D'); return; }
+      if (p.drag) {
+        ghost.remove(); ghost = null; for (const c of p.stack) c.style.visibility = '';
+        if (e.type !== 'pointerup') return;
+        const under = document.elementFromPoint(e.clientX, e.clientY), t = under && under.closest('[data-pile]');
+        const dst = t && el.contains(t) ? t.dataset.pile : null;
+        const mv = dst && /^(T\d|F\d)$/.test(dst) ? build(p.src, dst) : null;
+        if (!(mv && api.play(mv))) api.render(true);
+        return;
+      }
+      if (e.type === 'pointerup' && !autoMove(p.src)) wiggle(p.card);
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  }
+
+  // ================= SUDOKU =================
+  const SR = i => Math.floor(i / 9), SC = i => i % 9, SB = i => Math.floor(SR(i) / 3) * 3 + Math.floor(SC(i) / 3);
+  const SUD_UNITS = (() => { const u = []; for (let r = 0; r < 9; r++) u.push({ name: 'row ' + (r + 1), cells: Array.from({ length: 9 }, (_, c) => r * 9 + c) }); for (let c = 0; c < 9; c++) u.push({ name: 'column ' + (c + 1), cells: Array.from({ length: 9 }, (_, r) => r * 9 + c) }); for (let b = 0; b < 9; b++) { const cells = []; for (let i = 0; i < 81; i++) if (SB(i) === b) cells.push(i); u.push({ name: 'box ' + (b + 1), cells }); } return u; })();
+  const SUD_PEERS = Array.from({ length: 81 }, (_, i) => { const s = new Set(); for (let j = 0; j < 81; j++) if (j !== i && (SR(j) === SR(i) || SC(j) === SC(i) || SB(j) === SB(i))) s.add(j); return [...s]; });
+  const sudCellName = i => 'r' + (SR(i) + 1) + 'c' + (SC(i) + 1);
+  const pop9 = m => { let c = 0; for (let d = 1; d <= 9; d++) if (m & (1 << d)) c++; return c; };
+  const bits9 = m => { const out = []; for (let d = 1; d <= 9; d++) if (m & (1 << d)) out.push(d); return out; };
+  function sudSolve(g0, limit, rnd) {
+    const g = g0.slice(), rows = new Uint16Array(9), cols = new Uint16Array(9), boxes = new Uint16Array(9);
+    for (let i = 0; i < 81; i++) { const v = g[i]; if (!v) continue; const b = 1 << v; if ((rows[SR(i)] | cols[SC(i)] | boxes[SB(i)]) & b) return { count: 0 }; rows[SR(i)] |= b; cols[SC(i)] |= b; boxes[SB(i)] |= b; }
+    let count = 0, sol = null, steps = 0;
+    const rec = () => {
+      if (++steps > 200000) return true;
+      let best = -1, bm = 0, bc = 10;
+      for (let i = 0; i < 81; i++) if (!g[i]) { const m = ~(rows[SR(i)] | cols[SC(i)] | boxes[SB(i)]) & 0x3FE, c = pop9(m); if (c < bc) { bc = c; best = i; bm = m; if (c <= 1) break; } }
+      if (best < 0) { count++; if (!sol) sol = g.slice(); return count >= limit; }
+      if (!bc) return false;
+      const ds = bits9(bm); if (rnd) for (let i = ds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ds[i], ds[j]] = [ds[j], ds[i]]; }
+      const r = SR(best), c = SC(best), x = SB(best);
+      for (const d of ds) { const b = 1 << d; g[best] = d; rows[r] |= b; cols[c] |= b; boxes[x] |= b; if (rec()) return true; g[best] = 0; rows[r] &= ~b; cols[c] &= ~b; boxes[x] &= ~b; }
+      return false;
+    };
+    rec(); return { count, sol };
+  }
+  const SUD_LEVELS = { easy: 38, medium: 30, hard: 25 };
+  function sudGenerate(level) {
+    const seed = (Math.random() * 2 ** 31) >>> 0, rnd = solRng(seed);
+    const full = sudSolve(new Array(81).fill(0), 1, rnd).sol, puz = full.slice();
+    const order = Array.from({ length: 41 }, (_, i) => i); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    let clues = 81; const target = SUD_LEVELS[level] || 30;
+    for (const i of order) {
+      if (clues <= target) break;
+      const j = 80 - i, a = puz[i], b = puz[j];
+      puz[i] = 0; puz[j] = 0;
+      if (sudSolve(puz, 2).count !== 1) { puz[i] = a; puz[j] = b; } else clues -= i === j ? 1 : 2;
+    }
+    if (clues > target) {
+      const singles = Array.from({ length: 81 }, (_, i) => i); for (let i = 80; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [singles[i], singles[j]] = [singles[j], singles[i]]; }
+      for (const i of singles) { if (clues <= target) break; if (!puz[i]) continue; const a = puz[i]; puz[i] = 0; if (sudSolve(puz, 2).count !== 1) puz[i] = a; else clues--; }
+    }
+    return { puz: puz.join(''), sol: full.join(''), level, seed };
+  }
+  function sudCands(g) {
+    const rows = new Uint16Array(9), cols = new Uint16Array(9), boxes = new Uint16Array(9), out = new Uint16Array(81);
+    for (let i = 0; i < 81; i++) if (g[i]) { const b = 1 << g[i]; rows[SR(i)] |= b; cols[SC(i)] |= b; boxes[SB(i)] |= b; }
+    for (let i = 0; i < 81; i++) if (!g[i]) out[i] = ~(rows[SR(i)] | cols[SC(i)] | boxes[SB(i)]) & 0x3FE;
+    return out;
+  }
+  const sudConflict = (g, i) => g[i] && SUD_PEERS[i].some(j => g[j] === g[i]);
+  function sudSingles(g) {
+    const cand = sudCands(g), out = [];
+    for (let i = 0; i < 81; i++) if (!g[i] && pop9(cand[i]) === 1) out.push({ kind: 'naked', cell: i, v: bits9(cand[i])[0] });
+    for (const u of SUD_UNITS) for (let d = 1; d <= 9; d++) {
+      if (u.cells.some(i => g[i] === d)) continue;
+      const spots = u.cells.filter(i => !g[i] && (cand[i] & (1 << d)));
+      if (spots.length === 1 && !out.some(o => o.cell === spots[0])) out.push({ kind: 'hidden', cell: spots[0], v: d, unit: u });
+    }
+    return out;
+  }
+  function sudEnc(s) { return s.g.join('') + '|' + Array.from(s.n, x => x.toString(36).padStart(2, '0')).join(''); }
+  function sudDec(e) { const [g, n] = e.split('|'); return { g: g.split('').map(Number), n: Array.from({ length: 81 }, (_, i) => parseInt(n.substr(i * 2, 2), 36)) }; }
+
+  const SUD = {
+    key: 'sud', store: 'timechess-sud-v1', graphTop: 'Solved',
+    emptyText: 'No moves yet. Pick a square, then a number.',
+    simNote: 'The simulator fills in cells using the same logic as the coach, and takes an answer from the solution only when logic runs out.',
+    defaultView: { peers: true, same: true, mistakes: true, conflicts: true, cands: false }, defaultCfg: { level: 'medium' },
+    settings: [['peers', 'Highlight row, column and box', 'Shade the lines and box of the selected square.'], ['same', 'Highlight same number', 'Shade every square holding the selected number.'], ['mistakes', 'Show mistakes', 'Color numbers that don’t match the solution, and mark them on the timeline.'], ['conflicts', 'Show conflicts', 'Underline numbers that repeat in a row, column or box.'], ['cands', 'Candidate map', 'Show every number that could still go in each empty square. This is Sudoku’s version of the control map.']],
+    gameHtml: '<div class="seg"><span class="label">Level</span><button type="button" data-sudlevel="easy">Easy</button><button type="button" data-sudlevel="medium">Medium</button><button type="button" data-sudlevel="hard">Hard</button></div><p class="note" id="sudLevelNote" hidden>The level applies when you start a new game.</p>',
+    newRoot: api => sudGenerate(api.P.cfg.level),
+    initial: root => ({ g: root.puz.split('').map(Number), n: new Array(81).fill(0) }),
+    enc: sudEnc, dec: e => sudDec(e),
+    apply(s0, mv, root) {
+      const s = { g: s0.g.slice(), n: s0.n.slice() }, info = {};
+      let m;
+      if ((m = mv.match(/^S(\d+)=(\d)$/))) {
+        const i = +m[1], v = +m[2]; if (root.puz[i] !== '0' || s.g[i] === v) return null;
+        s.g[i] = v; s.n[i] = 0; for (const j of SUD_PEERS[i]) s.n[j] &= ~(1 << v);
+        Object.assign(info, { cell: i, v, wrong: v !== +root.sol[i] });
+      } else if ((m = mv.match(/^C(\d+)$/))) {
+        const i = +m[1]; if (root.puz[i] !== '0' || !s.g[i]) return null; info.cell = i; info.cleared = s.g[i]; s.g[i] = 0;
+      } else if ((m = mv.match(/^N(\d+)\.(\d)$/))) {
+        const i = +m[1], v = +m[2]; if (root.puz[i] !== '0' || s.g[i]) return null; s.n[i] ^= 1 << v; Object.assign(info, { cell: i, v, note: true, on: !!(s.n[i] & (1 << v)) });
+      } else return null;
+      return { state: s, info };
+    },
+    progress(s, root) { let open = 0, ok = 0; for (let i = 0; i < 81; i++) if (root.puz[i] === '0') { open++; if (s.g[i] === +root.sol[i]) ok++; } return open ? ok / open : 1; },
+    over: (s, root) => s.g.join('') === root.sol ? 'Solved! Every square is right.' : null,
+    label(api, n) { const i = n.info.cell; return n.info.note ? (n.info.on ? 'note ' : 'unnote ') + n.info.v + ' ' + sudCellName(i) : n.info.cleared ? 'clear ' + sudCellName(i) : n.info.v + ' at ' + sudCellName(i); },
+    shortLabel: (api, n) => n.info.note ? '✎' + n.info.v : n.info.cleared ? '⌫' : String(n.info.v),
+    dotClass: (api, n) => n.info.note ? 'pzd-note' : n.info.cleared ? 'pzd-draw' : 'pzd-home',
+    startCard: api => '<span class="mc-n">Start</span><span class="mc-g">#</span><span class="mc-san">' + api.P.root.level + '</span>',
+    cardInner: (api, n) => '<span class="mc-digit' + (n.info.note ? ' note' : '') + (n.info.wrong && api.P.view.mistakes ? ' wrong' : '') + '">' + (n.info.note ? '✎' + n.info.v : n.info.cleared ? '⌫' : n.info.v) + '</span><span class="mc-san">' + sudCellName(n.info.cell) + '</span>',
+    quality: (api, n) => n.info.wrong && api.P.view.mistakes ? ['blunder', '??'] : null,
+    verdict(api, n) {
+      if (n.info.note || n.info.cleared) return null;
+      if (n.info.wrong) return api.P.view.mistakes ? { label: 'Mistake', cls: 'bad', text: 'That ' + n.info.v + ' doesn’t belong at ' + sudCellName(n.info.cell) + '.' } : null;
+      return api.P.view.mistakes ? { label: 'Correct', cls: 'great', text: n.info.v + ' at ' + sudCellName(n.info.cell) + '.' } : null;
+    },
+    hint(api, s) {
+      const P = api.P, root = P.root, g = s.g;
+      for (let i = 0; i < 81; i++) if (P.view.conflicts && root.puz[i] === '0' && sudConflict(g, i)) return { move: 'C' + i, cell: i, unit: SUD_PEERS[i].filter(j => g[j] === g[i]).concat(i), html: 'The ' + g[i] + ' at <b>' + sudCellName(i) + '</b> repeats in its row, column or box. Clear it first.' };
+      if (P.view.mistakes) for (let i = 0; i < 81; i++) if (root.puz[i] === '0' && g[i] && g[i] !== +root.sol[i]) return { move: 'C' + i, cell: i, unit: [i], html: 'The ' + g[i] + ' at <b>' + sudCellName(i) + '</b> isn’t right. Clear it before going on.' };
+      const singles = sudSingles(g);
+      const naked = singles.find(x => x.kind === 'naked');
+      if (naked) {
+        const i = naked.cell, seen = new Set(SUD_PEERS[i].map(j => g[j]).filter(Boolean));
+        return { move: 'S' + i + '=' + naked.v, cell: i, unit: SUD_PEERS[i].concat(i), html: '<b>' + sudCellName(i) + '</b> can only be <b>' + naked.v + '</b>. Its row, column and box already hold ' + [...seen].sort().join(', ') + '.' };
+      }
+      const hid = singles.find(x => x.kind === 'hidden');
+      if (hid) return { move: 'S' + hid.cell + '=' + hid.v, cell: hid.cell, unit: hid.unit.cells, html: 'In ' + hid.unit.name + ', the <b>' + hid.v + '</b> fits only at <b>' + sudCellName(hid.cell) + '</b>. Every other open square there already sees a ' + hid.v + '.' };
+      const cand = sudCands(g); let best = -1;
+      for (let i = 0; i < 81; i++) if (!g[i] && (best < 0 || pop9(cand[i]) < pop9(cand[best]))) best = i;
+      if (best < 0) return null;
+      return { move: 'S' + best + '=' + root.sol[best], cell: best, unit: [best], html: 'No single-step logic is left. <b>' + sudCellName(best) + '</b> has only ' + bits9(cand[best]).join(' or ') + '. Test a guess on a branch, or play the answer: <b>' + root.sol[best] + '</b>.' };
+    },
+    tips(api) {
+      const s = api.P.st, t = []; let notes = 0; for (const x of s.n) if (x) notes++;
+      if (!notes && !api.P.view.cands) t.push('Stuck? Turn on Notes and pencil in candidates, or switch on the Candidate map in Settings.');
+      t.push('Time-travel tip: when you have to guess, guess on a branch. If it goes wrong, jump back on the tree.');
+      return t.slice(0, 2);
+    },
+    simMove(api, s) { const h = SUD.hint(api, s); return h ? h.move : null; },
+    status(api) {
+      const P = api.P, s = P.st, root = P.root; let open = 0, ok = 0, wrong = 0;
+      for (let i = 0; i < 81; i++) if (root.puz[i] === '0') { open++; if (s.g[i] === +root.sol[i]) ok++; else if (s.g[i]) wrong++; }
+      return '<b>' + ok + '</b>/' + open + ' filled' + (P.view.mistakes ? ' · <b>' + wrong + '</b> wrong now' : '') + ' · ' + api.node(P.cur).ply + ' moves · ' + root.level;
+    },
+    renderGame(api) { for (const b of document.querySelectorAll('[data-sudlevel]')) b.setAttribute('aria-pressed', String(b.dataset.sudlevel === api.P.cfg.level)); $('sudLevelNote').hidden = api.P.cfg.level === api.P.root.level; },
+    onClick(api, e) { const b = e.target.closest('[data-sudlevel]'); if (b) { api.P.cfg.level = b.dataset.sudlevel; if (!api.node(0).children.length) sudNewNow(api); else api.save(); api.render(); } },
+    storySummary(api, ln) {
+      const P = api.P, root = P.root, end = api.stateOf(ln[ln.length - 1]);
+      let open = 0, ok = 0; for (let i = 0; i < 81; i++) if (root.puz[i] === '0') { open++; if (end.g[i] === +root.sol[i]) ok++; }
+      const wrong = ln.filter(n => n.info.wrong).length, notes = ln.filter(n => n.info.note).length;
+      if (ln.length <= 1) return esc('A fresh ' + root.level + ' puzzle with ' + (81 - open) + ' clues and ' + open + ' squares to fill.');
+      let txt = 'A ' + root.level + ' puzzle with ' + open + ' open squares. This line runs ' + (ln.length - 1) + ' moves: ' + ok + ' squares filled correctly, ' + notes + ' notes';
+      txt += P.view.mistakes ? ', and ' + wrong + ' wrong number' + (wrong === 1 ? '' : 's') + ' along the way.' : '.';
+      if (end.g.join('') === root.sol) txt += ' Solved.';
+      return esc(txt);
+    },
+    storySections(api, ln) {
+      // breakthroughs: placements that opened up the most new single-step moves
+      const items = [];
+      for (let i = 1; i < ln.length; i++) {
+        const n = ln[i]; if (n.info.note || n.info.cleared || n.info.wrong) continue;
+        if (n._open === undefined) n._open = sudSingles(api.stateOf(n).g).length;
+        const p = ln[i - 1]; if (p._open === undefined) p._open = sudSingles(api.stateOf(p).g).length;
+        items.push({ n, gain: n._open - p._open + 1 });
+      }
+      items.sort((a, b) => b.gain - a.gain);
+      const top = items.filter(x => x.gain >= 2).slice(0, 5);
+      return '<p class="label">Breakthroughs</p><div class="turns">' + (top.length ? top.map(x => '<div class="turn"><span class="mv">' + x.n.ply + '. ' + x.n.info.v + ' at ' + sudCellName(x.n.info.cell) + '</span><span class="kind good">Opened ' + x.gain + ' easy squares</span><div class="acts"><button type="button" data-pzview="' + x.n.id + '">View move</button></div></div>').join('') : '<span class="empty">None yet. A breakthrough is a number that suddenly makes several other squares easy.</span>') + '</div>';
+    },
+    mistakeText: (api, n) => 'The answer there is ' + api.P.root.sol[n.info.cell] + '.',
+    storyPrompt(api, ln) {
+      const root = api.P.root, moves = ln.slice(1).filter(n => !n.info.note).map(n => n.ply + '. ' + SUD.label(api, n) + (n.info.wrong ? ' (wrong)' : '') + (n.sim ? ' [simulated]' : '')).join('; ');
+      return 'Write a short, warm chronicle (80 to 120 words, past tense, no lists) of this Sudoku solve, like a commentator following a puzzler. Use ONLY the moves given; do not invent events. Mention mistakes and recoveries if any, and how it stands now.\n\nLevel: ' + root.level + '. Moves (r = row, c = column): ' + moves;
+    },
+
+    // ---- board ----
+    buildBoard(api, box) {
+      let h = '<div class="sudwrap"><div class="sudgrid" id="sudGrid" role="grid" aria-label="Sudoku grid">';
+      for (let i = 0; i < 81; i++) h += '<button type="button" class="scell' + (SC(i) === 2 || SC(i) === 5 ? ' bR' : '') + (SR(i) === 2 || SR(i) === 5 ? ' bB' : '') + '" data-i="' + i + '"></button>';
+      h += '</div><div class="sudpad" id="sudPad">';
+      for (let d = 1; d <= 9; d++) h += '<button type="button" data-d="' + d + '">' + d + '<small></small></button>';
+      h += '<button type="button" data-d="0" aria-label="Erase">⌫</button><button type="button" id="sudNotes" aria-pressed="false" aria-label="Notes mode">✎</button></div></div>';
+      box.innerHTML = h;
+      const P = api.P;
+      $('sudGrid').addEventListener('click', e => { const c = e.target.closest('.scell'); if (!c) return; P.ui.sel = +c.dataset.i; api.render(true); });
+      $('sudPad').addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.id === 'sudNotes') { P.ui.notes = !P.ui.notes; api.render(true); return; }
+        sudInput(api, +b.dataset.d);
+      });
+    },
+    renderBoard(api) {
+      const P = api.P, s = P.st, root = P.root, sel = P.ui.sel, g = s.g, hint = api.hintMark();
+      const selV = sel != null ? g[sel] : 0, peers = sel != null ? new Set(SUD_PEERS[sel]) : new Set();
+      const cand = P.view.cands ? sudCands(g) : null, unit = hint && hint.unit ? new Set(hint.unit) : null;
+      const last = api.node(P.cur).info.cell, fresh = P.ui.lastCur !== P.cur;
+      const cells = $('sudGrid').children;
+      for (let i = 0; i < 81; i++) {
+        const el = cells[i], v = g[i], given = root.puz[i] !== '0';
+        const cls = ['scell'];
+        if (SC(i) === 2 || SC(i) === 5) cls.push('bR'); if (SR(i) === 2 || SR(i) === 5) cls.push('bB');
+        if (given) cls.push('given'); else if (v) cls.push('user');
+        if (v && !given && P.view.mistakes && v !== +root.sol[i]) cls.push('wrong');
+        if (P.view.conflicts && sudConflict(g, i)) cls.push('conflict');
+        if (i === sel) cls.push('sel'); else if (P.view.peers && peers.has(i)) cls.push('peer');
+        if (P.view.same && selV && v === selV && i !== sel) cls.push('same');
+        if (unit && unit.has(i)) cls.push('hintunit'); if (hint && hint.cell === i) cls.push('hint');
+        if (fresh && i === last && v) cls.push('fresh');
+        el.className = cls.join(' ');
+        let inner = '';
+        if (v) inner = String(v);
+        else if (s.n[i]) inner = '<span class="notes">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => '<i>' + (s.n[i] & (1 << d) ? d : '') + '</i>').join('') + '</span>';
+        else if (cand) inner = '<span class="notes auto">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => '<i>' + (cand[i] & (1 << d) ? d : '') + '</i>').join('') + '</span>';
+        if (el.innerHTML !== inner) el.innerHTML = inner;
+        el.setAttribute('aria-label', sudCellName(i) + (v ? ', ' + v : ', empty') + (given ? ', given' : ''));
+      }
+      P.ui.lastCur = P.cur;
+      // number pad: how many of each digit are still to place
+      const counts = new Array(10).fill(0); for (const v of g) if (v) counts[v]++;
+      for (const b of $('sudPad').querySelectorAll('[data-d]')) { const d = +b.dataset.d; if (!d) continue; b.querySelector('small').textContent = 9 - counts[d] > 0 ? 9 - counts[d] : ''; b.classList.toggle('done', counts[d] >= 9); }
+      $('sudNotes').setAttribute('aria-pressed', String(!!P.ui.notes));
+    },
+    onKey(api, e) {
+      const P = api.P; if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (/^[1-9]$/.test(e.key)) { e.preventDefault(); sudInput(api, +e.key); return; }
+      if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); sudInput(api, 0); return; }
+      if (e.key === 'n' || e.key === 'N') { P.ui.notes = !P.ui.notes; api.render(true); return; }
+      const mvs = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
+      if (mvs[e.key] != null) { e.preventDefault(); const sel = P.ui.sel == null ? 40 : P.ui.sel; let n = sel + mvs[e.key]; if (e.key === 'ArrowLeft' && SC(sel) === 0) n = sel + 8; if (e.key === 'ArrowRight' && SC(sel) === 8) n = sel - 8; P.ui.sel = (n + 81) % 81; api.render(true); }
+    }
+  };
+  function sudInput(api, d) {
+    const P = api.P, i = P.ui.sel; if (i == null || P.sim || P.root.puz[i] !== '0') return;
+    const g = P.st.g;
+    if (d === 0) { if (g[i]) api.play('C' + i); return; }
+    if (P.ui.notes) { if (!g[i]) api.play('N' + i + '.' + d); return; }
+    api.play(g[i] === d ? 'C' + i : 'S' + i + '=' + d);
+  }
+  function sudNewNow(api) { api.P.root = sudGenerate(api.P.cfg.level); const s = SUD.initial(api.P.root); api.P.st = s; api.node(0).enc = sudEnc(s); api.node(0).ev = 0; api.save(); }
 
   // ---------- boot ----------
   function start(data) {
