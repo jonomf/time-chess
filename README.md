@@ -10,5 +10,6 @@ Chess in the browser with visual overlays and branching timelines.
 - **Story Mode**: trace any piece's path through the game, see the standout pieces and their stories, and jump to the biggest turning points to branch from them.
 
 - **Go mode**: switch to Go from the header and get the same tools for Go: 9×9, 13×13 or 19×19 boards, a Monte Carlo computer opponent, a territory map, atari warnings, win-chance timeline, branch tree, coach, story mode and simulation.
+- **Online play**: host a chess or Go game from the Online tab and send a friend the 6-character code or invite link. Browsers connect directly over WebRTC; PeerJS's public server is used only to introduce them.
 
 It's a single `index.html` with no build step. Chess rules come from [chess.js](https://github.com/jhlywa/chess.js) and the engine is [Stockfish.js](https://github.com/nmrugg/stockfish.js), both loaded from cdnjs. The Go engine is a small Monte Carlo search built into the page.

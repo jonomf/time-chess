@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Chess and Go with control overlays, branching timelines, engines, a coach, and a story mode.">
+<meta name="description" content="Chess and Go with control overlays, branching timelines, engines, a coach, and a story mode. Play a friend online.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>TIME CHESS!</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -401,6 +401,20 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 .skin-neon .mcard .mc-stone.w { background: var(--neon-fill); border: 1.5px solid var(--neon-w); box-shadow: 0 0 6px var(--neon-w); }
 .skin-neon .tree circle.gs-b { fill: var(--neon-fill); stroke: var(--neon-b); }
 .skin-neon .tree circle.gs-w { fill: var(--neon-fill); stroke: var(--neon-w); }
+/* Online */
+.netcode { margin: 0; font: 800 34px var(--f-mono); letter-spacing: .18em; color: var(--ink); }
+.netjoin { display: flex; gap: 8px; }
+.netjoin input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); font: 600 15px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.netjoin input#netLink { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+.netjoin .btn { flex: none; min-width: 0; }
+.netstate { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.netstate .dot, .netchip::before { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.netstate .dot.ok { background: var(--ctl-w); } .netstate .dot.wait { background: var(--ctl-c); animation: pulse 1s infinite alternate; }
+.netnote { margin: 0; font-size: 13.5px; color: var(--ctl-b); }
+.netchip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font: 700 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; color: var(--ink); }
+.netchip::before { content: ""; background: var(--ctl-c); }
+.netchip.mine { border-color: var(--ctl-w); } .netchip.mine::before { background: var(--ctl-w); }
+.netchip.theirs::before { background: var(--muted); }
 /* Review */
 .hdr-right { display: flex; align-items: center; gap: 12px; }
 .revbtn { padding: 8px 14px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 13px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
@@ -563,6 +577,10 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       </div>
       </div>
     </section>
+    <section class="o-online card" data-card="online">
+      <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="online" aria-expanded="false"><span class="label">Online</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="cbody shared"></div>
+    </section>
     <section class="o-dev card" data-card="dev">
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="dev" aria-expanded="false"><span class="label">Developer</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
@@ -633,6 +651,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   let nodes, nextId, cur;           // move tree
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
+  const online = { active: false, applying: false };
   const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
   let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
@@ -719,7 +738,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     for (let i = 1; i < path.length; i++) applyMove(path[i].move);
     cur = id; clearSel();
   }
-  function addChild(m, isSim) {
+  function addChild(m, isSim) { const from = cur, n = addChild0(m, isSim); if (n && typeof onlineLocal === 'function') onlineLocal('chess', from, n); return n; }
+  function addChild0(m, isSim) {
     const here = nodes[cur];
     const same = here.children.map(c => nodes[c]).find(c => c.move.from === m.from && c.move.to === m.to && (c.move.promotion || null) === (m.promotion || null) && !!c.sim === !!isSim);
     if (same) { goTo(same.id); return same; }
@@ -850,7 +870,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 
   // ---------- Stockfish as Black ----------
   function maybeBotMove() {
-    if (opts.mode === 'go' || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
+    if (online.active || opts.mode === 'go' || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
     if (game.turn() !== 'b' || game.game_over() || nodes[cur].children.length) return;
     botThinking = true; renderStatus();
     const L = botCfg.level, at = cur, fen = game.fen();
@@ -875,7 +895,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 
   // ---------- simulation ----------
   async function startSim() {
-    if (engine.state !== 'ready' || sim || game.game_over()) return;
+    if (online.active || engine.state !== 'ready' || sim || game.game_over()) return;
     const cfg = STRENGTH[simCfg.str];
     sim = { left: simCfg.len, total: simCfg.len, stop: false };
     render();
@@ -920,7 +940,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       }
     }
     if (!p) { const was = inspectSq; clearSel(); inspectSq = was === s ? null : s; render(); return; }
-    if (p && p.color === game.turn() && !(botCfg.on && p.color === 'b') && !botThinking && !game.game_over() && s !== selected) select(s);
+    if (p && p.color === game.turn() && (online.active ? onlineMine(p.color) : !(botCfg.on && p.color === 'b')) && !botThinking && !game.game_over() && s !== selected) select(s);
     else { const was = inspectSq; clearSel(); if (s !== was) inspectSq = s; }
     render();
   }
@@ -980,7 +1000,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   }
 
   // ---------- pointer: tap or drag ----------
-  const canMove = p => p && p.color === game.turn() && !(botCfg.on && p.color === 'b') && !botThinking && !game.game_over() && !sim && !review && !pendingPromo;
+  const canMove = p => p && p.color === game.turn() && (online.active ? onlineMine(p.color) : !(botCfg.on && p.color === 'b')) && !botThinking && !game.game_over() && !sim && !review && !pendingPromo;
   let ptr = null, ghost = null, skipAnim = false;
   const squareAt = (x, y) => { const el = document.elementFromPoint(x, y); const c = el && el.closest && el.closest('.sq'); return c && boardEl.contains(c) ? c.dataset.sq : null; };
   function tryMove(from, to) {
@@ -1365,6 +1385,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
 
   function render() {
     applySkin();
+    if (typeof netRender === 'function') setTimeout(netRender, 0);
     renderCards();  // show the right panes first so views can measure themselves
     renderDev();
     if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
@@ -2015,8 +2036,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   // ---------- tab groups: every panel is a card with one or more tabs ----------
   // Drag a tab along its bar to reorder, onto another card's bar to move it there, or off any
   // bar to make a new card. Drag a card by its grip onto another card's bar to merge them.
-  const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'settings', 'dev'];
-  const TOOL_LABEL = { timeline: 'Timeline', branches: 'Branches', coach: 'Coach', review: 'Story Mode', sim: 'Simulate', game: 'Game', settings: 'Settings', dev: 'Developer' };
+  const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'online', 'settings', 'dev'];
+  const TOOL_LABEL = { timeline: 'Timeline', branches: 'Branches', coach: 'Coach', review: 'Story Mode', sim: 'Simulate', game: 'Game', settings: 'Settings', online: 'Online', dev: 'Developer' };
   const toolEl = {}; document.querySelectorAll('[data-card]').forEach(c => { toolEl[c.dataset.card] = c; });
   const colL = document.querySelector('.col-l'), colR = document.querySelector('.col-r');
   // the engine dot moves to the page header; the old fixed inspector is replaced by groups
@@ -2432,7 +2453,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     GO.cur = id; GO.st = goStateOf(GO.nodes[id]);
   }
   function goOver(n) { n = n || GO.nodes[GO.cur]; if (!n.parent && n.parent !== 0) return false; if (n.p === -2) return true; const par = GO.nodes[n.parent]; return n.p === -1 && par && par.p === -1; }
-  function goAdd(p, sim) {
+  function goAdd(p, sim) { const from = GO.cur, n = goAdd0(p, sim); if (n && typeof onlineLocal === 'function') onlineLocal('go', from, n); return n; }
+  function goAdd0(p, sim) {
     const here = GO.nodes[GO.cur];
     const same = here.children.map(c => GO.nodes[c]).find(c => c.p === p && !!c.sim === !!sim);
     if (same) { goGoTo(same.id); return same; }
@@ -2554,7 +2576,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     return m.p;
   }
   function goMaybeBot() {
-    if (opts.mode !== 'go' || !GO.bot.on || GO.thinking || GO.sim || GO.navTimer) return;
+    if (online.active || opts.mode !== 'go' || !GO.bot.on || GO.thinking || GO.sim || GO.navTimer) return;
     const n = GO.nodes[GO.cur];
     if (n.turn !== GO.bot.color || n.children.length || goOver(n)) return;
     GO.thinking = true; goRender();
@@ -2570,7 +2592,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   }
   const GO_STRENGTH = { strong: 3000, club: 900, casual: 150 };
   async function goStartSim() {
-    if (GO.sim || goOver()) return;
+    if (online.active || GO.sim || goOver()) return;
     GO.sim = { left: GO.simCfg.len, total: GO.simCfg.len, stop: false }; goRender();
     while (GO.sim && !GO.sim.stop && GO.sim.left > 0 && !goOver()) {
       const n = GO.nodes[GO.cur];
@@ -2740,7 +2762,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     const x = Math.round(q.x - M), y = Math.round(q.y - M);
     return x >= 0 && y >= 0 && x < N && y < N ? GC.pt(GO.st, x, y) : -1;
   }
-  const goHumanTurn = () => !GO.sim && !GO.thinking && !goOver() && !(GO.bot.on && GO.st.turn === GO.bot.color);
+  const goHumanTurn = () => online.active && online.game === 'go' ? netMyTurn() : (!GO.sim && !GO.thinking && !goOver() && !(GO.bot.on && GO.st.turn === GO.bot.color));
   const goCoachVisible = () => cardOpen('coach');
 
   // ---- timeline ribbon + branch tree ----
@@ -2952,6 +2974,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     if (light) goRenderPanels();
     setTimeout(goMaybeBot, 0);
     goPump();
+    netRender();
   }
 
   // ---- navigation with replay ----
@@ -3041,6 +3064,266 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     setMode(opts.mode === 'go' ? 'go' : 'chess');
   }
 
+  // ================= ONLINE: peer-to-peer play over WebRTC (PeerJS handles the handshake) =================
+  const NET_STORE = 'timechess-online-v1';
+  const NET_PREFIX = 'timechess-';
+  const NET_ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const netOK = !window.claude && !!window.RTCPeerConnection;   // claude.ai pages block WebRTC
+  Object.assign(online, { role: null, code: null, game: null, myColor: null, session: null, line: [], tipId: 0,
+    peer: null, conn: null, status: 'idle', note: '', hostColor: 'w', retry: null });
+
+  const netColorName = () => online.game === 'go' ? (online.myColor === 1 ? 'Black' : 'White') : (online.myColor === 'w' ? 'White' : 'Black');
+  const netConnected = () => online.active && online.status === 'connected';
+  // whose turn it is at the tip of the shared game
+  function netMyTurn() {
+    if (!netConnected()) return false;
+    if (online.game === 'chess') return cur === online.tipId && game.turn() === online.myColor && !game.game_over();
+    return GO.nodes && GO.cur === online.tipId && GO.st.turn === online.myColor && !goOver();
+  }
+  // used by the chess move gates: may the person move a piece of this colour right now?
+  function onlineMine(c) { return online.game === 'chess' && c === online.myColor && netMyTurn(); }
+
+  function netPersist() {
+    try {
+      if (!online.active) { localStorage.removeItem(NET_STORE); return; }
+      localStorage.setItem(NET_STORE, JSON.stringify({ role: online.role, code: online.code, game: online.game, myColor: online.myColor, session: online.session, line: online.line, hostColor: online.hostColor }));
+    } catch (e) {}
+  }
+  function netLoadLib() {
+    if (window.Peer || (window.peerjs && window.peerjs.Peer)) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+      s.onload = () => res(); s.onerror = () => rej(new Error('lib'));
+      document.head.appendChild(s);
+    });
+  }
+  const PeerCtor = () => window.Peer || (window.peerjs && window.peerjs.Peer);
+  const netSend = msg => { try { if (online.conn && online.conn.open !== false) online.conn.send(msg); } catch (e) {} };
+  const newCode = () => Array.from({ length: 6 }, () => NET_ALPHA[Math.floor(Math.random() * NET_ALPHA.length)]).join('');
+
+  // ---- applying the shared game to the local tree ----
+  function netFresh(gameKind, N, komi) {
+    online.line = []; online.tipId = 0;
+    if (gameKind === 'chess') { if (navTimer) stopNav(); resetTree(); forkOpen = null; focus = null; review = false; prevSq = null; save(); }
+    else { goEnsure(); if (GO.navTimer) goStopNav(); goReset(N || GO.nextN, komi != null ? komi : GO.nextKomi); goSave(); }
+  }
+  function netApplyMove(m) {
+    online.applying = true;
+    try {
+      if (online.game === 'chess') { goTo(online.tipId); const n = addChild0(m, false); if (!n) return false; online.tipId = n.id; save(); }
+      else { goGoTo(online.tipId); const n = goAdd0(m, false); if (!n) return false; online.tipId = n.id; goSave(); }
+      online.line.push(m); return true;
+    } finally { online.applying = false; }
+  }
+  function netApplyLine(line) {
+    online.applying = true;
+    try {
+      online.line = []; online.tipId = 0;
+      if (online.game === 'chess') { goTo(0); for (const m of line) { const n = addChild0(m, false); if (!n) break; online.line.push(m); online.tipId = n.id; } save(); }
+      else { goGoTo(0); for (const m of line) { const n = goAdd0(m, false); if (!n) break; online.line.push(m); online.tipId = n.id; } goSave(); }
+    } finally { online.applying = false; }
+  }
+  function netOrient() {
+    if (online.game === 'chess') { const f = online.myColor === 'b'; if (flipped !== f) { flipped = f; prevSq = null; buildBoard(); } }
+  }
+  function netRefresh() { netPersist(); if (opts.mode !== online.game && online.game) setMode(online.game); else { render(); if (opts.mode === 'go') goRender(); } }
+
+  // a local move made on the board: share it if it extends the shared game
+  function onlineLocal(kind, fromId, n) {
+    if (!online.active || online.applying || online.game !== kind || !n || n.sim || fromId !== online.tipId) return;
+    const m = kind === 'chess' ? { from: n.move.from, to: n.move.to, promotion: n.move.promotion || undefined } : n.p;
+    online.line.push(m); online.tipId = n.id;
+    netSend({ t: 'move', s: online.session, i: online.line.length - 1, m });
+    netPersist();
+  }
+
+  // ---- messages ----
+  function netHello(fresh) {
+    netSend({ t: 'hello', s: online.session, game: online.game, guestColor: online.game === 'go' ? 3 - online.myColor : (online.myColor === 'w' ? 'b' : 'w'),
+      N: GO.N, komi: GO.komi, line: online.line, fresh: !!fresh });
+  }
+  function netOnData(d) {
+    if (!d || typeof d !== 'object') return;
+    if (d.t === 'hello' && online.role === 'guest') {
+      const same = online.session === d.s && online.game === d.game;
+      online.game = d.game === 'go' ? 'go' : 'chess'; online.myColor = d.guestColor; online.session = d.s;
+      if (!same || d.fresh) netFresh(online.game, d.N, d.komi);
+      else if (online.game === 'go') goEnsure();
+      netApplyLine(Array.isArray(d.line) ? d.line : []);
+      online.status = 'connected'; online.note = ''; netOrient(); netRefresh();
+    } else if (d.t === 'move' && d.s === online.session) {
+      if (d.i === online.line.length) { if (!netApplyMove(d.m)) netSend({ t: 'sync?' }); netRefresh(); }
+      else if (d.i > online.line.length) netSend({ t: 'sync?' });
+    } else if (d.t === 'sync?') {
+      netSend({ t: 'state', s: online.session, line: online.line });
+    } else if (d.t === 'state' && d.s === online.session) {
+      if (Array.isArray(d.line) && d.line.length >= online.line.length) { netApplyLine(d.line); netRefresh(); }
+    } else if (d.t === 'new') {
+      online.session = d.s; online.myColor = d.yourColor; if (online.role === 'host') online.hostColor = online.myColor;
+      netFresh(online.game, d.N, d.komi); online.note = 'New game. You play ' + netColorName() + '.'; netOrient(); netRefresh();
+    } else if (d.t === 'bye') {
+      online.note = 'Your friend left the game.'; netEnd(false);
+    } else if (d.t === 'busy') {
+      online.note = 'That game already has two players.'; netEnd(false);
+    }
+  }
+  function netWire(conn) {
+    online.conn = conn;
+    conn.on('open', () => {
+      if (online.role === 'host') {
+        const fresh = !online.session;
+        if (fresh) { online.session = newCode(); netFresh(online.game); }
+        online.status = 'connected'; online.note = ''; netHello(fresh); netOrient(); netRefresh();
+      } else { if (online.status !== 'connected') online.status = 'handshake'; netRender(); }
+    });
+    conn.on('data', netOnData);
+    conn.on('close', () => { if (online.conn !== conn) return; online.conn = null; if (online.active) { online.status = 'lost'; online.note = ''; netRender(); if (online.role === 'guest') netRetry(); } });
+    conn.on('error', () => {});
+  }
+  function netRetry() {
+    clearTimeout(online.retry);
+    online.retry = setTimeout(() => { if (online.active && online.role === 'guest' && !netConnected() && online.peer) { try { netWire(online.peer.connect(NET_PREFIX + online.code.toLowerCase(), { reliable: true })); } catch (e) {} netRetry(); } }, 3000);
+  }
+
+  // ---- host / join / leave ----
+  async function netHost(resume) {
+    try { await netLoadLib(); } catch (e) { online.note = 'Couldn’t load the connection library. Check your internet connection.'; netRender(); return; }
+    if (!resume) { online.code = newCode(); online.game = opts.mode === 'go' ? 'go' : 'chess'; online.myColor = online.game === 'go' ? (online.hostColor === 'b' ? 2 : 1) : online.hostColor; online.session = null; online.line = []; online.tipId = 0; }
+    online.role = 'host'; online.active = true; online.status = 'waiting'; online.note = '';
+    netPersist(); netRender();
+    const open = tries => {
+      const P = PeerCtor(), peer = new P(NET_PREFIX + online.code.toLowerCase());
+      online.peer = peer;
+      peer.on('connection', conn => {
+        // the newest connection wins: a guest who reloads or drops comes back on a fresh one
+        const old = online.conn; netWire(conn);
+        if (old && old !== conn) { try { old.close(); } catch (e) {} }
+      });
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+      peer.on('error', err => {
+        if (err && err.type === 'unavailable-id' && tries < 8) { try { peer.destroy(); } catch (e) {} setTimeout(() => open(tries + 1), 2500); return; }
+        if (err && err.type === 'peer-unavailable') return;
+        online.note = 'Connection problem: ' + ((err && err.type) || 'unknown') + '.'; netRender();
+      });
+    };
+    open(0);
+  }
+  async function netJoin(code, resume) {
+    code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) { online.note = 'Game codes are 6 letters and numbers.'; netRender(); return; }
+    try { await netLoadLib(); } catch (e) { online.note = 'Couldn’t load the connection library. Check your internet connection.'; netRender(); return; }
+    if (!resume) { online.session = null; online.line = []; online.tipId = 0; }
+    online.role = 'guest'; online.code = code; online.active = true; online.status = 'connecting'; online.note = '';
+    netPersist(); netRender();
+    const P = PeerCtor(), peer = new P();
+    online.peer = peer;
+    peer.on('open', () => { netWire(peer.connect(NET_PREFIX + code.toLowerCase(), { reliable: true })); netRetry(); });
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+    peer.on('error', err => {
+      if (err && err.type === 'peer-unavailable') { online.note = online.session ? 'Waiting for your friend to come back…' : 'No game with that code yet. Check the code, or wait for your friend to host.'; netRender(); return; }
+      online.note = 'Connection problem: ' + ((err && err.type) || 'unknown') + '.'; netRender();
+    });
+  }
+  function netEnd(sayBye) {
+    if (sayBye) netSend({ t: 'bye' });
+    clearTimeout(online.retry);
+    const peer = online.peer, conn = online.conn;
+    online.active = false; online.status = 'idle'; online.role = null; online.conn = null; online.peer = null; online.session = null;
+    setTimeout(() => { try { conn && conn.close(); } catch (e) {} try { peer && peer.destroy(); } catch (e) {} }, 200);
+    if (location.hash.startsWith('#join-')) history.replaceState(null, '', location.pathname + location.search);
+    netPersist(); render(); if (opts.mode === 'go') goRender();
+  }
+  function netRematch() {
+    if (!netConnected()) return;
+    online.session = newCode();
+    online.myColor = online.game === 'go' ? 3 - online.myColor : (online.myColor === 'w' ? 'b' : 'w');
+    if (online.role === 'host') online.hostColor = online.game === 'go' ? (online.myColor === 1 ? 'w' : 'b') : online.myColor;
+    const theirs = online.game === 'go' ? 3 - online.myColor : (online.myColor === 'w' ? 'b' : 'w');
+    netFresh(online.game);
+    netSend({ t: 'new', s: online.session, yourColor: theirs, N: GO.N, komi: GO.komi });
+    online.note = 'Rematch. You play ' + netColorName() + '.'; netOrient(); netRefresh();
+  }
+
+  // ---- UI ----
+  function netBuild() {
+    const body = document.querySelector('[data-card="online"] .cbody');
+    body.innerHTML = '<div id="netBody"></div>';
+    const chip = document.createElement('span'); chip.className = 'netchip'; chip.id = 'netChip'; chip.hidden = true;
+    document.querySelector('.hdr-right').prepend(chip);
+    body.addEventListener('click', e => {
+      const a = e.target.closest('[data-net]'); if (!a) return;
+      const k = a.dataset.net;
+      if (k === 'host') netHost(false);
+      else if (k === 'join') netJoin($('netCode').value, false);
+      else if (k === 'leave' || k === 'cancel') netEnd(true);
+      else if (k === 'rematch') netRematch();
+      else if (k === 'side') { online.hostColor = a.dataset.v; netRender(); }
+      else if (k === 'copy') {
+        const link = netLink(), done = () => { a.textContent = 'Copied'; setTimeout(() => { a.textContent = 'Copy invite link'; }, 1500); };
+        try { navigator.clipboard.writeText(link).then(done, () => { $('netLink').select(); }); } catch (_) { $('netLink').select(); }
+      }
+    });
+    body.addEventListener('keydown', e => { if (e.target.id === 'netCode' && e.key === 'Enter') netJoin(e.target.value, false); });
+    $('netChip').addEventListener('click', () => { const g = groupOf('online'); if (g) setTab('online'); });
+  }
+  const netLink = () => location.href.split('#')[0] + '#join-' + online.code;
+  function netRender() {
+    const el = $('netBody'); if (!el) return;
+    const chip = $('netChip');
+    const gameName = (online.game || opts.mode) === 'go' ? 'Go' : 'chess';
+    let h = '';
+    if (!netOK) {
+      h = '<p class="note">Online play connects two browsers directly, which this page can’t do inside Claude. Open the GitHub Pages version to play a friend online:</p><p><a class="src" href="https://jonomf.github.io/time-chess/" target="_blank" rel="noopener">jonomf.github.io/time-chess</a></p>';
+    } else if (!online.active) {
+      const side = online.hostColor, goGame = opts.mode === 'go';
+      h = '<p class="note">Play a friend over the internet. Your browsers connect directly; nobody else sees the game.</p>' +
+        '<p class="label">Host a ' + gameName + ' game</p>' +
+        '<div class="seg"><span class="label">You play</span><button type="button" data-net="side" data-v="w" aria-pressed="' + (side === 'w') + '">' + (goGame ? 'Black' : 'White') + '</button><button type="button" data-net="side" data-v="b" aria-pressed="' + (side === 'b') + '">' + (goGame ? 'White' : 'Black') + '</button></div>' +
+        '<button class="btn primary" type="button" data-net="host">Host a game</button>' +
+        '<p class="note">Hosting starts a fresh ' + gameName + ' game and replaces the one on your board. Switch Chess/Go at the top first.</p>' +
+        '<p class="label">Join a friend’s game</p>' +
+        '<div class="netjoin"><input id="netCode" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="7" placeholder="Game code" aria-label="Game code"><button class="btn" type="button" data-net="join">Join</button></div>';
+    } else if (online.status === 'waiting' || (online.role === 'host' && !online.conn && !online.session)) {
+      h = '<p class="label">Your game code</p><p class="netcode">' + online.code + '</p>' +
+        '<p class="note">Send your friend the code, or this link. The game starts as soon as they open it.</p>' +
+        '<div class="netjoin"><input id="netLink" type="text" readonly value="' + esc(netLink()) + '" aria-label="Invite link"><button class="btn" type="button" data-net="copy">Copy invite link</button></div>' +
+        '<p class="netstate"><span class="dot wait"></span>Waiting for your friend…</p><button class="btn" type="button" data-net="cancel">Cancel</button>';
+    } else {
+      const my = netMyTurn(), over = !online.session ? false : online.game === 'chess' ? game.game_over() && cur === online.tipId : !!(GO.nodes && GO.nodes[online.tipId] && goOver(GO.nodes[online.tipId]));
+      const st = online.status === 'connected' ? (over ? 'Game over' : my ? 'Your move' : 'Their move') : online.status === 'lost' ? (online.role === 'host' ? 'Connection lost. Waiting for your friend to reconnect…' : 'Connection lost. Reconnecting…') : 'Connecting…';
+      h = '<p class="netstate"><span class="dot ' + (online.status === 'connected' ? 'ok' : 'wait') + '"></span><b>' + st + '</b></p>' +
+        '<p class="note">' + (online.game === 'go' ? 'Go' : 'Chess') + ' · code ' + online.code + (online.myColor != null && online.session ? ' · you play ' + netColorName() : '') + '. Browse the timeline freely; moves go through only at the latest position.</p>' +
+        '<div class="controls"><button class="btn" type="button" data-net="rematch"' + (online.status === 'connected' ? '' : ' disabled') + '>Rematch, swap colors</button><button class="btn danger" type="button" data-net="leave">Leave game</button></div>';
+    }
+    if (online.note) h += '<p class="netnote">' + esc(online.note) + '</p>';
+    if (el.dataset.html !== h) { const v = $('netCode') ? $('netCode').value : ''; el.innerHTML = h; el.dataset.html = h; if ($('netCode')) $('netCode').value = v; }
+    // header chip + locks while a shared game is on
+    if (online.active) {
+      chip.hidden = false;
+      chip.className = 'netchip ' + (netConnected() ? (netMyTurn() ? 'mine' : 'theirs') : 'wait');
+      chip.textContent = netConnected() ? (netMyTurn() ? 'Online · your move' : 'Online · their move') : online.status === 'waiting' ? 'Online · waiting' : 'Online · reconnecting';
+    } else chip.hidden = true;
+    const lock = online.active && !!online.session;
+    for (const b of document.querySelectorAll('.modesw button')) b.disabled = lock && b.dataset.mode !== online.game;
+    for (const id of ['newgame', 'goNew', 'simBtn', 'goSimBtn']) { const b = $(id); if (b && lock) b.disabled = true; }
+  }
+
+  function netBoot() {
+    window.addEventListener('pagehide', () => { try { online.conn && online.conn.close(); } catch (e) {} });
+    netBuild();
+    let saved = null; try { saved = JSON.parse(localStorage.getItem(NET_STORE) || 'null'); } catch (e) {}
+    const m = location.hash.match(/^#join-([A-Za-z0-9]{6})$/);
+    if (netOK && m && (!saved || saved.code !== m[1].toUpperCase() || saved.role !== 'guest')) { setTab('online'); netJoin(m[1], false); }
+    else if (netOK && saved && saved.role) {
+      Object.assign(online, { code: saved.code, game: saved.game, myColor: saved.myColor, session: saved.session, hostColor: saved.hostColor || 'w' });
+      // rebuild where the shared game stands in this tree
+      if (saved.session && Array.isArray(saved.line)) { online.active = true; netApplyLine(saved.line); online.active = false; }
+      if (saved.role === 'host') netHost(true); else netJoin(saved.code, true);
+    }
+    netRender();
+  }
+
   // ---------- boot ----------
   function start(data) {
     const s = (data && data.v === 2) ? data : load();
@@ -3059,6 +3342,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     coachCfg.on = cardOpen('coach'); review = cardOpen('review');
     buildBoard(); render(); initEngine();
     goBoot();
+    netBoot();
   }
   if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(serialize);
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
