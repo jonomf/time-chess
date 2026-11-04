@@ -2149,12 +2149,16 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
   function setTab(k) { const g = groupOf(k); if (!g) return; g.active = k; g.open = true; applyState(); }
   function removeTool(k) { for (const g of allGroups()) { const i = g.tabs.indexOf(k); if (i >= 0) { g.tabs.splice(i, 1); if (g.active === k) g.active = g.tabs[Math.min(i, g.tabs.length - 1)]; } } }
   function prune() { const L = layout(); L.l = L.l.filter(g => g.tabs.length); L.r = L.r.filter(g => g.tabs.length); }
-  function moveTab(k, toGid, beforeKey) {
+  // put each card back on the tab it showed when a drag started (unless that tab has left the card)
+  function netRestoreActive(p) {
+    for (const g of allGroups()) { const w = p.was && p.was[g.id]; if (w && g.tabs.includes(w)) g.active = w; else if (!g.tabs.includes(g.active)) g.active = g.tabs[0]; }
+  }
+  function moveTab(k, toGid, beforeKey, quiet) {
     const to = groupById(toGid); if (!to) return;
     removeTool(k);
     const i = beforeKey ? to.tabs.indexOf(beforeKey) : -1;
     if (i >= 0) to.tabs.splice(i, 0, k); else to.tabs.push(k);
-    to.active = k; to.open = true; prune();
+    if (!quiet) { to.active = k; to.open = true; } prune();
   }
   function popOut(k, side, index) {
     removeTool(k); prune();
@@ -2193,7 +2197,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     el.style.left = (e.clientX - drag.dx) + 'px'; el.style.top = (e.clientY - drag.dy) + 'px';
     const over = barAt(e.clientX, e.clientY, el);
     if (over !== drag.over) { if (drag.over) drag.over.classList.remove('droptarget'); if (over) over.classList.add('droptarget'); drag.over = over; }
-    ph.hidden = !!over;
+    // keep the gap's space while hovering a tab bar, so the layout (and the bar) doesn't jump away
+    ph.style.visibility = over ? 'hidden' : '';
     if (!over) {
       const narrowView = matchMedia('(max-width: 899px)').matches;
       const col = narrowView ? (e.clientY > colR.getBoundingClientRect().top ? colR : colL) : (e.clientX >= colR.getBoundingClientRect().left - 9 ? colR : colL);
@@ -2226,7 +2231,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     const grip = e.target.closest('.group .grip');
     if (grip) { e.preventDefault(); try { grip.setPointerCapture(e.pointerId); } catch (_) {} startGroupDrag(grip.closest('.group'), e); return; }
     const t = e.target.closest('.group .tab');
-    if (t) { tabPress = { k: t.dataset.tab, x: e.clientX, y: e.clientY, id: e.pointerId, moved: false }; try { t.setPointerCapture(e.pointerId); } catch (_) {} }
+    if (t) { tabPress = { k: t.dataset.tab, x: e.clientX, y: e.clientY, id: e.pointerId, moved: false, home: groupOf(t.dataset.tab).id, was: Object.fromEntries(allGroups().map(g => [g.id, g.active])) }; try { t.setPointerCapture(e.pointerId); } catch (_) {} }
   });
   document.addEventListener('pointermove', e => {
     if (drag && e.pointerId === drag.id) { moveGroupDrag(e); return; }
@@ -2242,21 +2247,29 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
         const fromIdx = home.tabs.indexOf(k), beforeIdx = before ? home.tabs.indexOf(before) : -1;
         // moving rightward within the same bar inserts after the hovered tab
         const beforeKey = toId === home.id && beforeIdx > fromIdx ? home.tabs[beforeIdx + 1] || null : before;
-        moveTab(k, toId, beforeKey); placeAll(); renderCards(); save();
+        moveTab(k, toId, beforeKey, true); netRestoreActive(tabPress); placeAll(); renderCards(); save();
       }
       return;
     }
     // off every bar: tear the tab off into a new card that follows the pointer
-    tabPress = null;
+    const tabPress0 = tabPress; tabPress = null;
     const at = locate(home.id) || { side: 'r', i: 0 };
+    const was = tabPress0.was;
     const g = popOut(k, at.side, at.i + 1);
+    netRestoreActive({ k, was });
     placeAll(); renderCards();
     startGroupDrag(groupEls[g.id], e);
     drag.id = e.pointerId;
   });
   document.addEventListener('pointerup', e => {
     if (drag && e.pointerId === drag.id) { endGroupDrag(e); return; }
-    if (tabPress && e.pointerId === tabPress.id) { const p = tabPress; tabPress = null; if (!p.moved) setTab(p.k); else applyState(); }
+    if (tabPress && e.pointerId === tabPress.id) {
+      const p = tabPress; tabPress = null;
+      if (!p.moved) { setTab(p.k); return; }
+      // a tab dropped into a different card becomes that card's selected tab; a reorder changes nothing else
+      const g = groupOf(p.k); if (g && g.id !== p.home) { g.active = p.k; g.open = true; }
+      placeAll(); applyState();
+    }
   });
   document.addEventListener('pointercancel', () => { if (drag) endGroupDrag(null); tabPress = null; });
   // --- buttons and keyboard ---
