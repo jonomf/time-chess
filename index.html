@@ -21,9 +21,6 @@
   --sq-dark: #94a698;
   --accent: #2b5d88;
   --sim: #7a4fb0;
-  --map-w: #e2761b;
-  --map-b: #8a4fd6;
-  --map-c: #169c93;
   --ctl-w: #17945a;
   --ctl-b: #cf3a2c;
   --ctl-c: #e3960f;
@@ -40,7 +37,7 @@
   :root:not([data-theme="light"]) {
     --bg: #111513; --surface: #19201c; --ink: #e5ebe6; --muted: #93a099; --line: #2d3732;
     --sq-light: #6b7a71; --sq-dark: #3c4a42; --accent: #7fb0dc; --sim: #b48ce8;
-    --map-w: #ff9a3d; --map-b: #b385ff; --map-c: #2fd1c4; --ctl-w: #2ec47c; --ctl-b: #ff5a48; --ctl-c: #ffb02e;
+    --ctl-w: #2ec47c; --ctl-b: #ff5a48; --ctl-c: #ffb02e;
     --pc-w: #fbf9f2; --pc-w-edge: #111513; --pc-b: #141816; --pc-b-edge: #c9d1cb;
     color-scheme: dark;
   }
@@ -48,7 +45,7 @@
 :root[data-theme="dark"] {
   --bg: #111513; --surface: #19201c; --ink: #e5ebe6; --muted: #93a099; --line: #2d3732;
   --sq-light: #6b7a71; --sq-dark: #3c4a42; --accent: #7fb0dc; --sim: #b48ce8;
-  --map-w: #ff9a3d; --map-b: #b385ff; --map-c: #2fd1c4; --ctl-w: #2ec47c; --ctl-b: #ff5a48; --ctl-c: #ffb02e;
+  --ctl-w: #2ec47c; --ctl-b: #ff5a48; --ctl-c: #ffb02e;
   --pc-w: #fbf9f2; --pc-w-edge: #111513; --pc-b: #141816; --pc-b-edge: #c9d1cb;
   color-scheme: dark;
 }
@@ -102,8 +99,8 @@ h1 span { color: var(--muted); font-weight: 600; }
 .coord.file { right: .7cqi; bottom: .3cqi; }
 .coord.rank { left: .7cqi; top: .4cqi; }
 .cnt { left: 50%; bottom: .5cqi; transform: translateX(-50%); font-family: var(--f-mono); font-weight: 700; font-size: 2.2cqi; padding: .1cqi .7cqi; border-radius: 1cqi; background: color-mix(in oklab, var(--surface) 82%, transparent); color: var(--ink); white-space: nowrap; line-height: 1.25; z-index: 3; }
-.cnt b { color: var(--map-w); font-weight: 700; }
-.cnt i { color: var(--map-b); font-style: normal; }
+.cnt b { color: var(--ctl-w); font-weight: 700; }
+.cnt i { color: var(--ctl-b); font-style: normal; }
 .pc { inset: 0; display: grid; place-items: center; font-family: var(--f-piece); font-size: 9.6cqi; line-height: 1; font-variant-emoji: text; z-index: 2; transition: transform .12s ease; }
 .pc.w { color: var(--pc-w); -webkit-text-stroke: .32cqi var(--pc-w-edge); paint-order: stroke fill; }
 .pc.b { color: var(--pc-b); -webkit-text-stroke: .18cqi var(--pc-b-edge); paint-order: stroke fill; }
@@ -616,13 +613,13 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       <p class="note">How quickly moves play back when you jump around the timeline or tree.</p>
       <p class="label">Square control · counted from White's side</p>
       <div class="legend">
-        <div class="key"><span class="sw" style="background:var(--map-w)"></span>White only</div>
-        <div class="key"><span class="sw" style="background:var(--map-b)"></span>Black only</div>
-        <div class="key"><span class="sw" style="background:var(--map-c)"></span>Contested</div>
+        <div class="key"><span class="sw" style="background:var(--ctl-w)"></span>White only</div>
+        <div class="key"><span class="sw" style="background:var(--ctl-b)"></span>Black only</div>
+        <div class="key"><span class="sw" style="background:var(--ctl-c)"></span>Contested</div>
       </div>
       <div class="toggles">
         <button class="tog" data-opt="map" type="button"><span>Control map<small>Shade each square by who attacks it. Darker means more attackers.</small></span><span class="sw2"></span></button>
-        <button class="tog" data-opt="counts" type="button"><span>Attacker counts<small>White count in orange, Black count in purple.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="counts" type="button"><span>Attacker counts<small>White count in green, Black count in red.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="flag" type="button"><span>Flag outnumbered White pieces<small>Dashed ring when Black attackers outnumber White defenders.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="safety" type="button"><span>Move safety<small>Tap a piece: green lands safe, amber is a fair trade, red is outnumbered.</small></span><span class="sw2"></span></button>
       </div>
@@ -972,8 +969,8 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     const groups = target
       ? [{ list: att.filter(a => a.p.color === target.color), col: 'var(--accent)', word: 'Protected by', cls: 'pr' },
          { list: att.filter(a => a.p.color !== target.color), col: 'var(--ctl-b)', word: 'Attacked by', cls: 'b' }]
-      : [{ list: att.filter(a => a.p.color === 'w'), col: 'var(--map-w)', word: 'White', cls: 'w' },
-         { list: att.filter(a => a.p.color === 'b'), col: 'var(--map-b)', word: 'Black', cls: 'b' }];
+      : [{ list: att.filter(a => a.p.color === 'w'), col: 'var(--ctl-w)', word: 'White', cls: 'w' },
+         { list: att.filter(a => a.p.color === 'b'), col: 'var(--ctl-b)', word: 'Black', cls: 'b' }];
     let h = '';
     for (const g of groups) for (const a of g.list) {
       const [x, y] = XY(a.sq), dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
@@ -986,7 +983,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
       h += '<text x="' + tx + '" y="' + (ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="var(--accent)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
     } else {
       h += '<rect x="' + (tx - .46) + '" y="' + (ty - .46) + '" width=".92" height=".92" rx=".08" fill="color-mix(in oklab, var(--ink) 10%, transparent)" stroke="var(--ink)" stroke-width=".06"/>';
-      h += '<text x="' + tx + '" y="' + (ty + .12) + '" text-anchor="middle" font-size=".34" font-weight="700"><tspan fill="var(--map-w)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)">·</tspan><tspan fill="var(--map-b)">' + groups[1].list.length + '</tspan></text>';
+      h += '<text x="' + tx + '" y="' + (ty + .12) + '" text-anchor="middle" font-size=".34" font-weight="700"><tspan fill="var(--ctl-w)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)">·</tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
     }
     svg.innerHTML = h;
     const list = arr => arr.map(a => PNAME[a.p.type] + ' ' + a.sq).join(', ');
@@ -1127,7 +1124,7 @@ body:not(.mode-go) .goboard-box, body:not(.mode-go) [data-card] > .gobody { disp
     for (const s in cells) {
       const c = cells[s], i = idx(c.f, c.r), p = game.get(s), w = map.w[i], b = map.b[i];
       if (opts.map && (w || b)) {
-        const n = Math.max(w, b), v = w && b ? '--map-c' : (w ? '--map-w' : '--map-b');
+        const n = Math.max(w, b), v = w && b ? '--ctl-c' : (w ? '--ctl-w' : '--ctl-b');
         c.tint.style.background = 'color-mix(in oklab, var(' + v + ') ' + Math.min(16 + n * 13, 58) + '%, transparent)';
       } else c.tint.style.background = '';
       if (opts.counts && (w || b)) { c.cnt.hidden = false; c.cnt.innerHTML = '<b>' + w + '</b>·<i>' + b + '</i>'; } else c.cnt.hidden = true;
