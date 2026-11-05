@@ -593,6 +593,13 @@ body.creative.brushing .board .sq { cursor: copy; }
 .skin-neon .cpal-tools .br.w, .skin-neon .cpal-tools .br.b { color: var(--neon-fill); }
 .skin-neon .cpal-tools .br.w { -webkit-text-stroke: 1px var(--neon-w); filter: drop-shadow(0 0 3px var(--neon-w)); }
 .skin-neon .cpal-tools .br.b { -webkit-text-stroke: 1px var(--neon-b); filter: drop-shadow(0 0 3px var(--neon-b)); }
+
+/* puzzle modes: stuck banner over the timeline */
+.pzstuck-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 9px 11px; margin-bottom: 8px; border-radius: 8px; border: 1.5px solid var(--ctl-b); background: color-mix(in oklab, var(--ctl-b) 10%, var(--surface)); }
+.pzstuck-in p { margin: 0; flex: 1 1 240px; font-size: 13px; line-height: 1.45; }
+.coach .pzstuck-in { margin: 8px 0 0; }
+.mcard.lostwin { border-width: 2px; }
+@media (prefers-reduced-motion: no-preference) { .mcard.lostwin { animation: lostpulse 1.1s ease-in-out 3; } @keyframes lostpulse { 50% { box-shadow: inset 0 3px 0 var(--ctl-b), 0 0 0 4px color-mix(in oklab, var(--ctl-b) 35%, transparent); } } }
 </style>
 </head>
 <body>
@@ -3807,7 +3814,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       const pip = document.querySelector('.pip') ? document.querySelector('.pip').outerHTML : '';
       const settings = (M.settings || []).map(([key, label, desc]) => '<button class="tog" data-pzv="' + key + '" type="button"><span>' + label + '<small>' + desc + '</small></span><span class="sw2"></span></button>').join('');
       const body = {
-        timeline: '<div class="ribbon" id="' + k + 'Ribbon"><div class="rib-inner" id="' + k + 'RibInner"></div></div><p class="empty" id="' + k + 'RibEmpty">' + M.emptyText + '</p><div class="alts" id="' + k + 'Alts" hidden></div><div class="nav"><button data-pznav="start" type="button" aria-label="Go to start">«</button><button data-pznav="back" type="button" aria-label="Back one move">‹</button><button data-pznav="fwd" type="button" aria-label="Forward one move">›</button><button data-pznav="end" type="button" aria-label="Go to end of this line">»</button></div>',
+        timeline: '<div class="pzstuck" id="' + k + 'Stuck" hidden></div><div class="ribbon" id="' + k + 'Ribbon"><div class="rib-inner" id="' + k + 'RibInner"></div></div><p class="empty" id="' + k + 'RibEmpty">' + M.emptyText + '</p><div class="alts" id="' + k + 'Alts" hidden></div><div class="nav"><button data-pznav="start" type="button" aria-label="Go to start">«</button><button data-pznav="back" type="button" aria-label="Back one move">‹</button><button data-pznav="fwd" type="button" aria-label="Forward one move">›</button><button data-pznav="end" type="button" aria-label="Go to end of this line">»</button></div>',
         branches: '<div class="tree" id="' + k + 'Tree"></div><div class="branches" id="' + k + 'BranchNote"></div>',
         coach: '<div class="coach">' + pip + '<div class="bubble"><div class="c-tools"><button type="button" class="mini" data-pzv="marks" aria-pressed="true" title="Show the hint on the board">Marks</button></div><div class="c-body" id="' + k + 'CoachBody"></div></div></div>',
         review: '<p class="label">The story so far</p><p class="story" id="' + k + 'Story"></p><button class="btn simgo" id="' + k + 'StoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="' + k + 'StoryNote" hidden></p><div id="' + k + 'StorySections"></div><p class="label">Mistakes</p><div class="turns" id="' + k + 'Mistakes"></div>',
@@ -3874,6 +3881,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       ln.forEach((n, i) => {
         const cls = ['mcard']; if (i === ci) cls.push('cur'); if (i > ci) cls.push('after'); if (n.sim) cls.push('sim');
         const q = quality(n); if (q) cls.push(q[0]);
+        if (i && M.cardClass) { const cc = M.cardClass(api, n); if (cc) cls.push(cc); }
         const inner = (i === 0 ? M.startCard(api) : '<span class="mc-n">' + n.ply + '.' + (q ? '<b>' + q[1] + '</b>' : '') + '</span>' + M.cardInner(api, n)) + '<span class="mc-ev">' + Math.round(n.ev * 100) + '%</span>';
         const par = i ? node(n.parent) : null;
         const fork = par && par.children.length > 1 ? '<button type="button" class="fork" data-pzfork="' + par.id + '" aria-expanded="' + (P.forkOpen === par.id) + '">' + FORK_SVG + par.children.length + '</button>' : '';
@@ -3941,7 +3949,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       const n = node(P.cur); let h = '';
       if (n.id) { const v = M.verdict(api, n); if (v) h += '<p class="c-verdict"><span class="pill ' + v.cls + '">' + v.label + '</span> ' + v.text + '</p>'; }
       const o = over();
-      if (o) h += '<p class="c-main">' + esc(o) + ' Open Story Mode to see how it went.</p>';
+      if (o) h += '<p class="c-main">' + esc(o) + ' Open Story Mode to see how it went.</p>' + (M.stuckHtml ? M.stuckHtml(api) : '');
       else if (P.sim) h += '<p class="c-main muted">Watching the simulation.</p>';
       else {
         const hint = getHint(n);
@@ -4006,10 +4014,16 @@ body.creative.brushing .board .sq { cursor: copy; }
     function render(light) {
       if (opts.mode !== k || !P.nodes) return;
       M.renderBoard(api, $k('Board'), light);
-      renderRibbon(); renderTree(); renderPanels(); renderCoach(); renderStory();
+      renderRibbon(); renderTree(); renderPanels(); renderCoach(); renderStory(); renderStuck();
       if (typeof netRender === 'function') netRender();
     }
     api.render = render;
+    // optional banner a mode can show over the timeline (Solitaire uses it to find where a game was lost)
+    function renderStuck() {
+      const el = $k('Stuck'); if (!el) return;
+      const h = M.stuckHtml ? M.stuckHtml(api) : '';
+      el.hidden = !h; if (el.innerHTML !== h) el.innerHTML = h;
+    }
 
     function ensure() { if (!P.booted) { P.booted = true; load(); } }
     function onKey(e) {
@@ -4140,10 +4154,22 @@ body.creative.brushing .board .sq { cursor: copy; }
     }
     return false;
   }
+  // a card brought back down from a foundation that gives some other card a new place to go
+  function solUnstick(s) {
+    for (const x of solMoves(s, true)) {
+      if (x.mv[0] !== 'F') continue;
+      const t = x.r.state, c = x.r.info.cards[0];
+      const opens = solRanked(t).find(y => y.mv !== 'D' && y.score > 5 && y.r.info.cards[0] !== c);
+      if (opens) return { mv: x.mv, r: x.r, opens };
+      if (solStockUseful(t) && !solStockUseful(s)) return { mv: x.mv, r: x.r, opens: null };
+    }
+    return null;
+  }
   function solStuck(s) {
     if (solHome(s) === 52) return false;
     if (solRanked(s).some(x => x.mv !== 'D' && x.score > 5)) return false;
-    return !solStockUseful(s);
+    if (solStockUseful(s)) return false;
+    return !solUnstick(s);
   }
   function solSafeFinish(s) { return !s.stock.length && !s.waste.length && solHidden(s) === 0; }
 
@@ -4244,6 +4270,64 @@ body.creative.brushing .board .sq { cursor: copy; }
     const won = dfs(clone(S), 0);
     return won ? { ok: true, moves: path.slice(), nodes } : { ok: out ? null : false, nodes };
   }
+  // ---- when a game gets stuck: find the move after which the deal could no longer be won ----
+  // Winnability only ever goes from yes to no along a line, so a binary search over the line finds the switch.
+  // A position counts as winnable only when the solver actually finds a win from it.
+  function solBetterText(s, moves) {
+    const parts = []; let st = s, draws = 0;
+    const flush = () => { if (draws) { parts.push(draws === 1 ? 'draw' : 'draw ' + draws + ' times'); draws = 0; } };
+    for (const mv of moves) {
+      const r = solApply(st, mv); if (!r) break;
+      if (mv === 'D') draws++;
+      else { flush(); parts.push(solLabelFor(r.info, mv)); }
+      st = r.state;
+      if (parts.length >= 4) break;
+    }
+    flush();
+    return parts.length ? 'From the position before it, a winning line starts: <b>' + parts.map(esc).join('</b>, then <b>') + '</b>.' : '';
+  }
+  async function solFindError(api) {
+    const P = api.P, leaf = P.cur, pth = api.path(leaf);
+    if (P.solErr && P.solErr.busy) return;
+    P.solErr = { leaf, busy: true }; api.render();
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    const win = async (i, budget) => { await tick(); const r = solSolve(api.stateOf(pth[i]), budget); return r.ok ? r : null; };
+    let lo = 0, hi = pth.length - 1, loRes = await win(0, 60000);
+    if (loRes) {
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1, r = await win(mid, 60000); if (r) { lo = mid; loRes = r; } else hi = mid; }
+      // double-check the suspect move with a bigger search, in case the quick check gave up too early
+      for (let g = 0; g < 6 && lo + 1 < pth.length - 1; g++) { const r = await win(lo + 1, 200000); if (!r) break; lo++; loRes = r; }
+    }
+    // if the winning line begins with the player's own next moves, those moves were fine: step past them
+    while (loRes && lo + 1 < pth.length && loRes.moves[0] === pth[lo + 1].move) { lo++; loRes = { moves: loRes.moves.slice(1) }; }
+    if (P.cur !== leaf && !(P.solErr && P.solErr.leaf === leaf)) return;
+    if (!loRes) { P.solErr = { leaf, none: true }; api.render(); return; }
+    if (lo === pth.length - 1) { P.solErr = { leaf, alive: solBetterText(api.stateOf(pth[lo]), loRes.moves).replace('From the position before it, a', 'A') }; api.render(); return; }
+    const errNode = pth[lo + 1];
+    const text = solBetterText(api.stateOf(pth[lo]), loRes.moves);
+    P.root.lostAt = Object.assign(P.root.lostAt || {}, { [errNode.id]: text });
+    errNode._q = undefined; pth[lo].hint = undefined;
+    P.solErr = { leaf, at: errNode.id };
+    api.save(); api.render();
+  }
+  function solStuckHtml(api) {
+    const P = api.P, e = P.solErr || {}, cur = api.node(P.cur), s = api.stateOf(cur);
+    const box = (body, btn) => '<div class="pzstuck-in"><p>' + body + '</p>' + (btn || '') + '</div>';
+    if (e.busy) return box('<b>Checking your game…</b> The solver is replaying your line to find where the win slipped away.');
+    // standing on the position just before the lost move: say what would have worked
+    const lost = P.root.lostAt || {};
+    const nextLost = cur.children.map(c => api.node(c)).find(c => lost[c.id]);
+    if (nextLost) return box('<b>This is the last position that could still be won.</b> Your next move, <b>' + esc(solLabelFor(nextLost.info, nextLost.move)) + '</b> (marked ✕ on the timeline), closed it off. ' + lost[nextLost.id] + ' Play a different move here to start a new branch.');
+    if (solHome(s) === 52 || !solStuck(s)) return '';
+    if (e.leaf === P.cur && e.at != null && api.node(e.at)) {
+      const en = api.node(e.at);
+      return box('<b>Found it.</b> The deal stopped being winnable at move ' + en.ply + ', <b>' + esc(solLabelFor(en.info, en.move)) + '</b>. It’s marked ✕ on the timeline.', '<button type="button" class="cbtn" data-solerr="' + en.id + '">Go to the position before it</button>');
+    }
+    if (e.leaf === P.cur && e.alive) return box('<b>Good news: this position can still be won.</b> ' + e.alive);
+    if (e.leaf === P.cur && e.none) return box('The solver couldn’t find a win from any point in this game, so it can’t pin down a single mistake.' + (P.root.winnable ? '' : ' This deal was dealt before winnability checks and may have no solution.'));
+    return box('<b>Stuck.</b> ' + (P.root.winnable ? 'This deal can be won, so somewhere a move closed off the win.' : 'Want to know if a different move could have saved it?'), '<button type="button" class="cbtn" data-solerr="find">Find where it went wrong</button>');
+  }
+
   // Deal only games a solver can win (it sees the face-down cards). Deals it can't settle quickly are skipped too.
   function solWinnableRoot(draw) {
     let root = null;
@@ -4279,23 +4363,37 @@ body.creative.brushing .board .sq { cursor: copy; }
       return '<span class="mc-cardg' + (cRed(c) ? ' red' : '') + '">' + cName(c) + '</span><span class="mc-san">' + (n.info.to === 'F' ? 'home' : n.info.onto != null ? '→' + cName(n.info.onto) : '→col ' + (+n.info.to.slice(1) + 1)) + '</span>';
     },
     quality(api, n) {
+      if (api.P.root.lostAt && api.P.root.lostAt[n.id]) return ['blunder', '✕'];
       if (n._q !== undefined) return n._q;
       const ps = api.stateOf(api.node(n.parent)), ranked = solRanked(ps), best = ranked[0];
       const me = solApply(ps, n.move), my = me ? solScore(ps, n.move, me) : 0;
       n._q = best && best.score - my >= 55 ? ['mistake', '?'] : null;
       return n._q;
     },
+    cardClass: (api, n) => api.P.root.lostAt && api.P.root.lostAt[n.id] ? 'lostwin' : '',
+    stuckHtml: api => solStuckHtml(api),
     verdict(api, n) {
+      if (api.P.root.lostAt && api.P.root.lostAt[n.id]) return { label: 'Win slipped away', cls: 'bad', text: 'After this move the deal could no longer be won. ' + api.P.root.lostAt[n.id] };
       const q = SOL.quality(api, n);
       if (q) { const ps = api.stateOf(api.node(n.parent)), b = solRanked(ps)[0]; return { label: 'Missed chance', cls: 'meh', text: 'Better was <b>' + esc(solLabelFor(b.r.info, b.mv)) + '</b>: ' + esc(solExplain(ps, b.mv, b.r)) + '.' }; }
       if (n.info.flip != null) return { label: 'Nice', cls: 'great', text: 'You uncovered the ' + cName(n.info.flip) + '.' };
       if (n.info.toF != null) return { label: 'Home', cls: 'good', text: 'The ' + cName(n.info.toF) + ' is on its foundation.' };
       return null;
     },
-    hint(api, s) {
+    hint(api, s, n) {
+      const lostKid = n && api.P.root.lostAt && n.children.map(c => api.node(c)).find(c => api.P.root.lostAt[c.id]);
+      if (lostKid) {  // the solver already showed this position's obvious move loses: follow its winning line instead
+        const r = solSolve(s, 60000), mv = r.ok && r.moves[0];
+        const rr = mv && solApply(s, mv);
+        if (rr && mv !== lostKid.move) return { move: mv, src: solSrcOf(s, mv), dst: mv === 'D' ? null : rr.info.to, html: 'Not <b>' + esc(solLabelFor(lostKid.info, lostKid.move)) + '</b>: that closes off the win. The solver’s line starts with <b>' + esc(solLabelFor(rr.info, mv)) + '</b>.' };
+      }
       const ranked = solRanked(s), b = ranked[0];
       if (!b) return { html: 'No moves at all from here. Rewind and try another line.' };
       if (solSafeFinish(s)) return { move: b.mv, src: solSrcOf(s, b.mv), dst: b.r.info.to, html: 'Every card is face up, so this deal is won. Tap <b>Finish</b> in the Game tab to send everything home, or try <b>' + esc(solLabelFor(b.r.info, b.mv)) + '</b>.' };
+      if (b.mv === 'D' && !solStockUseful(s) && !ranked.some(x => x.mv !== 'D' && x.score > 5)) {
+        const u = solUnstick(s);
+        if (u) return { move: u.mv, src: solSrcOf(s, u.mv), dst: u.r.info.to, html: 'Try <b>' + esc(solLabelFor(u.r.info, u.mv)) + '</b>: bringing the ' + cName(u.r.info.cards[0]) + ' back down from its foundation ' + (u.opens ? 'gives the ' + cName(u.opens.r.info.cards[0]) + ' somewhere to go.' : 'lets a card from the stock come into play.') };
+      }
       if (b.mv === 'D' && !solStockUseful(s) && !ranked.some(x => x.mv !== 'D' && x.score > 5)) return { html: 'Nothing on the table or in the stock can be played. This line is stuck: rewind on the timeline and branch off somewhere earlier.' };
       return { move: b.mv, src: solSrcOf(s, b.mv), dst: b.mv === 'D' ? null : b.r.info.to, html: 'Try <b>' + esc(solLabelFor(b.r.info, b.mv)) + '</b>: ' + esc(solExplain(s, b.mv, b.r)) + '.' };
     },
@@ -4332,6 +4430,11 @@ body.creative.brushing .board .sq { cursor: copy; }
       const d = e.target.closest('[data-soldraw]');
       if (d) { const P = api.P; P.cfg.draw = +d.dataset.soldraw; if (!api.node(0).children.length) { Object.assign(P.root, solWinnableRoot(P.cfg.draw)); P.st = solDeal(P.root); api.node(0).enc = solEnc(P.st); } api.save(); api.render(); return; }
       if (e.target.closest('#solFinish')) solFinish(api);
+      const fe = e.target.closest('[data-solerr]');
+      if (fe) {
+        if (fe.dataset.solerr === 'find') solFindError(api);
+        else { const en = api.node(+fe.dataset.solerr); if (en) { api.P.solErr = Object.assign({}, api.P.solErr, { shown: en.id }); api.navTo(en.parent); } }
+      }
     },
     storySummary(api, ln) {
       const P = api.P, end = api.stateOf(ln[ln.length - 1]), flips = ln.filter(n => n.info.flip != null).length;
