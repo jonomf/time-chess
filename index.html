@@ -4147,20 +4147,128 @@ body.creative.brushing .board .sq { cursor: copy; }
   }
   function solSafeFinish(s) { return !s.stock.length && !s.waste.length && solHidden(s) === 0; }
 
+  // ---- Klondike solver: full-knowledge depth-first search with a transposition table ----
+  // Returns { ok: true, moves: [...] } when it finds a win (moves in the game's own notation),
+  // { ok: false } when it proves there is none, or { ok: null } when it runs out of budget.
+  function solSolve(s0, budget) {
+    const cR = c => c % 13, cS = c => (c / 13) | 0, red = c => { const q = cS(c); return q === 1 || q === 2; };
+    const draw = s0.draw || 1;
+    const S = { t: s0.tab.map(p => p.map(x => x.c)), d: s0.tab.map(p => p.filter(x => !x.up).length), f: s0.found.map(f => f.length), s: s0.stock.slice(), w: s0.waste.slice() };
+    const seen = new Set(); let nodes = 0, out = false;
+    const path = [];
+    const key = st => {
+      const cols = st.t.map((p, i) => String.fromCharCode(48 + st.d[i]) + String.fromCharCode(...p.map(c => 65 + c))).sort().join('.');
+      return cols + '|' + st.f.join('') + '|' + String.fromCharCode(...st.s.map(c => 65 + c)) + '/' + String.fromCharCode(...st.w.map(c => 65 + c));
+    };
+    const fits = (st, c) => st.f[cS(c)] === cR(c);
+    const fitsT = (p, c) => { if (!p.length) return cR(c) === 12; const top = p[p.length - 1]; return red(top) !== red(c) && cR(top) === cR(c) + 1; };
+    const clone = st => ({ t: st.t.map(p => p.slice()), d: st.d.slice(), f: st.f.slice(), s: st.s.slice(), w: st.w.slice() });
+    const flipFix = (st, i) => { if (st.d[i] > 0 && st.d[i] >= st.t[i].length) st.d[i] = st.t[i].length - 1; };
+    // every waste top reachable by drawing, with how many draws it takes (stock order is fixed, passes unlimited)
+    function talon(st) {
+      const res = [], seenTop = new Set(); let s = st.s.slice(), w = st.w.slice();
+      const total = s.length + w.length; if (!total) return res;
+      for (let k = 0; k <= total * 2 + 2; k++) {
+        if (w.length) { const c = w[w.length - 1]; if (!seenTop.has(c)) { seenTop.add(c); res.push({ c, k, s: s.slice(), w: w.slice(0, -1) }); } }
+        if (s.length) { const n = Math.min(draw, s.length); for (let i = 0; i < n; i++) w.push(s.pop()); }
+        else { s = w.reverse(); w = []; }
+      }
+      return res;
+    }
+    // send cards home while it can't hurt: a card whose opposite-colored next-lower cards are all home
+    function autoHome(st, moves) {
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let i = 0; i < 7; i++) {
+          const p = st.t[i]; if (p.length <= st.d[i]) continue;
+          const c = p[p.length - 1], r = cR(c);
+          if (!fits(st, c)) continue;
+          const opp = red(c) ? [0, 3] : [1, 2];
+          if (r <= 1 || (st.f[opp[0]] >= r && st.f[opp[1]] >= r)) { p.pop(); st.f[cS(c)]++; flipFix(st, i); moves.push('T' + i + '>F'); changed = true; }
+        }
+      }
+    }
+    function dfs(st, depth) {
+      if (out || ++nodes > budget) { out = true; return false; }
+      const auto = []; autoHome(st, auto); path.push(...auto);
+      if (st.f[0] + st.f[1] + st.f[2] + st.f[3] === 52) return true;
+      const k = key(st); if (seen.has(k)) { path.length -= auto.length; return false; } seen.add(k);
+      const cand = [];
+      const tal = talon(st);
+      // 1. tableau → foundation
+      for (let i = 0; i < 7; i++) { const p = st.t[i]; if (p.length > st.d[i] && fits(st, p[p.length - 1])) cand.push([90 + (st.d[i] && p.length - 1 === st.d[i] ? 10 : 0), 'TF', i]); }
+      // 2. talon → foundation
+      for (const x of tal) if (fits(st, x.c)) cand.push([80 - x.k * 0.01, 'WF', x]);
+      // 3. tableau → tableau
+      for (let i = 0; i < 7; i++) {
+        const p = st.t[i], up0 = st.d[i]; if (p.length <= up0) continue;
+        for (let j = up0; j < p.length; j++) {
+          const c = p[j];
+          const whole = j === up0;
+          if (whole && up0 === 0 && cR(c) === 12) continue;            // king already at the bottom
+          if (!whole) {                                                 // part of a run: only to free a card for home
+            const below = p[j - 1]; if (!fits(st, below)) continue;
+          }
+          for (let q = 0; q < 7; q++) {
+            if (q === i || !fitsT(st.t[q], c)) continue;
+            if (!st.t[q].length && whole && up0 === 0) continue;        // column to column with nothing gained
+            cand.push([whole ? (up0 ? 70 + up0 : 30) : 60, 'TT', i, j, q]);
+            if (!st.t[q].length) break;                                 // empty columns are interchangeable
+          }
+        }
+      }
+      // 4. talon → tableau
+      for (const x of tal) { let usedEmpty = false; for (let q = 0; q < 7; q++) { if (!fitsT(st.t[q], x.c)) continue; if (!st.t[q].length) { if (usedEmpty) continue; usedEmpty = true; } cand.push([cR(x.c) === 12 ? 50 : 40, 'WT', x, q]); } }
+      // 5. foundation → tableau (rarely needed, last)
+      for (let f = 0; f < 4; f++) if (st.f[f] > 2) { const c = f * 13 + st.f[f] - 1; for (let q = 0; q < 7; q++) if (st.t[q].length && fitsT(st.t[q], c)) cand.push([5, 'FT', f, q]); }
+      cand.sort((a, b) => b[0] - a[0]);
+      for (const m of cand) {
+        const n = clone(st), mv = [];
+        if (m[1] === 'TF') { const c = n.t[m[2]].pop(); n.f[cS(c)]++; flipFix(n, m[2]); mv.push('T' + m[2] + '>F'); }
+        else if (m[1] === 'WF' || m[1] === 'WT') {
+          const x = m[2]; n.s = x.s.slice(); n.w = x.w.slice();
+          for (let r = 0; r < x.k; r++) mv.push('D');
+          if (m[1] === 'WF') { n.f[cS(x.c)]++; mv.push('W>F'); } else { n.t[m[3]].push(x.c); mv.push('W>T' + m[3]); }
+        }
+        else if (m[1] === 'TT') { const [, , i, j, q] = m; const run = n.t[i].splice(j); n.t[q].push(...run); flipFix(n, i); mv.push('T' + i + '.' + j + '>T' + q); }
+        else { const c = m[2] * 13 + n.f[m[2]] - 1; n.f[m[2]]--; n.t[m[3]].push(c); mv.push('F' + m[2] + '>T' + m[3]); }
+        path.push(...mv);
+        if (dfs(n, depth + 1)) return true;
+        path.length -= mv.length;
+        if (out) break;
+      }
+      path.length -= auto.length;
+      return false;
+    }
+    const won = dfs(clone(S), 0);
+    return won ? { ok: true, moves: path.slice(), nodes } : { ok: out ? null : false, nodes };
+  }
+  // Deal only games a solver can win (it sees the face-down cards). Deals it can't settle quickly are skipped too.
+  function solWinnableRoot(draw) {
+    let root = null;
+    for (let i = 0; i < 40; i++) {
+      root = { seed: (Math.random() * 2 ** 31) >>> 0, draw };
+      const r = solSolve(solDeal(root), 20000);
+      if (r.ok) { root.winnable = true; root.solLen = r.moves.length; return root; }
+    }
+    return root;
+  }
+
   const SOL = {
     key: 'sol', store: 'timechess-sol-v1', graphTop: 'Solved',
     emptyText: 'No moves yet. Tap a card to move it, drag it, or tap the deck to draw.',
     simNote: 'The simulator plays by the same rules of thumb as the coach. It can’t see face-down cards.',
     defaultView: { playable: true, hidden: true }, defaultCfg: { draw: 1 },
     settings: [['playable', 'Highlight playable cards', 'Glow on every card that has a legal move right now.'], ['hidden', 'Hidden card counts', 'A badge on each column showing how many cards are still face down.']],
-    gameHtml: '<div class="seg" data-solseg="draw"><span class="label">Draw</span><button type="button" data-soldraw="1">1 card</button><button type="button" data-soldraw="3">3 cards</button></div><p class="note" id="solDrawNote" hidden>The draw setting applies when you start a new game.</p>',
+    gameHtml: '<div class="seg" data-solseg="draw"><span class="label">Draw</span><button type="button" data-soldraw="1">1 card</button><button type="button" data-soldraw="3">3 cards</button></div><p class="note" id="solDrawNote" hidden>The draw setting applies when you start a new game.</p><p class="note" id="solWinNote"></p>',
     gameButtons: '<button class="btn" id="solFinish" type="button" hidden>Finish</button>',
-    newRoot: api => ({ seed: (Math.random() * 2 ** 31) >>> 0, draw: api.P.cfg.draw }),
+    newRoot: api => solWinnableRoot(api.P.cfg.draw),
     initial: root => solDeal(root),
     enc: solEnc, dec: e => solDec(e),
     apply: (s, mv) => solApply(s, mv),
     progress: s => (solHome(s) * 2 + (21 - solHidden(s))) / (104 + 21),
-    over: s => solHome(s) === 52 ? 'Solved! Every card is home.' : solStuck(s) ? 'No moves left that can help. Rewind on the timeline or branches and try another line.' : null,
+    over: (s, root) => solHome(s) === 52 ? 'Solved! Every card is home.' : solStuck(s) ? 'No moves left that can help.' + (root && root.winnable ? ' This deal can be won, so a different choice earlier opens it up.' : '') + ' Rewind on the timeline or branches and try another line.' : null,
     label: (api, n) => solLabelFor(n.info, n.move),
     shortLabel: (api, n) => n.move === 'D' ? (n.info.recycle ? 'Recycle' : 'Draw') : cName(n.info.cards[0]),
     dotClass: (api, n) => n.move === 'D' ? 'pzd-draw' : n.info.toF != null ? 'pzd-home' : n.info.flip != null ? 'pzd-flip' : '',
@@ -4218,10 +4326,11 @@ body.creative.brushing .board .sq { cursor: copy; }
       for (const b of document.querySelectorAll('[data-soldraw]')) b.setAttribute('aria-pressed', String(+b.dataset.soldraw === P.cfg.draw));
       $('solDrawNote').hidden = P.cfg.draw === P.root.draw;
       $('solFinish').hidden = !(solSafeFinish(P.st) && solHome(P.st) < 52);
+      $('solWinNote').textContent = P.root.winnable ? 'This deal is winnable. A solver that can see the face-down cards checked it before dealing, so a win is always there to find.' : 'This deal was dealt before winnability checks, so it may have no solution. New games are always winnable.';
     },
     onClick(api, e) {
       const d = e.target.closest('[data-soldraw]');
-      if (d) { const P = api.P; P.cfg.draw = +d.dataset.soldraw; if (!api.node(0).children.length) { P.root.draw = P.cfg.draw; P.st = solDeal(P.root); api.node(0).enc = solEnc(P.st); } api.save(); api.render(); return; }
+      if (d) { const P = api.P; P.cfg.draw = +d.dataset.soldraw; if (!api.node(0).children.length) { Object.assign(P.root, solWinnableRoot(P.cfg.draw)); P.st = solDeal(P.root); api.node(0).enc = solEnc(P.st); } api.save(); api.render(); return; }
       if (e.target.closest('#solFinish')) solFinish(api);
     },
     storySummary(api, ln) {
