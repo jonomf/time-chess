@@ -7,6 +7,7 @@ Chess in the browser with visual overlays and branching timelines.
 - **Branching timelines**: go back to any move and play something else; the old line stays. Simulate any position forward with Stockfish. An interactive branch tree shows every line; tap any move in it to jump there.
 - **Timeline ribbon**: one card per move under the board, with the engine's evaluation graph drawn at the same scale and blunders, mistakes and strong moves marked.
 - **Coach mode**: Coach Pip names your opening and offers book moves, gives a nudge or the engine's best move with a plain-language reason, grades your last move, and flags pieces in danger.
+- **Creative mode**: drag any piece anywhere, drop it off the board to remove it, or place pieces from a palette, and set who moves next. Legal moves still count as moves; everything else is recorded as an edit in the timeline, so you can rewind it. Stockfish keeps evaluating, and you can play on from your setup.
 - **Story Mode**: trace any piece's path through the game, see the standout pieces and their stories, and jump to the biggest turning points to branch from them.
 
 - **Go mode**: switch to Go from the header and get the same tools for Go: 9×9, 13×13 or 19×19 boards, a Monte Carlo computer opponent, a territory map, atari warnings, win-chance timeline, branch tree, coach, story mode and simulation.

@@ -156,6 +156,10 @@ section.card { background: var(--surface); border: 1px solid var(--line); border
 .mcard.great { border-color: var(--ctl-w); box-shadow: inset 0 3px 0 var(--ctl-w); }
 .mcard.great .mc-n b { color: var(--ctl-w); }
 .mcard.sim { border-style: dashed; border-color: var(--sim); }
+.mcard.edit { border-style: dotted; border-color: var(--accent); }
+.mcard.edit .mc-n { color: var(--accent); }
+.mcard.edit .mc-san { font-size: 10.5px; letter-spacing: -.02em; }
+.mcard.invalid { border-color: var(--ctl-b); }
 .mcard.after { opacity: .5; }
 .mcard.cur { border-color: var(--accent); border-width: 2px; background: color-mix(in oklab, var(--accent) 16%, var(--surface)); transform: translateY(-2px); box-shadow: 0 4px 10px color-mix(in oklab, var(--accent) 30%, transparent); }
 .slot:has(.mcard.cur)::before { background: var(--accent); width: 4px; margin-left: -2px; }
@@ -560,6 +564,35 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
 .note { font-size: 13px; color: var(--muted); margin: 0; }
 
 @media (prefers-reduced-motion: reduce) { .pc, .tog .sw2, .tog .sw2::after { transition: none; } .engine.busy::before { animation: none; } }
+
+/* creative mode palette */
+.cpal { display: grid; gap: 8px; padding: 10px; border-radius: 8px; border: 1.5px dotted var(--accent); background: var(--surface); }
+body.nonchess .cpal { display: none !important; }
+.cpal-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.cpal-hd b { color: var(--accent); }
+.cdone, .cact { padding: 6px 12px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 600 13px var(--f-body); cursor: pointer; }
+.cdone { background: var(--ink); color: var(--bg); }
+.cpal-tools { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cpal-tools button { height: 44px; min-width: 0; padding: 0; border-radius: 6px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; font-family: var(--f-piece); font-size: clamp(18px, 5vw, 28px); line-height: 1; font-variant-emoji: text; display: grid; place-items: center; }
+.cpal-tools .tool { font-family: var(--f-body); font-size: clamp(15px, 4vw, 20px); color: var(--muted); }
+.cpal-tools .br { background: var(--sq-light); }
+.cpal-tools .br.w { color: var(--pc-w); -webkit-text-stroke: 1px var(--pc-w-edge); paint-order: stroke fill; }
+.cpal-tools .br.b { color: var(--pc-b); -webkit-text-stroke: .5px var(--pc-b-edge); paint-order: stroke fill; }
+.cpal-tools button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 20%, var(--surface)); box-shadow: inset 0 0 0 1px var(--accent); }
+.cnote { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); min-height: calc(2 * 1.4em); }
+.cnote .bad { color: var(--ctl-b); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) { .cnote.shake { animation: cshake .3s; } @keyframes cshake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } } }
+.cpal-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.cpal-row .seg .label { width: auto; margin-right: 2px; }
+.cpal-acts { display: flex; gap: 6px; }
+.creative-tog { width: 100%; margin-top: 8px; }
+.creative-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+body.creative .board .sq { cursor: grab; }
+body.creative.brushing .board .sq { cursor: copy; }
+.ghost.bin { opacity: .45; filter: grayscale(1); }
+.skin-neon .cpal-tools .br.w, .skin-neon .cpal-tools .br.b { color: var(--neon-fill); }
+.skin-neon .cpal-tools .br.w { -webkit-text-stroke: 1px var(--neon-w); filter: drop-shadow(0 0 3px var(--neon-w)); }
+.skin-neon .cpal-tools .br.b { -webkit-text-stroke: 1px var(--neon-b); filter: drop-shadow(0 0 3px var(--neon-b)); }
 </style>
 </head>
 <body>
@@ -575,6 +608,16 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   <div class="o-board board-wrap">
     <div class="status" id="status" hidden><span class="turn-chip w" id="chip"></span><span id="statusText">White to move</span><span class="evaltag" id="evalTag" title="Engine evaluation, in pawns, from White's side">…</span></div>
     <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+    <div class="cpal" id="cpal" hidden>
+      <div class="cpal-hd"><b>✎ Creative mode</b><button type="button" class="cdone" id="cDone">Done</button></div>
+      <div class="cpal-tools" role="toolbar" aria-label="Piece palette">
+        <button type="button" class="tool" data-brush="" aria-label="Move pieces" title="Move: drag or tap pieces">✥</button><button type="button" class="br w" data-brush="wk" aria-label="Place white king">♚</button><button type="button" class="br w" data-brush="wq" aria-label="Place white queen">♛</button><button type="button" class="br w" data-brush="wr" aria-label="Place white rook">♜</button><button type="button" class="br w" data-brush="wb" aria-label="Place white bishop">♝</button><button type="button" class="br w" data-brush="wn" aria-label="Place white knight">♞</button><button type="button" class="br w" data-brush="wp" aria-label="Place white pawn">♟︎</button>
+        <button type="button" class="tool" data-brush="x" aria-label="Eraser" title="Eraser: tap pieces to remove them">⌫</button><button type="button" class="br b" data-brush="bk" aria-label="Place black king">♚</button><button type="button" class="br b" data-brush="bq" aria-label="Place black queen">♛</button><button type="button" class="br b" data-brush="br" aria-label="Place black rook">♜</button><button type="button" class="br b" data-brush="bb" aria-label="Place black bishop">♝</button><button type="button" class="br b" data-brush="bn" aria-label="Place black knight">♞</button><button type="button" class="br b" data-brush="bp" aria-label="Place black pawn">♟︎</button>
+      </div>
+      <p class="cnote" id="cNote"></p>
+      <div class="cpal-row"><div class="seg" id="cTurn"><span class="label">To move</span><button type="button" data-cturn="w">White</button><button type="button" data-cturn="b">Black</button></div>
+        <div class="cpal-acts"><button type="button" class="cact" id="cClear" title="Remove everything but the kings">Clear</button><button type="button" class="cact" id="cStart">Start position</button></div></div>
+    </div>
     <p class="inspect idle" id="inspectNote" hidden>Tap any square or piece to see what attacks and protects it.</p>
   </div>
   </div>
@@ -661,6 +704,8 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
         <button class="btn" id="flip" type="button">Flip board</button>
         <button class="btn danger" id="newgame" type="button">New game</button>
       </div>
+      <button class="btn creative-tog" id="creativeBtn" type="button" aria-pressed="false">✎ Creative mode</button>
+      <p class="note">Move or add any piece, anywhere. Stockfish keeps evaluating, and you can play on from your setup.</p>
       <div class="confirm" id="confirm" hidden>
         <button class="btn primary" id="confirmYes" type="button">Start new game</button>
         <button class="btn" id="confirmNo" type="button">Keep playing</button>
@@ -679,6 +724,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
         <div class="diff devrow"><div class="diffhead"><label for="dev-camMax">Follow top speed</label><span id="devv-camMax"></span></div><input type="range" id="dev-camMax" data-dev="camMax" min="4" max="200" step="2" data-unit=" px/frame"><p class="note">Caps how fast the timeline and tree can scroll toward the current move.</p></div>
         <p class="label">Motion</p>
         <div class="diff devrow"><div class="diffhead"><label for="dev-animMs">Piece slide</label><span id="devv-animMs"></span></div><input type="range" id="dev-animMs" data-dev="animMs" min="0" max="800" step="10" data-unit=" ms"><p class="note">How long a single move takes to slide.</p></div>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-replayStep">Replay step</label><span id="devv-replayStep"></span></div><input type="range" id="dev-replayStep" data-dev="replayStep" min="20" max="300" step="5" data-unit=" ms"><p class="note">Shortest time each move gets when jumping through the timeline, at Normal replay speed. Long jumps take longer instead of snapping.</p></div>
         <div class="diff devrow"><div class="diffhead"><label for="dev-botDelay">Stockfish reply delay</label><span id="devv-botDelay"></span></div><input type="range" id="dev-botDelay" data-dev="botDelay" min="0" max="2000" step="50" data-unit=" ms"><p class="note">Minimum wait before Stockfish plays, so its move doesn’t feel instant.</p></div>
         <p class="label">Engine</p>
         <div class="diff devrow"><div class="diffhead"><label for="dev-analysisMs">Background analysis</label><span id="devv-analysisMs"></span></div><input type="range" id="dev-analysisMs" data-dev="analysisMs" min="100" max="3000" step="50" data-unit=" ms"><p class="note">Thinking time per position for the evaluation graph. Higher is more accurate but slower to fill in.</p></div>
@@ -742,7 +788,13 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
   const online = { active: false, applying: false };
-  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
+  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, replayStep: 75, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
+  // Time per step when replaying a jump: the whole jump shares opts.replay, but no step drops below
+  // the Replay step floor (scaled by the Replay setting), so each move still visibly slides.
+  function replayPer(n) {
+    const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
+    return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
+  }
   let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
@@ -808,6 +860,117 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     return res;
   }
 
+  // ---------- creative mode: free edits recorded as tree nodes ----------
+  // An edit op is a short string: 'm e2 e4' (move anything anywhere), 'a wq d4' (place), 'd e4' (remove),
+  // 't b' (side to move), 'clear' (all but kings), 'start' (standard setup). Edits never touch chess.js
+  // move rules; the new position is written straight into a FEN.
+  const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  function fenBoard(fen) {
+    const B = {}, rows = fen.split(' ')[0].split('/');
+    rows.forEach((row, i) => { let f = 0; for (const ch of row) { if (/\d/.test(ch)) f += +ch; else { B[FILES[f] + (8 - i)] = ch; f++; } } });
+    return B;
+  }
+  function boardFen(B) {
+    const rows = [];
+    for (let r = 8; r >= 1; r--) { let row = '', gap = 0; for (let f = 0; f < 8; f++) { const ch = B[FILES[f] + r]; if (ch) { if (gap) row += gap; gap = 0; row += ch; } else gap++; } if (gap) row += gap; rows.push(row); }
+    return rows.join('/');
+  }
+  const pcColor = ch => ch === ch.toUpperCase() ? 'w' : 'b';
+  function editFen(fen, op) {
+    const [k, a, b] = op.split(' '), parts = fen.split(' ');
+    let B = fenBoard(fen), side = parts[1], cast = parts[2], san, long, color = side, pt = null;
+    const backRank = sq => sq[1] === '1' || sq[1] === '8';
+    if (k === 'm') {
+      const ch = B[a]; if (!ch || a === b || !/^[a-h][1-8]$/.test(b)) return null;
+      if (ch.toLowerCase() === 'p' && backRank(b)) return null;
+      const cap = B[b]; B[b] = ch; delete B[a];
+      color = pcColor(ch); pt = ch.toLowerCase();
+      const T = ch.toUpperCase() === 'P' ? '' : ch.toUpperCase();
+      san = T + a + (cap ? '×' : '–') + b;
+      long = 'moved ' + (color === 'w' ? 'White ' : 'Black ') + NAMES[pt] + ' ' + a + ' to ' + b + (cap ? ', removing the ' + NAMES[cap.toLowerCase()] : '');
+    } else if (k === 'a') {
+      const ch = a[0] === 'w' ? a[1].toUpperCase() : a[1]; if (!/^[a-h][1-8]$/.test(b) || B[b] === ch) return null;
+      if (a[1] === 'p' && backRank(b)) return null;
+      if (a[1] === 'k' && Object.keys(B).some(q => B[q] === ch)) return null;
+      B[b] = ch; color = a[0]; pt = a[1];
+      san = '+' + a[1].toUpperCase() + b;
+      long = 'placed ' + (color === 'w' ? 'White ' : 'Black ') + NAMES[pt] + ' on ' + b;
+    } else if (k === 'd') {
+      const ch = B[a]; if (!ch) return null;
+      delete B[a]; color = pcColor(ch); pt = ch.toLowerCase();
+      san = '−' + ch.toUpperCase() + a;
+      long = 'removed ' + (color === 'w' ? 'White ' : 'Black ') + NAMES[pt] + ' from ' + a;
+    } else if (k === 't') {
+      if (a === side) return null;
+      side = color = a; san = a === 'w' ? 'White' : 'Black'; long = (a === 'w' ? 'White' : 'Black') + ' to move';
+    } else if (k === 'clear') {
+      const kept = {}; for (const q in B) if (B[q].toLowerCase() === 'k') kept[q] = B[q];
+      if (Object.keys(kept).length === Object.keys(B).length) return null;
+      B = kept; san = 'Cleared'; long = 'cleared the board down to the kings';
+    } else if (k === 'start') {
+      if (fen.split(' ').slice(0, 2).join(' ') === START_FEN.split(' ').slice(0, 2).join(' ')) return null;
+      B = fenBoard(START_FEN); side = 'w'; cast = 'KQkq'; color = 'w'; san = 'Reset'; long = 'reset to the starting position';
+    } else return null;
+    // castling survives only while king and rook still sit on their home squares
+    let c = '';
+    if (cast.includes('K') && B.e1 === 'K' && B.h1 === 'R') c += 'K';
+    if (cast.includes('Q') && B.e1 === 'K' && B.a1 === 'R') c += 'Q';
+    if (cast.includes('k') && B.e8 === 'k' && B.h8 === 'r') c += 'k';
+    if (cast.includes('q') && B.e8 === 'k' && B.a8 === 'r') c += 'q';
+    const out = boardFen(B) + ' ' + side + ' ' + (c || '-') + ' - 0 ' + (parts[5] || 1);
+    return { fen: out, san, long, color, pt, invalid: fenProblem(out) };
+  }
+  // Why a position can't be played or analyzed, or null when it's fine.
+  function fenProblem(fen) {
+    const B = fenBoard(fen), v = Object.values(B);
+    const wk = v.filter(x => x === 'K').length, bk = v.filter(x => x === 'k').length;
+    if (wk !== 1 || bk !== 1) return wk !== 1 && bk !== 1 ? 'Both sides need a king.' : (wk !== 1 ? 'White' : 'Black') + ' needs a king.';
+    const parts = fen.split(' '), other = parts[1] === 'w' ? 'b' : 'w';
+    try { const g = new Chess(parts[0] + ' ' + other + ' - - 0 1'); if (g.in_check()) return (other === 'w' ? 'White' : 'Black') + ' is in check but it’s ' + (parts[1] === 'w' ? 'White' : 'Black') + '’s move.'; } catch (e) {}
+    return null;
+  }
+  function applyEdit(n) {
+    const [k, a, b] = n.edit.split(' ');
+    const e = { edit: k, from: null, to: null, promotion: null, san: '✎' + n.san, color: n.color, piece: n.pt, mover: null, captured: null, capSq: null, rook: null, removed: [], added: [] };
+    const mk = sq => { const ch = fenBoard(n.fen)[sq]; return pcColor(ch) + ch.toUpperCase() + '-' + sq + '+' + n.id; };
+    if (k === 'm') {
+      const fresh = !ids[a];
+      e.from = a; e.to = b; e.mover = ids[a] || mk(b);
+      if (ids[b]) { e.captured = ids[b]; e.capSq = b; e.removed.push(ids[b]); }
+      delete ids[a]; ids[b] = e.mover;
+      if (fresh) e.added.push(e.mover);
+    } else if (k === 'a') {
+      e.to = b; if (ids[b]) e.removed.push(ids[b]);
+      ids[b] = mk(b); e.added.push(ids[b]);
+    } else if (k === 'd') {
+      e.to = a; if (ids[a]) e.removed.push(ids[a]); delete ids[a];
+    } else if (k === 'clear') {
+      for (const q in ids) if (ids[q][1] !== 'K') { e.removed.push(ids[q]); delete ids[q]; }
+    } else if (k === 'start') {
+      e.removed = Object.values(ids); ids = {};
+      for (const q in fenBoard(n.fen)) { ids[q] = mk(q); e.added.push(ids[q]); }
+    }
+    game = new Chess(n.fen); log.push(e);
+    return e;
+  }
+  const applyNode = n => n.edit ? applyEdit(n) : applyMove(n.move);
+  function makeEditNode(par, op, id) {
+    const r = editFen(par.fen, op); if (!r) return null;
+    const [k, a, b] = op.split(' ');
+    return { id, parent: par.id, children: [], pref: 0, edit: op, move: { from: k === 'm' ? a : null, to: k === 'm' ? b : k === 'a' ? b : k === 'd' ? a : null, promotion: null },
+      san: r.san, long: r.long, pt: r.pt, color: r.color, fen: r.fen, ply: par.ply + 1, sim: false, ev: null, invalid: r.invalid };
+  }
+  function addEdit(op) {
+    const here = nodes[cur];
+    const same = here.children.map(c => nodes[c]).find(c => c.edit === op);
+    if (same) { goTo(same.id); return same; }
+    const n = makeEditNode(here, op, nextId); if (!n) return null;
+    nextId++;
+    nodes[n.id] = n; here.children.push(n.id); here.pref = here.children.length - 1;
+    applyEdit(n); cur = n.id; clearSel();
+    return n;
+  }
+
   // ---------- move tree ----------
   function resetTree() {
     nodes = { 0: { id: 0, parent: null, children: [], pref: 0, fen: new Chess().fen(), ply: 0, ev: null } };
@@ -825,13 +988,13 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     const path = pathTo(id);
     for (let i = 1; i < path.length; i++) { const par = nodes[path[i].parent]; par.pref = par.children.indexOf(path[i].id); }
     freshPosition();
-    for (let i = 1; i < path.length; i++) applyMove(path[i].move);
+    for (let i = 1; i < path.length; i++) applyNode(path[i]);
     cur = id; clearSel();
   }
   function addChild(m, isSim) { const from = cur, n = addChild0(m, isSim); if (n && typeof onlineLocal === 'function') onlineLocal('chess', from, n); return n; }
   function addChild0(m, isSim) {
     const here = nodes[cur];
-    const same = here.children.map(c => nodes[c]).find(c => c.move.from === m.from && c.move.to === m.to && (c.move.promotion || null) === (m.promotion || null) && !!c.sim === !!isSim);
+    const same = here.children.map(c => nodes[c]).find(c => !c.edit && c.move.from === m.from && c.move.to === m.to && (c.move.promotion || null) === (m.promotion || null) && !!c.sim === !!isSim);
     if (same) { goTo(same.id); return same; }
     const res = applyMove(m); if (!res) return null;
     const n = { id: nextId++, parent: cur, children: [], pref: 0, move: { from: res.from, to: res.to, promotion: res.promotion || null }, san: res.san, color: res.color, fen: game.fen(), ply: here.ply + 1, sim: !!isSim, ev: null };
@@ -853,12 +1016,14 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     doomed.forEach(id => delete nodes[id]);
     goTo(back);
   }
-  const moveLabel = n => Math.ceil(n.ply / 2) + (n.color === 'w' ? '.' : '…') + n.san;
+  // Move numbers come from the position (FEN), so edits in the line don't shift them.
+  const mvNum = n => { const p = nodes[n.parent]; return p ? +(p.fen.split(' ')[5] || 1) : Math.ceil(n.ply / 2); };
+  const moveLabel = n => n.edit ? 'Edit: ' + n.long : mvNum(n) + (n.color === 'w' ? '.' : '…') + n.san;
 
   // ---------- persistence ----------
   function serialize() {
     const list = Object.values(nodes).filter(n => n.id !== 0).sort((a, b) => a.id - b.id)
-      .map(n => [n.id, n.parent, n.move.from, n.move.to, n.move.promotion, n.sim ? 1 : 0, n.ev]);
+      .map(n => n.edit ? [n.id, n.parent, '@', n.edit, null, 0, n.ev] : [n.id, n.parent, n.move.from, n.move.to, n.move.promotion, n.sim ? 1 : 0, n.ev]);
     const prefs = Object.values(nodes).map(n => [n.id, n.pref]);
     return { v: 2, list, prefs, rootEv: nodes[0].ev, cur, nextId, flipped, opts, simCfg, botCfg, coachCfg };
   }
@@ -867,6 +1032,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (s.rootEv) nodes[0].ev = s.rootEv;
     for (const [id, parent, from, to, promotion, isSim, ev] of s.list || []) {
       const par = nodes[parent]; if (!par) continue;
+      if (from === '@') { const en = makeEditNode(par, to, id); if (en) { en.ev = ev || null; nodes[id] = en; par.children.push(id); } continue; }
       const g = new Chess(par.fen); const res = g.move(promotion ? { from, to, promotion } : { from, to }); if (!res) continue;
       nodes[id] = { id, parent, children: [], pref: 0, move: { from, to, promotion: promotion || null }, san: res.san, color: res.color, fen: g.fen(), ply: par.ply + 1, sim: !!isSim, ev: ev || null };
       par.children.push(id);
@@ -945,7 +1111,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     const line = lineOf(cur);
     const order = [nodes[cur], ...line];
     for (const n of order) {
-      if (n.ev) continue;
+      if (n.ev || n.invalid) continue;
       const t = terminalEval(n.fen);
       if (t) { n.ev = t; continue; }
       analyzing = n.id;
@@ -960,7 +1126,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
 
   // ---------- Stockfish as Black ----------
   function maybeBotMove() {
-    if (online.active || opts.mode !== 'chess' || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
+    if (online.active || opts.mode !== 'chess' || opts.creative || nodes[cur].invalid || !botCfg.on || botThinking || sim || review || navTimer || engine.state !== 'ready') return;
     if (game.turn() !== 'b' || game.game_over() || nodes[cur].children.length) return;
     botThinking = true; renderStatus();
     const L = botCfg.level, at = cur, fen = game.fen();
@@ -985,7 +1151,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
 
   // ---------- simulation ----------
   async function startSim() {
-    if (online.active || engine.state !== 'ready' || sim || game.game_over()) return;
+    if (online.active || engine.state !== 'ready' || sim || nodes[cur].invalid || game.game_over()) return;
     const cfg = STRENGTH[simCfg.str];
     sim = { left: simCfg.len, total: simCfg.len, stop: false };
     render();
@@ -1021,6 +1187,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (navTimer) stopNav();
     if (pendingPromo || sim) return;
     if (review) { focus = ids[s] && ids[s] !== focus ? ids[s] : null; focusStep = null; renderReview(); return; }
+    if (creativeOn()) { creativeTap(s); return; }
     const p = game.get(s);
     if (selected) {
       const hits = legal.filter(m => m.to === s);
@@ -1090,7 +1257,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   }
 
   // ---------- pointer: tap or drag ----------
-  const canMove = p => p && p.color === game.turn() && (online.active ? onlineMine(p.color) : !(botCfg.on && p.color === 'b')) && !botThinking && !game.game_over() && !sim && !review && !pendingPromo;
+  const canMove = p => p && !nodes[cur].invalid && p.color === game.turn() && (online.active ? onlineMine(p.color) : !(botCfg.on && p.color === 'b')) && !botThinking && !game.game_over() && !sim && !review && !pendingPromo;
   let ptr = null, ghost = null, skipAnim = false;
   const squareAt = (x, y) => { const el = document.elementFromPoint(x, y); const c = el && el.closest && el.closest('.sq'); return c && boardEl.contains(c) ? c.dataset.sq : null; };
   function tryMove(from, to) {
@@ -1102,13 +1269,14 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (e.button > 0) return;
     const s = squareAt(e.clientX, e.clientY); if (!s) return;
     ptr = { s, x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, justSelected: false, over: null };
-    if (canMove(game.get(s)) && selected !== s) { select(s); ptr.justSelected = true; render(); }
+    if (creativeOn()) { if (!brush && game.get(s) && selected !== s) { select(s); safety = {}; ptr.justSelected = true; render(); } }
+    else if (canMove(game.get(s)) && selected !== s) { select(s); ptr.justSelected = true; render(); }
     try { boardEl.setPointerCapture(e.pointerId); } catch (_) {}
   });
   boardEl.addEventListener('pointermove', e => {
     if (!ptr || e.pointerId !== ptr.id) return;
     if (!ptr.drag) {
-      if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) < 6 || selected !== ptr.s || !canMove(game.get(ptr.s))) return;
+      if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) < 6 || selected !== ptr.s || !(creativeOn() ? !brush && game.get(ptr.s) : canMove(game.get(ptr.s)))) return;
       ptr.drag = true;
       const p = game.get(ptr.s), size = boardEl.getBoundingClientRect().width;
       ghost = document.createElement('div');
@@ -1119,7 +1287,8 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
       cells[ptr.s].el.classList.add('lifted');
     }
     ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
-    const t = squareAt(e.clientX, e.clientY), ok = t && safety[t] ? t : null;
+    const t = squareAt(e.clientX, e.clientY), cr = creativeOn(), ok = t && (cr ? t !== ptr.s : safety[t]) ? t : null;
+    ghost.classList.toggle('bin', cr && !t);
     if (ok !== ptr.over) { if (ptr.over) cells[ptr.over].el.classList.remove('drop'); if (ok) cells[ok].el.classList.add('drop'); ptr.over = ok; }
   });
   function endDrag() {
@@ -1132,7 +1301,8 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (info.drag) {
       const t = squareAt(e.clientX, e.clientY);
       skipAnim = true;
-      if (!(t && t !== info.s && tryMove(info.s, t))) render();
+      if (creativeOn()) { if (!t) doEdit('d ' + info.s); else if (!(t !== info.s && creativeMove(info.s, t))) render(); }
+      else if (!(t && t !== info.s && tryMove(info.s, t))) render();
       skipAnim = false;
       return;
     }
@@ -1140,6 +1310,69 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     onTap(squareAt(e.clientX, e.clientY) || info.s);
   });
   boardEl.addEventListener('pointercancel', () => { endDrag(); ptr = null; render(); });
+
+  // ---------- creative mode: free setup with the palette ----------
+  let brush = null;  // null = move tool, 'wq' etc. = place that piece, 'x' = eraser
+  const creativeOn = () => !!opts.creative && opts.mode === 'chess' && !online.active && !sim && !review;
+  function doEdit(op) {
+    if (navTimer) stopNav();
+    const n = addEdit(op);
+    if (!n) { const el = $('cNote'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); render(); return false; }
+    save(); render(); return true;
+  }
+  function creativeMove(from, to) {
+    if (!nodes[cur].invalid) {  // a legal move stays a real move, so the game record keeps making sense
+      const hits = game.moves({ square: from, verbose: true }).filter(m => m.to === to);
+      if (hits.length) { if (hits.some(m => m.flags.includes('p'))) { openPromo(from, to); return true; } addChild({ from, to }, false); save(); render(); return true; }
+    }
+    return doEdit('m ' + from + ' ' + to);
+  }
+  function placeBrush(s) {
+    const p = game.get(s), color = brush[0], type = brush[1];
+    if (p && p.color === color && p.type === type) return doEdit('d ' + s);  // tap the same piece again to lift it
+    if (type === 'k') {  // one king per side: placing a king moves the existing one
+      const ks = Object.keys(cells).find(q => { const x = game.get(q); return x && x.type === 'k' && x.color === color; });
+      if (ks) return doEdit('m ' + ks + ' ' + s);
+    }
+    return doEdit('a ' + brush + ' ' + s);
+  }
+  function creativeTap(s) {
+    const p = game.get(s);
+    const inspect = () => { const was = inspectSq; clearSel(); inspectSq = was === s ? null : s; render(); };
+    if (brush === 'x') { if (p) doEdit('d ' + s); else inspect(); return; }
+    if (brush) { placeBrush(s); return; }
+    if (selected && s !== selected) {
+      const sp = game.get(selected);
+      if (p && sp && p.color === sp.color) { select(s); safety = {}; render(); return; }
+      creativeMove(selected, s); return;
+    }
+    if (selected === s) { clearSel(); render(); return; }
+    if (p) { select(s); safety = {}; render(); return; }
+    inspect();
+  }
+  function setCreative(on) { if (navTimer) stopNav(); opts.creative = !!on; brush = null; clearSel(); save(); render(); }
+  function renderCreative() {
+    const on = creativeOn(), btn = $('creativeBtn');
+    $('cpal').hidden = !on;
+    document.body.classList.toggle('creative', on); document.body.classList.toggle('brushing', on && !!brush);
+    btn.setAttribute('aria-pressed', String(!!opts.creative)); btn.disabled = online.active;
+    btn.textContent = opts.creative ? '✎ Creative mode is on' : '✎ Creative mode';
+    if (!on) return;
+    for (const b of document.querySelectorAll('[data-brush]')) b.setAttribute('aria-pressed', String((b.dataset.brush || null) === brush));
+    for (const b of document.querySelectorAll('[data-cturn]')) b.setAttribute('aria-pressed', String(b.dataset.cturn === game.turn()));
+    const bad = nodes[cur].invalid;
+    $('cNote').innerHTML = (bad ? '<span class="bad">' + esc(bad) + '</span> ' : '') +
+      (brush === 'x' ? 'Tap a piece to remove it.' : brush ? 'Tap squares to place. Tap the same piece again to lift it.' : 'Drag any piece anywhere, or drop it off the board to remove it. Legal moves still count as moves.');
+  }
+  $('creativeBtn').onclick = () => setCreative(!opts.creative);
+  $('cDone').onclick = () => setCreative(false);
+  $('cpal').addEventListener('click', e => {
+    const b = e.target.closest('[data-brush]');
+    if (b) { const v = b.dataset.brush || null; brush = v && v === brush ? null : v; clearSel(); render(); return; }
+    const t = e.target.closest('[data-cturn]'); if (t) { doEdit('t ' + t.dataset.cturn); return; }
+    if (e.target.closest('#cClear')) { doEdit('clear'); return; }
+    if (e.target.closest('#cStart')) doEdit('start');
+  });
 
   // ---------- promotion ----------
   function openPromo(from, to) {
@@ -1191,7 +1424,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (steps.length <= 1 || reduce) { goTo(id); save(); render(); return; }
     if (!opts.replay) { goTo(id); save(); render(); return; }
     navDest = id;
-    const per = Math.max(opts.replay / 16, Math.min(opts.replay / 5, opts.replay / steps.length));
+    const per = replayPer(steps.length);
     animMs = Math.round(per * 0.9);
     let i = 0;
     const tick = () => {
@@ -1285,9 +1518,10 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   // ---------- timeline ribbon: eval graph above, one card per move, same horizontal scale ----------
   const SLOT = 66, GH = 60;
   const FORK_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1v4c0 2 6 2 6 4v2M3 5v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const nodeGlyph = n => !n.edit ? GLYPH[pieceOfSan(n.san)] : n.pt ? GLYPH[n.pt] : n.edit[0] === 't' ? '⇄' : n.edit === 'clear' ? '∅' : '↺';
   const pieceOfSan = san => /^[KQRBN]/.test(san) ? san[0].toLowerCase() : san[0] === 'O' ? 'k' : 'p';
   function quality(n) {
-    if (!n.parent && n.parent !== 0) return null;
+    if ((!n.parent && n.parent !== 0) || n.edit || nodes[n.parent].invalid) return null;
     const a = evVal(nodes[n.parent].ev), b = evVal(n.ev); if (a == null || b == null) return null;
     const fm = n.color === 'w' ? b - a : a - b;
     return fm <= -0.35 ? ['blunder', '??'] : fm <= -0.15 ? ['mistake', '?'] : fm >= 0.3 ? ['great', '!'] : null;
@@ -1363,14 +1597,17 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
       const e = fmtEval(n.ev);
       let inner;
       if (i === 0) inner = '<span class="mc-n">Start</span><span class="mc-g">○</span><span class="mc-san">&nbsp;</span>';
-      else {
+      else if (n.edit) {
+        cls.push('edit', n.color); if (n.invalid) cls.push('invalid');
+        inner = '<span class="mc-n">✎ edit</span><span class="mc-g ' + n.color + '">' + nodeGlyph(n) + '</span><span class="mc-san">' + esc(n.san) + '</span>';
+      } else {
         const q = quality(n); if (q) cls.push(q[0]);
         const pt = pieceOfSan(n.san);
         cls.push(n.color);
-        inner = '<span class="mc-n">' + Math.ceil(n.ply / 2) + (n.color === 'w' ? '.' : '…') + (q ? '<b>' + q[1] + '</b>' : '') + '</span>' +
+        inner = '<span class="mc-n">' + mvNum(n) + (n.color === 'w' ? '.' : '…') + (q ? '<b>' + q[1] + '</b>' : '') + '</span>' +
           '<span class="mc-g ' + n.color + '">' + GLYPH[pt] + '</span><span class="mc-san">' + esc(n.san) + '</span>';
       }
-      inner += '<span class="mc-ev' + (e.c ? ' ' + e.c : '') + '">' + e.t + '</span>';
+      inner += n.invalid ? '<span class="mc-ev">—</span>' : '<span class="mc-ev' + (e.c ? ' ' + e.c : '') + '">' + e.t + '</span>';
       const par = i ? nodes[n.parent] : null;
       const fork = par && par.children.length > 1 ? '<button type="button" class="fork" data-fork="' + par.id + '" aria-expanded="' + (forkOpen === par.id) + '" aria-label="' + par.children.length + ' lines from here">' + FORK_SVG + par.children.length + '</button>' : '';
       c += '<div class="slot">' + fork + '<button type="button" class="' + cls.join(' ') + '" data-go="' + n.id + '" aria-label="' + (i ? esc(moveLabel(n)) : 'Start position') + '">' + inner + '</button></div>';
@@ -1450,8 +1687,8 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
       const label = n.id ? moveLabel(n) : 'Start';
       dots += '<g data-node="' + n.id + '" role="button" tabindex="0" aria-label="' + esc(label) + '"><title>' + esc(label) + (n.ev ? ' (' + fmtEval(n.ev).t + ')' : '') + '</title><circle cx="' + x + '" cy="' + y + '" r="12" fill="transparent"/>' +
         (n.id === 0 ? '<rect class="dot" x="' + (x - 5) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" fill="' + (isCur ? 'var(--accent)' : 'var(--ink)') + '"/>'
-          : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 11.5 : 9.5) + '" fill="' + (isCur ? 'color-mix(in oklab, var(--accent) 22%, var(--surface))' : 'var(--surface)') + '" stroke="' + (isCur ? 'var(--ink)' : fill) + '" stroke-width="' + (isCur ? 2.5 : q || fork ? 2 : 1.4) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>' +
-            '<text class="pg ' + n.color + '" x="' + x + '" y="' + (y + 5) + '" text-anchor="middle">' + GLYPH[pieceOfSan(n.san)] + '</text>') + '</g>';
+          : '<circle class="dot" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 11.5 : 9.5) + '" fill="' + (isCur ? 'color-mix(in oklab, var(--accent) 22%, var(--surface))' : 'var(--surface)') + '" stroke="' + (isCur ? 'var(--ink)' : n.invalid ? 'var(--ctl-b)' : fill) + '"' + (n.edit ? ' stroke-dasharray="2.2 1.6"' : '') + ' stroke-width="' + (isCur ? 2.5 : q || fork ? 2 : 1.4) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>' +
+            '<text class="pg ' + n.color + '" x="' + x + '" y="' + (y + 5) + '" text-anchor="middle">' + nodeGlyph(n) + '</text>') + '</g>';
       // first move of each side branch, and the current move
       const par = n.parent != null ? nodes[n.parent] : null;
       if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + esc(n.san) + '</text>';
@@ -1480,7 +1717,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     renderDev();
     if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
     if (typeof puzzleModes !== 'undefined' && puzzleModes[opts.mode]) setTimeout(() => puzzleModes[opts.mode].render(true), 0);
-    renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect();
+    renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect(); renderCreative();
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     boardEl.style.setProperty('--checker', opts.checker + '%');
@@ -1505,7 +1742,9 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   const mvNo = ply => Math.ceil(ply / 2);
 
   function pieceName(id) {
+    if (!id) return 'an edit';
     const side = id[0] === 'w' ? 'White' : 'Black', t = id[1], sq = id.slice(3), f = sq[0];
+    if (sq.includes('+')) return side + "'s " + TYPE_WORD[t] + ' placed on ' + sq.split('+')[0];
     if (t === 'K') return side + "'s king";
     if (t === 'Q') return side + "'s queen";
     if (t === 'R') return side + "'s " + (f === 'a' ? "queen's" : "king's") + ' rook';
@@ -1520,7 +1759,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   function reviewLog() {
     const keep = [game, ids, log];
     freshPosition();
-    for (const n of reviewLine().slice(1)) applyMove(n.move);
+    for (const n of reviewLine().slice(1)) applyNode(n);
     const out = log;
     [game, ids, log] = keep;
     return out;
@@ -1528,20 +1767,28 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   function journeys() {
     const log = reviewLog();
     const J = {};
-    for (const id of START_IDS) J[id] = { id, color: id[0], type: id[1], start: id.slice(3), steps: [], kills: [], checks: 0, mate: false, dist: 0, death: null, promo: null };
+    const mkJ = id => ({ id, color: id[0], type: id[1], start: id.slice(3).split('+')[0], steps: [], kills: [], checks: 0, mate: false, dist: 0, death: null, promo: null });
+    for (const id of START_IDS) J[id] = mkJ(id);
     log.forEach((m, i) => {
-      const ply = i + 1, j = J[m.mover];
+      const ply = i + 1;
+      if (m.edit) {  // creative-mode edit: pieces appear, vanish, or teleport
+        for (const id of m.added) if (!J[id]) J[id] = mkJ(id);
+        for (const id of m.removed) if (J[id] && !J[id].death) J[id].death = { ply, by: null, sq: m.capSq || m.to || id.slice(3).split('+')[0] };
+        if (m.edit === 'm' && m.mover) { const j = J[m.mover] || (J[m.mover] = mkJ(m.mover)); j.steps.push({ ply, from: m.from, to: m.to, san: m.san, edit: true }); }
+        return;
+      }
+      const j = J[m.mover] || (J[m.mover] = mkJ(m.mover));
       j.steps.push({ ply, from: m.from, to: m.to, san: m.san, kill: m.captured || null, capSq: m.capSq });
       j.dist += cheb(m.from, m.to);
       if (m.promotion) { j.promo = m.promotion.toUpperCase(); j.type = j.promo; }
-      if (m.captured) { j.kills.push({ ply, victim: m.captured, sq: m.capSq, san: m.san }); J[m.captured].death = { ply, by: m.mover, sq: m.capSq }; }
+      if (m.captured) { j.kills.push({ ply, victim: m.captured, sq: m.capSq, san: m.san }); (J[m.captured] || (J[m.captured] = mkJ(m.captured))).death = { ply, by: m.mover, sq: m.capSq }; }
       if (/[+#]$/.test(m.san)) j.checks++;
       if (m.san.endsWith('#')) j.mate = true;
-      if (m.rook) { const r = J[m.rook.id]; r.steps.push({ ply, from: m.rook.from, to: m.rook.to, san: m.san, castle: true }); r.dist += cheb(m.rook.from, m.rook.to); }
+      if (m.rook && J[m.rook.id]) { const r = J[m.rook.id]; r.steps.push({ ply, from: m.rook.from, to: m.rook.to, san: m.san, castle: true }); r.dist += cheb(m.rook.from, m.rook.to); }
     });
     for (const id in J) {
       const j = J[id];
-      j.killValue = j.kills.reduce((a, k) => a + VALUE[J[k.victim].promo || k.victim[1]], 0);
+      j.killValue = j.kills.reduce((a, k) => a + VALUE[(J[k.victim] && J[k.victim].promo) || k.victim[1]], 0);
       const v = VALUE[id[1]];
       const early = j.death && j.death.ply <= 40 && v >= 3 ? v * 1.2 : 0;
       j.score = j.killValue * 2 + (j.mate ? 14 : 0) + j.checks * 1.5 + (j.promo ? 9 : 0) + j.dist * 0.22 + early;
@@ -1572,7 +1819,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
       ev.push(e);
     }
     if (j.promo) ev.push('promoted to a ' + TYPE_WORD[j.promo]);
-    if (j.death) ev.push('captured on move ' + mvNo(j.death.ply) + ' by ' + pieceName(j.death.by) + ' on ' + j.death.sq);
+    if (j.death) ev.push(j.death.by ? 'captured on move ' + mvNo(j.death.ply) + ' by ' + pieceName(j.death.by) + ' on ' + j.death.sq : 'lifted off the board on ' + j.death.sq + ' by an edit');
     else ev.push('still on the board at ' + (j.steps.length ? j.steps[j.steps.length - 1].to : j.start));
     return ev;
   }
@@ -1591,7 +1838,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (j.promo) parts.push('It reached the last rank and became a ' + TYPE_WORD[j.promo] + '.');
     if (j.mate) parts.push('It delivered the final checkmate.');
     else if (j.checks) parts.push('It gave check ' + (j.checks === 1 ? 'once' : j.checks + ' times') + '.');
-    if (j.death) parts.push('It was taken on ' + j.death.sq + ' by ' + pieceName(j.death.by) + ' on move ' + mvNo(j.death.ply) + '.');
+    if (j.death) parts.push(j.death.by ? 'It was taken on ' + j.death.sq + ' by ' + pieceName(j.death.by) + ' on move ' + mvNo(j.death.ply) + '.' : 'An edit lifted it off the board on ' + j.death.sq + '.');
     else if (j.steps.length) parts.push('It is still standing on ' + j.steps[j.steps.length - 1].to + '.');
     return parts.join(' ');
   }
@@ -1601,6 +1848,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     let pending = 0;
     for (let i = 1; i < path.length; i++) {
       const n = path[i], p = path[i - 1], a = evVal(p.ev), b = evVal(n.ev);
+      if (n.edit || n.invalid || p.invalid) continue;
       if (a == null || b == null) { pending++; continue; }
       const d = b - a, forMover = n.color === 'w' ? d : -d;
       out.push({ n, p, mag: Math.abs(d), forMover });
@@ -1613,7 +1861,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   const STORY_STORE = 'sightline-stories-v1';
   let storyCache = (() => { try { return JSON.parse(localStorage.getItem(STORY_STORE) || '{}'); } catch (e) { return {}; } })();
   let sampler = null, storyBusy = false, storyErr = null;
-  const storyKey = () => reviewLine().slice(1).map(n => n.move.from + n.move.to + (n.move.promotion || '')).join('');
+  const storyKey = () => reviewLine().slice(1).map(n => n.edit ? '@' + n.edit : n.move.from + n.move.to + (n.move.promotion || '')).join('');
   if (window.claude && typeof window.claude.use === 'function') window.claude.use('sample').then(s => { sampler = s; if (review) renderReview(); }).catch(() => {});
 
   async function writeStories() {
@@ -1698,7 +1946,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     $('reviewLabel').textContent = 'Story Mode · ' + (RL ? 'whole line, ' + mvNo(RL) + ' moves' : 'no moves yet');
 
     // roster
-    $('roster').innerHTML = ROSTER.map(id => { const j = J[id]; return '<button type="button" class="' + j.color + (j.death ? ' dead' : '') + (!j.steps.length && !j.death ? ' idle' : '') + '" data-piece="' + id + '" aria-pressed="' + (focus === id) + '" aria-label="' + esc(pieceName(id)) + '">' + glyphOf(j) + '</button>'; }).join('');
+    $('roster').innerHTML = [...ROSTER, ...Object.keys(J).filter(id => !ROSTER.includes(id))].map(id => { const j = J[id]; return '<button type="button" class="' + j.color + (j.death ? ' dead' : '') + (!j.steps.length && !j.death ? ' idle' : '') + '" data-piece="' + id + '" aria-pressed="' + (focus === id) + '" aria-label="' + esc(pieceName(id)) + '">' + glyphOf(j) + '</button>'; }).join('');
 
     // journey
     const jEl = $('journey'), key = storyKey(), gen = storyCache[key] || {};
@@ -1839,6 +2087,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
   };
   const clean = san => san.replace(/[+#?!]/g, '');
   function bookInfo(path) {
+    if (path.some(n => n.edit)) return { name: null, idea: null, inBook: false, next: [] };  // edited positions are off the map
     const seq = path.slice(1).map(n => clean(n.san));
     let name = null, idea = null, depth = 0;
     for (let k = seq.length; k > 0; k--) { const e = BOOK[seq.slice(0, k).join(' ')]; if (e) { name = e[0]; idea = e[1] || null; depth = k; break; } }
@@ -1919,9 +2168,9 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     return tips.slice(0, 2);
   }
 
-  function humanTurnNow() { return !(botCfg.on && game.turn() === 'b') && !game.game_over() && !sim; }
+  function humanTurnNow() { return (opts.creative || !(botCfg.on && game.turn() === 'b')) && !game.game_over() && !sim; }
   function requestCoach(n) {
-    if (opts.mode !== 'chess' || !n || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
+    if (opts.mode !== 'chess' || !n || n.invalid || n.coach || n.coachPending || engine.state !== 'ready' || sim || navTimer) return;
     const g = new Chess(n.fen); if (g.game_over()) return;
     n.coachPending = true;
     runEngine(n.fen, { skill: 20, ms: opts.dev.coachMs, multipv: 3 }, true).then(r => {
@@ -1934,7 +2183,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     });
   }
   function verdictFor(n) {
-    if (!n || n.id === 0) return null;
+    if (!n || n.id === 0 || n.edit || n.invalid || nodes[n.parent].invalid) return null;
     const par = nodes[n.parent];
     const pathSoFar = pathTo(n.id);
     const bk = bookInfo(pathSoFar);
@@ -1973,7 +2222,8 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     if (bk.name) h += '<p class="c-open"><span class="label">Opening</span> <b>' + esc(bk.name) + '</b>' + (bk.idea ? ' · ' + esc(bk.idea) : '') + '</p>';
 
     let actions = '';
-    if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Story Mode to see the turning points.</p>';
+    if (n.invalid) h += '<p class="c-main">This setup can’t be played or analyzed yet. ' + esc(n.invalid) + '</p>';
+    else if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Story Mode to see the turning points.</p>';
     else if (sim) h += '<p class="c-main muted">Watching the simulation.</p>';
     else if (!humanTurnNow()) h += '<p class="c-main muted">Stockfish is choosing its reply…</p>';
     else {
@@ -3120,7 +3370,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (steps.length <= 1 || reduce || !opts.replay) { goGoTo(id); goSave(); goRender(); return; }
     GO.navDest = id;
-    const per = Math.max(opts.replay / 16, Math.min(opts.replay / 5, opts.replay / steps.length));
+    const per = replayPer(steps.length);
     let i = 0;
     const tick = () => { goGoTo(steps[i++]); if (i >= steps.length) { GO.navTimer = null; GO.navDest = null; goRender(); goSave(); return; } GO.navTimer = setTimeout(tick, per); goRender(true); };
     tick();
@@ -3538,7 +3788,7 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
       const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (steps.length <= 1 || reduce || !opts.replay) { goTo(id); save(); render(); return; }
       P.navDest = id;
-      const per = Math.max(opts.replay / 16, Math.min(opts.replay / 5, opts.replay / steps.length));
+      const per = replayPer(steps.length);
       let i = 0;
       const tick = () => { goTo(steps[i++]); if (i >= steps.length) { P.navTimer = null; P.navDest = null; render(); save(); return; } P.navTimer = setTimeout(tick, per); render(true); };
       tick();
