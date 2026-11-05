@@ -600,6 +600,16 @@ body.creative.brushing .board .sq { cursor: copy; }
 .coach .pzstuck-in { margin: 8px 0 0; }
 .mcard.lostwin { border-width: 2px; }
 @media (prefers-reduced-motion: no-preference) { .mcard.lostwin { animation: lostpulse 1.1s ease-in-out 3; } @keyframes lostpulse { 50% { box-shadow: inset 0 3px 0 var(--ctl-b), 0 0 0 4px color-mix(in oklab, var(--ctl-b) 35%, transparent); } } }
+
+/* coach: rate-my-moves mode */
+.c-swing { font: 600 11.5px var(--f-mono); color: var(--muted); white-space: nowrap; }
+.c-blabel { margin: 4px 0 2px; font-size: 10.5px; }
+.c-better { display: grid; gap: 6px; }
+.c-opt { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); }
+.c-opt-t { min-width: 0; font-size: 13px; line-height: 1.4; }
+.c-opt-t b { font-family: var(--f-mono); }
+.c-why { display: block; color: var(--muted); font-size: 12.5px; }
+.c-opt .cbtn { flex: none; padding: 6px 10px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -659,7 +669,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       <div class="cbody coach" aria-live="polite">
       <svg class="pip" viewBox="0 0 48 56" aria-hidden="true"><ellipse cx="24" cy="52" rx="16" ry="3.5" fill="var(--line)"/><path d="M10 50c0-6 4-9 7-11-2-3-3-6-3-9 0-6 4-10 10-10s10 4 10 10c0 3-1 6-3 9 3 2 7 5 7 11z" fill="var(--accent)"/><circle cx="24" cy="13" r="9" fill="var(--accent)"/><circle cx="20.5" cy="12" r="3" fill="var(--surface)"/><circle cx="27.5" cy="12" r="3" fill="var(--surface)"/><circle cx="21" cy="12.6" r="1.4" fill="var(--ink)"/><circle cx="28" cy="12.6" r="1.4" fill="var(--ink)"/><path d="M20.5 17.2q3.5 2.6 7 0" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 5.5l10-4 10 4-10 4z" fill="var(--ink)"/><path d="M33 6v5" stroke="var(--ink)" stroke-width="1.2"/></svg>
       <div class="bubble">
-        <div class="c-tools"><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button></div>
+        <div class="c-tools"><button type="button" class="mini" data-cstyle="guide" title="Coach suggests moves as you play">Guide</button><button type="button" class="mini" data-cstyle="rate" title="No suggestions while you play. Each move gets rated afterward, with better alternatives you can branch to">Rate my moves</button><button type="button" class="mini" id="coachArrows" aria-pressed="false" title="Draw the suggested move and alternatives on the board">Arrows</button></div>
         <div class="c-body" id="coachBody"></div>
         <button type="button" class="more" id="coachMore" aria-expanded="false">More</button>
       </div>
@@ -2035,7 +2045,7 @@ body.creative.brushing .board .sq { cursor: copy; }
     more.setAttribute('aria-expanded', String(coachOpen));
   }
 
-  let coachCfg = { on: false, showArrows: true };
+  let coachCfg = { on: false, showArrows: true, style: 'guide' };  // style: 'guide' suggests moves, 'rate' only reviews them afterward
   const reveal = {};               // node id -> 'nudge' | 'best'
   const coachText = {};            // node id -> Claude explanation
   let coachAsk = null;             // node id being explained
@@ -2215,6 +2225,8 @@ body.creative.brushing .board .sq { cursor: copy; }
 
   function renderCoach() {
     if (!coachCfg.on) return;
+    for (const b of document.querySelectorAll('[data-cstyle]')) b.setAttribute('aria-pressed', String(b.dataset.cstyle === (coachCfg.style || 'guide')));
+    $('coachArrows').hidden = coachCfg.style === 'rate';
     const n = nodes[cur], path = pathTo(cur), bk = bookInfo(path);
     // last move verdict: in a Stockfish game, judge White's most recent move; in hotseat, the move just played
     let vn = cur ? n : null;
@@ -2222,6 +2234,7 @@ body.creative.brushing .board .sq { cursor: copy; }
     if (vn && !nodes[vn.parent].coach) requestCoach(nodes[vn.parent]);
     const v = vn ? verdictFor(vn) : null;
     let h = '';
+    if (coachCfg.style === 'rate') { renderRateCoach(n, vn, v, bk); return; }
     if (v && !v.pending) {
       h += '<p class="c-verdict"><span class="pill ' + v.cls + '">' + v.label + '</span> ' + esc(moveLabel(v.n)) + (v.better ? '. Stronger was <b>' + esc(v.better.san) + '</b>, because ' + esc(v.better.why) + '.' : '') + '</p>';
     } else if (v && v.pending) h += '<p class="c-verdict muted">Checking your last move…</p>';
@@ -2267,11 +2280,57 @@ body.creative.brushing .board .sq { cursor: copy; }
     $('coachArrows').setAttribute('aria-pressed', String(coachCfg.showArrows));
   }
 
+  // ---------- "Rate my moves": no hints while you play, a rating and better options afterward ----------
+  function betterOptions(vn) {
+    const par = nodes[vn.parent]; if (!par.coach || !vn.ev) return null;
+    const played = vn.move.from + vn.move.to + (vn.move.promotion || '');
+    const me = v => vn.color === 'w' ? evVal(v) : -evVal(v);
+    const mine = me(vn.ev);
+    return par.coach.lines.filter(l => l.uci !== played && l.ev && me(l.ev) - mine > 0.04).map(l => {
+      const kid = par.children.map(c => nodes[c]).find(c => !c.edit && c.move.from + c.move.to + (c.move.promotion || '') === l.uci);
+      return { l, san: sanOf(par.fen, l.uci), gain: me(l.ev) - mine, kid, why: joinReasons(explain(par.fen, l.uci, l.ev)) };
+    });
+  }
+  function renderRateCoach(n, vn, v, bk) {
+    let h = '';
+    if (!n.coach && !n.invalid && !game.game_over() && humanTurnNow()) requestCoach(n);  // quietly prepare, so the next rating is instant
+    if (vn && v && !v.pending) {
+      const par = nodes[vn.parent], from = fmtEval(par.ev), to = fmtEval(vn.ev);
+      h += '<p class="c-verdict"><span class="pill ' + v.cls + '">' + v.label + '</span> ' + esc(moveLabel(vn)) + ' <span class="c-swing">' + from.t + ' → ' + to.t + '</span></p>';
+      const opts2 = v.cls === 'good' || v.cls === 'great' ? [] : betterOptions(vn);
+      if (opts2 == null) h += '<p class="c-main muted">Looking for better moves…</p>';
+      else if (!opts2.length) h += '<p class="c-main">' + (v.cls === 'great' || v.cls === 'good' ? 'Nothing clearly better here.' : 'None of the engine’s top moves does much better here.') + '</p>';
+      else {
+        h += '<p class="label c-blabel">Better was</p><div class="c-better">' + opts2.map((o, k) =>
+          '<div class="c-opt"><div class="c-opt-t"><b>' + esc(o.san) + '</b> <span class="c-swing">' + fmtEval(o.l.ev).t + '</span>' + (k === 0 ? '<span class="c-why">' + esc(o.why) + '</span>' : '') + '</div>' +
+          '<button type="button" class="cbtn' + (k ? ' ghost' : '') + '" data-tryalt="' + par.id + ':' + o.l.uci + '"' + (online.active ? ' disabled' : '') + '>' + (o.kid ? 'Go to that branch' : 'Play this instead') + '</button></div>').join('') + '</div>';
+      }
+    } else if (vn && v && v.pending) h += '<p class="c-verdict muted">Rating your last move…</p>';
+    if (bk.name) h += '<p class="c-open"><span class="label">Opening</span> <b>' + esc(bk.name) + '</b></p>';
+    if (n.invalid) h += '<p class="c-main">This setup can’t be played or analyzed yet. ' + esc(n.invalid) + '</p>';
+    else if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Story Mode to see the turning points.</p>';
+    else if (sim) h += '<p class="c-main muted">Watching the simulation.</p>';
+    else if (!humanTurnNow()) h += '<p class="c-main muted">Stockfish is choosing its reply…</p>';
+    else if (!vn) h += '<p class="c-main">No hints in this mode. Make your move and I’ll rate it, with any better options you can branch to.</p>';
+    $('coachBody').innerHTML = h;
+    fitCoach();
+    $('coachArrows').setAttribute('aria-pressed', String(coachCfg.showArrows));
+  }
+  function tryAlt(parId, uci) {
+    const par = nodes[parId]; if (!par || sim || online.active) return;
+    const kid = par.children.map(c => nodes[c]).find(c => !c.edit && c.move.from + c.move.to + (c.move.promotion || '') === uci);
+    if (kid) { navTo(kid.id); return; }
+    if (navTimer) stopNav();
+    goTo(parId);
+    addChild({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || undefined }, false);
+    save(); render();
+  }
+
   function renderCoachArrows() {
     const svg = $('overlay');
     const n = nodes[cur];
     if (!coachCfg.on || !n.coach || !n.coach.lines.length || !humanTurnNow()) { svg.innerHTML = ''; return; }
-    if (!coachCfg.showArrows || inspectSq) { svg.innerHTML = ''; return; }
+    if (!coachCfg.showArrows || inspectSq || coachCfg.style === 'rate') { svg.innerHTML = ''; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     let h = '<defs><marker id="cah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ctl-w)"/></marker><marker id="cah2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>';
     { const [x, y] = XY(n.coach.lines[0].uci.slice(0, 2)); h += '<circle cx="' + x + '" cy="' + y + '" r=".46" fill="none" stroke="var(--ctl-w)" stroke-width=".09" stroke-dasharray=".18 .1"/>'; }
@@ -2307,6 +2366,8 @@ body.creative.brushing .board .sq { cursor: copy; }
   $('coachCard').addEventListener('click', e => {
     const c = e.target.closest('[data-coach]');
     if (c) { const k = c.dataset.coach; if (k === 'claude') askClaudeCoach(); else { reveal[cur] = k; render(); } return; }
+    const st = e.target.closest('[data-cstyle]'); if (st) { coachCfg.style = st.dataset.cstyle; save(); render(); return; }
+    const ta = e.target.closest('[data-tryalt]'); if (ta) { const [pid, uci] = ta.dataset.tryalt.split(':'); tryAlt(+pid, uci); return; }
     const b = e.target.closest('[data-bookmove]');
     if (b && humanTurnNow()) {
       const g = new Chess(game.fen()), r = g.move(b.dataset.bookmove);
