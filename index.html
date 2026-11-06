@@ -470,17 +470,17 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
 /* Sudoku */
 .sudwrap { container-type: inline-size; width: 100%; display: grid; gap: 12px; }
 .sudgrid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--line); gap: 1px; }
-.scell { position: relative; border: 0; padding: 0; margin: 0; background: var(--surface); color: var(--ink); font: 500 6.4cqi var(--f-body); display: grid; place-items: center; cursor: pointer; min-width: 0; }
+.scell { position: relative; isolation: isolate; border: 0; padding: 0; margin: 0; background: var(--surface); color: var(--ink); font: 500 6.4cqi var(--f-body); display: grid; place-items: center; cursor: pointer; min-width: 0; }
 .scell.bR { box-shadow: inset -2px 0 0 var(--ink); } .scell.bB { box-shadow: inset 0 -2px 0 var(--ink); } .scell.bR.bB { box-shadow: inset -2px 0 0 var(--ink), inset 0 -2px 0 var(--ink); }
 .scell.given { font-weight: 800; }
 .scell.user { color: var(--accent); font-weight: 600; }
 .scell.wrong { color: var(--ctl-b); }
 .scell.conflict::after { content: ""; position: absolute; left: 30%; right: 30%; bottom: 12%; height: 3px; border-radius: 2px; background: var(--ctl-b); }
-.scell.peer { background: color-mix(in oklab, var(--accent) 8%, var(--surface)); }
-.scell.same { background: color-mix(in oklab, var(--accent) 24%, var(--surface)); }
-.scell.hintunit { background: color-mix(in oklab, var(--ctl-w) 12%, var(--surface)); }
-.scell.hint { background: color-mix(in oklab, var(--ctl-w) 30%, var(--surface)); }
-.scell.sel { background: color-mix(in oklab, var(--accent) 38%, var(--surface)); outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1; }
+.scell.peer { background: color-mix(in oklab, var(--accent) 22%, var(--surface)); }
+.scell.same { background: color-mix(in oklab, var(--accent) 45%, var(--surface)); }
+.scell.hintunit { background: color-mix(in oklab, var(--ctl-w) 24%, var(--surface)); }
+.scell.hint { background: color-mix(in oklab, var(--ctl-w) 50%, var(--surface)); }
+.scell.sel { background: color-mix(in oklab, var(--accent) 55%, var(--surface)); outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1; }
 .scell.fresh { animation: sudpop .22s ease-out; }
 @keyframes sudpop { from { transform: scale(.6); } to { transform: scale(1); } }
 .scell .notes { position: absolute; inset: 6%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font: 600 2.2cqi var(--f-mono); color: var(--muted); }
@@ -503,6 +503,11 @@ body:not(.mode-sol) [data-for="sol"], body:not(.mode-sud) [data-for="sud"] { dis
 .skin-neon .mcard .mc-cardg.red { border-color: var(--neon-b); color: var(--neon-b); }
 .skin-neon .sudgrid { background: color-mix(in oklab, var(--neon-w) 25%, #000); border-color: var(--neon-w); box-shadow: 0 0 10px color-mix(in oklab, var(--neon-w) 50%, transparent); }
 .skin-neon .scell { background: var(--neon-fill); color: #d9dee8; }
+.skin-neon .scell.peer { background: color-mix(in oklab, var(--neon-w) 20%, var(--neon-fill)); }
+.skin-neon .scell.same { background: color-mix(in oklab, var(--neon-w) 40%, var(--neon-fill)); }
+.skin-neon .scell.hintunit { background: color-mix(in oklab, var(--neon-b) 22%, var(--neon-fill)); }
+.skin-neon .scell.hint { background: color-mix(in oklab, var(--neon-b) 45%, var(--neon-fill)); }
+.skin-neon .scell.sel { background: color-mix(in oklab, var(--neon-w) 50%, var(--neon-fill)); outline-color: var(--neon-w); }
 .skin-neon .scell.bR { box-shadow: inset -2px 0 0 var(--neon-w); } .skin-neon .scell.bB { box-shadow: inset 0 -2px 0 var(--neon-w); } .skin-neon .scell.bR.bB { box-shadow: inset -2px 0 0 var(--neon-w), inset 0 -2px 0 var(--neon-w); }
 .skin-neon .scell.given { color: var(--neon-w); text-shadow: 0 0 6px var(--neon-w); }
 .skin-neon .scell.user { color: var(--neon-b); text-shadow: 0 0 6px var(--neon-b); }
@@ -610,6 +615,31 @@ body.creative.brushing .board .sq { cursor: copy; }
 .c-opt-t b { font-family: var(--f-mono); }
 .c-why { display: block; color: var(--muted); font-size: 12.5px; }
 .c-opt .cbtn { flex: none; padding: 6px 10px; font-size: 12.5px; }
+
+/* sudoku coach overlays ("lenses"): painted on a layer under the digits */
+.scell[class*="lz-"]::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.scell.lz-block::before { background: repeating-linear-gradient(135deg, color-mix(in oklab, var(--ctl-b) 30%, transparent) 0 2px, transparent 2px 7px); }
+.scell.lz-can::before { background: color-mix(in oklab, var(--ctl-w) 30%, transparent); }
+.scell.lz-only::before { background: color-mix(in oklab, var(--ctl-w) 62%, transparent); box-shadow: inset 0 0 0 2.5px var(--ctl-w); }
+.scell.lz-src::before { box-shadow: inset 0 0 0 3px var(--accent); background: color-mix(in oklab, var(--accent) 30%, transparent); }
+.scell.lz-blocker::before { box-shadow: inset 0 0 0 2.5px var(--ctl-b); background: color-mix(in oklab, var(--ctl-b) 22%, transparent); }
+.scell.lz-target::before { box-shadow: inset 0 0 0 3px var(--accent); }
+.scell.lz-ready::before { background: radial-gradient(circle, color-mix(in oklab, var(--ctl-w) 75%, transparent) 0 30%, color-mix(in oklab, var(--ctl-w) 25%, transparent) 70%); }
+.scell.lz-h1::before { background: color-mix(in oklab, var(--ctl-b) 62%, transparent); }
+.scell.lz-h2::before { background: color-mix(in oklab, var(--ctl-b) 38%, transparent); }
+.scell.lz-h3::before { background: color-mix(in oklab, var(--ctl-b) 20%, transparent); }
+.scell.lz-h4::before { background: color-mix(in oklab, var(--ctl-b) 8%, transparent); }
+.scell .lzn { position: absolute; right: 6%; bottom: 4%; font: 700 2.6cqi var(--f-mono); color: var(--ink); opacity: .75; }
+.scell .lzx { font: 600 4.4cqi var(--f-mono); color: var(--ctl-b); }
+.sudpad button.no { opacity: .3; text-decoration: line-through; }
+.sudpad button.lzd { box-shadow: inset 0 0 0 2px var(--accent); }
+.lensbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.lensbar .label { margin-right: 2px; }
+.lensbar .digs { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; }
+.lensbar .digs .mini { min-width: 26px; font-size: 12px; }
+.lens-note .bad { color: var(--ctl-b); }
+.lens-note { margin: 0; font-size: 13px; line-height: 1.45; }
+.lens-note .k { display: inline-block; width: 11px; height: 11px; border-radius: 2px; vertical-align: -1px; margin: 0 3px 0 6px; }
 </style>
 </head>
 <body>
@@ -4007,7 +4037,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       const body = $k('CoachBody'); if (!body) return;
       for (const b of document.querySelectorAll('[data-for="' + k + '"] [data-pzv="marks"]')) b.setAttribute('aria-pressed', String(P.view.marks !== false));
       if (!cardOpen('coach')) return;
-      const n = node(P.cur); let h = '';
+      const n = node(P.cur); let h = M.coachLens && !P.sim ? M.coachLens(api) : '';
       if (n.id) { const v = M.verdict(api, n); if (v) h += '<p class="c-verdict"><span class="pill ' + v.cls + '">' + v.label + '</span> ' + v.text + '</p>'; }
       const o = over();
       if (o) h += '<p class="c-main">' + esc(o) + ' Open Story Mode to see how it went.</p>' + (M.stuckHtml ? M.stuckHtml(api) : '');
@@ -4020,6 +4050,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       }
       body.innerHTML = h;
     }
+    api.coachOpen = () => cardOpen('coach') && !P.sim;
     api.hintMark = () => (cardOpen('coach') && P.view.marks !== false && !P.sim && !over()) ? getHint(node(P.cur)) : null;
 
     // ---- story ----
@@ -4741,7 +4772,7 @@ body.creative.brushing .board .sq { cursor: copy; }
     key: 'sud', store: 'timechess-sud-v1', graphTop: 'Solved',
     emptyText: 'No moves yet. Pick a square, then a number.',
     simNote: 'The simulator fills in cells using the same logic as the coach, and takes an answer from the solution only when logic runs out.',
-    defaultView: { peers: true, same: true, mistakes: true, conflicts: true, cands: false }, defaultCfg: { level: 'medium' },
+    defaultView: { peers: true, same: true, mistakes: true, conflicts: true, cands: false, lens: 'off' }, defaultCfg: { level: 'medium' },
     settings: [['peers', 'Highlight row, column and box', 'Shade the lines and box of the selected square.'], ['same', 'Highlight same number', 'Shade every square holding the selected number.'], ['mistakes', 'Show mistakes', 'Color numbers that don’t match the solution, and mark them on the timeline.'], ['conflicts', 'Show conflicts', 'Underline numbers that repeat in a row, column or box.'], ['cands', 'Candidate map', 'Show every number that could still go in each empty square. This is Sudoku’s version of the control map.']],
     gameHtml: '<div class="seg"><span class="label">Level</span><button type="button" data-sudlevel="easy">Easy</button><button type="button" data-sudlevel="medium">Medium</button><button type="button" data-sudlevel="hard">Hard</button></div><p class="note" id="sudLevelNote" hidden>The level applies when you start a new game.</p>',
     newRoot: api => sudGenerate(api.P.cfg.level),
@@ -4798,13 +4829,17 @@ body.creative.brushing .board .sq { cursor: copy; }
       return t.slice(0, 2);
     },
     simMove(api, s) { const h = SUD.hint(api, s); return h ? h.move : null; },
+    coachLens: api => sudLensHtml(api),
     status(api) {
       const P = api.P, s = P.st, root = P.root; let open = 0, ok = 0, wrong = 0;
       for (let i = 0; i < 81; i++) if (root.puz[i] === '0') { open++; if (s.g[i] === +root.sol[i]) ok++; else if (s.g[i]) wrong++; }
       return '<b>' + ok + '</b>/' + open + ' filled' + (P.view.mistakes ? ' · <b>' + wrong + '</b> wrong now' : '') + ' · ' + api.node(P.cur).ply + ' moves · ' + root.level;
     },
     renderGame(api) { for (const b of document.querySelectorAll('[data-sudlevel]')) b.setAttribute('aria-pressed', String(b.dataset.sudlevel === api.P.cfg.level)); $('sudLevelNote').hidden = api.P.cfg.level === api.P.root.level; },
-    onClick(api, e) { const b = e.target.closest('[data-sudlevel]'); if (b) { api.P.cfg.level = b.dataset.sudlevel; if (!api.node(0).children.length) sudNewNow(api); else api.save(); api.render(); } },
+    onClick(api, e) {
+      const lz = e.target.closest('[data-sudlens]'); if (lz) { const v = lz.dataset.sudlens; api.P.view.lens = api.P.view.lens === v ? 'off' : v; api.save(); api.render(); return; }
+      const dg = e.target.closest('[data-suddig]'); if (dg) { const d = +dg.dataset.suddig; api.P.ui.lensDigit = api.P.ui.lensDigit === d ? 0 : d; if (api.P.ui.sel != null && api.P.st.g[api.P.ui.sel]) api.P.ui.sel = null; api.render(); return; }
+      const b = e.target.closest('[data-sudlevel]'); if (b) { api.P.cfg.level = b.dataset.sudlevel; if (!api.node(0).children.length) sudNewNow(api); else api.save(); api.render(); } },
     storySummary(api, ln) {
       const P = api.P, root = P.root, end = api.stateOf(ln[ln.length - 1]);
       let open = 0, ok = 0; for (let i = 0; i < 81; i++) if (root.puz[i] === '0') { open++; if (end.g[i] === +root.sol[i]) ok++; }
@@ -4851,7 +4886,7 @@ body.creative.brushing .board .sq { cursor: copy; }
       });
     },
     renderBoard(api) {
-      const P = api.P, s = P.st, root = P.root, sel = P.ui.sel, g = s.g, hint = api.hintMark();
+      const P = api.P, s = P.st, root = P.root, sel = P.ui.sel, g = s.g, lz = sudLens(api), hint = lz ? null : api.hintMark();  // an overlay replaces the hint shading
       const selV = sel != null ? g[sel] : 0, peers = sel != null ? new Set(SUD_PEERS[sel]) : new Set();
       const cand = P.view.cands ? sudCands(g) : null, unit = hint && hint.unit ? new Set(hint.unit) : null;
       const last = api.node(P.cur).info.cell, fresh = P.ui.lastCur !== P.cur;
@@ -4867,18 +4902,21 @@ body.creative.brushing .board .sq { cursor: copy; }
         if (P.view.same && selV && v === selV && i !== sel) cls.push('same');
         if (unit && unit.has(i)) cls.push('hintunit'); if (hint && hint.cell === i) cls.push('hint');
         if (fresh && i === last && v) cls.push('fresh');
+        if (lz && lz.cls[i]) cls.push(lz.cls[i]);
         el.className = cls.join(' ');
         let inner = '';
-        if (v) inner = String(v);
+        if (lz && lz.inner[i] != null) inner = lz.inner[i];
+        else if (v) inner = String(v);
         else if (s.n[i]) inner = '<span class="notes">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => '<i>' + (s.n[i] & (1 << d) ? d : '') + '</i>').join('') + '</span>';
         else if (cand) inner = '<span class="notes auto">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => '<i>' + (cand[i] & (1 << d) ? d : '') + '</i>').join('') + '</span>';
+        if (lz && lz.badge[i] != null && !s.n[i] && !cand) inner += '<b class="lzn">' + lz.badge[i] + '</b>';
         if (el.innerHTML !== inner) el.innerHTML = inner;
         el.setAttribute('aria-label', sudCellName(i) + (v ? ', ' + v : ', empty') + (given ? ', given' : ''));
       }
       P.ui.lastCur = P.cur;
       // number pad: how many of each digit are still to place
       const counts = new Array(10).fill(0); for (const v of g) if (v) counts[v]++;
-      for (const b of $('sudPad').querySelectorAll('[data-d]')) { const d = +b.dataset.d; if (!d) continue; b.querySelector('small').textContent = 9 - counts[d] > 0 ? 9 - counts[d] : ''; b.classList.toggle('done', counts[d] >= 9); }
+      for (const b of $('sudPad').querySelectorAll('[data-d]')) { const d = +b.dataset.d; if (!d) continue; b.querySelector('small').textContent = 9 - counts[d] > 0 ? 9 - counts[d] : ''; b.classList.toggle('done', counts[d] >= 9); b.classList.toggle('no', !!(lz && lz.padNo && lz.padNo.has(d))); b.classList.toggle('lzd', !!(lz && lz.digit === d)); }
       $('sudNotes').setAttribute('aria-pressed', String(!!P.ui.notes));
     },
     onKey(api, e) {
@@ -4891,11 +4929,78 @@ body.creative.brushing .board .sq { cursor: copy; }
     }
   };
   function sudInput(api, d) {
-    const P = api.P, i = P.ui.sel; if (i == null || P.sim || P.root.puz[i] !== '0') return;
+    const P = api.P, i = P.ui.sel;
+    if (i == null && d && P.view.lens === 'digit' && api.coachOpen()) { P.ui.lensDigit = P.ui.lensDigit === d ? 0 : d; api.render(); return; }
+    if (i == null || P.sim || P.root.puz[i] !== '0') return;
     const g = P.st.g;
     if (d === 0) { if (g[i]) api.play('C' + i); return; }
     if (P.ui.notes) { if (!g[i]) api.play('N' + i + '.' + d); return; }
     api.play(g[i] === d ? 'C' + i : 'S' + i + '=' + d);
+  }
+  // ---- coach lenses: overlays that show the puzzle's constraints ----
+  const SUD_LENSES = [['digit', 'Digit', 'Where one number can and can’t go'], ['block', 'Blockers', 'What rules numbers out of the selected square'], ['single', 'Ready', 'Squares you can solve right now'], ['heat', 'Heat', 'How many numbers each open square could still be']];
+  function sudLensDigit(api) {
+    const P = api.P, sel = P.ui.sel, g = P.st.g;
+    if (sel != null && g[sel] && P.ui.lzSel !== sel) P.ui.lensDigit = g[sel];  // tapping a filled square switches the digit
+    P.ui.lzSel = sel;
+    return P.ui.lensDigit || 0;
+  }
+  // what the active lens paints: a class per cell, optional replacement content, corner badges, pad digits to dim
+  function sudLens(api) {
+    const P = api.P, lens = P.view.lens; if (!lens || lens === 'off' || !api.coachOpen()) return null;
+    const g = P.st.g, cand = sudCands(g), out = { cls: {}, inner: {}, badge: {}, padNo: null, digit: 0, info: {} };
+    if (lens === 'digit') {
+      const d = sudLensDigit(api); out.digit = d; if (!d) return out;
+      const only = new Set(sudSingles(g).filter(x => x.v === d).map(x => x.cell));
+      let can = 0, placed = 0;
+      for (let i = 0; i < 81; i++) {
+        if (g[i] === d) { out.cls[i] = 'lz-src'; placed++; }
+        else if (!g[i]) { if (cand[i] & (1 << d)) { can++; out.cls[i] = only.has(i) ? 'lz-only' : 'lz-can'; } else out.cls[i] = 'lz-block'; }
+      }
+      Object.assign(out.info, { d, can, placed, only: only.size });
+    } else if (lens === 'block') {
+      const i = P.ui.sel; if (i == null || g[i]) return out;
+      out.cls[i] = 'lz-target'; out.padNo = new Set();
+      const ruled = [];
+      for (let d = 1; d <= 9; d++) {
+        if (cand[i] & (1 << d)) continue;
+        out.padNo.add(d);
+        const by = SUD_PEERS[i].filter(j => g[j] === d);
+        for (const j of by) out.cls[j] = 'lz-blocker';
+        const j = by[0]; ruled.push({ d, where: SR(j) === SR(i) ? 'row' : SC(j) === SC(i) ? 'column' : 'box' });
+      }
+      Object.assign(out.info, { cell: i, cands: bits9(cand[i]), ruled });
+    } else if (lens === 'single') {
+      const singles = sudSingles(g);
+      for (const x of singles) out.cls[x.cell] = 'lz-ready';
+      Object.assign(out.info, { n: singles.length, naked: singles.filter(x => x.kind === 'naked').length });
+    } else if (lens === 'heat') {
+      let min = 10, dead = 0;
+      for (let i = 0; i < 81; i++) {
+        if (g[i]) continue;
+        const c = pop9(cand[i]); out.badge[i] = c; if (c === 0) { dead++; out.cls[i] = 'lz-h1'; out.inner[i] = '<span class="lzx">✕</span>'; continue; }
+        min = Math.min(min, c); if (c <= 4) out.cls[i] = 'lz-h' + c;
+      }
+      Object.assign(out.info, { min, dead });
+    }
+    return out;
+  }
+  function sudLensHtml(api) {
+    const P = api.P, lens = P.view.lens || 'off';
+    let h = '<div class="lensbar"><span class="label">Overlay</span>' + SUD_LENSES.map(([k, t, tip]) => '<button type="button" class="mini" data-sudlens="' + k + '" aria-pressed="' + (lens === k) + '" title="' + esc(tip) + '">' + t + '</button>').join('');
+    const lz = sudLens(api);
+    if (lens === 'digit') h += '<div class="digs">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => '<button type="button" class="mini" data-suddig="' + d + '" aria-pressed="' + (lz && lz.digit === d) + '">' + d + '</button>').join('') + '</div>';
+    h += '</div>';
+    if (!lz) return h;
+    const key = (cls, txt) => '<span class="k scell ' + cls + '" style="position:relative"></span>' + txt;
+    const I = lz.info; let note = '';
+    if (lens === 'digit') note = !lz.digit ? 'Pick a number, or tap a square that holds one.' :
+      '<b>' + I.d + '</b>: ' + I.placed + ' of 9 placed. ' + key('lz-can', 'can go') + ' in ' + I.can + ' square' + (I.can === 1 ? '' : 's') + (I.only ? ', ' + key('lz-only', 'only spot') + ' in ' + I.only + ' line or box' + (I.only === 1 ? '' : 'es') : '') + '. ' + key('lz-block', 'blocked') + ' squares already see a ' + I.d + '.';
+    else if (lens === 'block') note = I.cell == null ? 'Select an empty square to see what rules numbers out of it.' :
+      '<b>' + sudCellName(I.cell) + '</b> could be <b>' + (I.cands.join(', ') || 'nothing') + '</b>.' + (I.ruled.length ? ' ' + key('lz-blocker', 'Ruled out') + ': ' + I.ruled.map(r => r.d + ' (' + r.where + ')').join(', ') + '. Crossed-out keys can’t go here.' : '');
+    else if (lens === 'single') note = I.n ? '<b>' + I.n + '</b> ' + key('lz-ready', 'glowing') + ' square' + (I.n === 1 ? ' is' : 's are') + ' solvable right now: ' + I.naked + ' with only one possible number, the rest the only spot for a number in a row, column or box. Use Blockers or Digit to see why.' : 'Nothing is solvable in one step right now. Try Heat to find the squares with the fewest options.';
+    else if (lens === 'heat') note = (I.dead ? '<b class="bad">' + I.dead + ' square' + (I.dead === 1 ? ' has' : 's have') + ' no possible number</b>, so something placed is wrong. ' : '') + 'Corner numbers count each square’s options. ' + key('lz-h1', '1') + key('lz-h2', '2') + key('lz-h3', '3') + key('lz-h4', '4') + ' Hotter squares are closer to solved.';
+    return h + '<p class="lens-note">' + note + '</p>';
   }
   function sudNewNow(api) { api.P.root = sudGenerate(api.P.cfg.level); const s = SUD.initial(api.P.root); api.P.st = s; api.node(0).enc = sudEnc(s); api.node(0).ev = 0; api.save(); }
 
