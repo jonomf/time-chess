@@ -640,6 +640,79 @@ body.creative.brushing .board .sq { cursor: copy; }
 .lens-note .bad { color: var(--ctl-b); }
 .lens-note { margin: 0; font-size: 13px; line-height: 1.45; }
 .lens-note .k { display: inline-block; width: 11px; height: 11px; border-radius: 2px; vertical-align: -1px; margin: 0 3px 0 6px; }
+
+/* header New button */
+header { position: relative; }
+.newbtn { flex: none; padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--bg); font: 700 12px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.newpop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--ink); background: var(--surface); box-shadow: 0 8px 24px color-mix(in oklab, var(--ink) 25%, transparent); font-size: 14px; }
+.newpop span { font-weight: 600; margin-right: 4px; }
+.newpop button { padding: 7px 12px; border-radius: 6px; border: 1.5px solid var(--ink); font: 700 13px var(--f-body); cursor: pointer; }
+.np-yes { background: var(--ink); color: var(--bg); }
+.np-no { background: var(--surface); color: var(--ink); }
+.moretab { display: none; }
+
+/* ---- phones: everything above the fold ---- */
+@media (max-width: 640px) {
+  body { padding-block: 6px 20px; }
+  .app, .col { gap: 8px; }
+  header { flex-wrap: nowrap; align-items: center; gap: 8px; min-height: 30px; }
+  h1 { font-size: 19px; white-space: nowrap; letter-spacing: 0; }
+  .hdr-right { width: auto; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; min-width: 0; }
+  .hdr-right .src { display: none; }
+  .modesw { order: 0; width: auto; border-radius: 6px; }
+  .modesw button { flex: none; padding: 5px 6px; font-size: 10.5px; letter-spacing: .02em; }
+  body.mode-chess .modesw [data-mode="chess"], body.mode-go .modesw [data-mode="go"], body.mode-sol .modesw [data-mode="sol"], body.mode-sud .modesw [data-mode="sud"] { display: none; }
+  .modesw button:not([hidden]):not([style]) + button { border-left: 1.5px solid var(--ink); }
+  .newbtn { padding: 5px 8px; font-size: 11px; border-radius: 6px; }
+  .newpop { left: 0; right: 0; justify-content: space-between; }
+  /* card chrome */
+  .tab { padding: 7px 6px 5px; font-size: 12.5px; }
+  .group .tabbar { min-height: 30px; }
+  .panes { padding: 6px 10px 8px; }
+  .panes > .ribbon-wrap { margin: 0 -10px; }
+  .panes > .ribbon-wrap .cbody > .empty, .panes > .ribbon-wrap .cbody > .alts, .panes > .ribbon-wrap .cbody > .nav { margin: 0 10px; }
+  .group.hasmore:not(.showmore) .tab.adv:not([aria-selected="true"]) { display: none; }
+  .group.hasmore .moretab { display: inline-block; flex: none; padding: 7px 6px 5px; border: 0; background: none; color: var(--accent); font: 600 12.5px var(--f-body); cursor: pointer; white-space: nowrap; }
+  /* timeline: short graph, narrow cards, slim nav */
+  .ribbon-wrap .cbody, .ribbon-wrap .gobody, .ribbon-wrap .pzbody { gap: 6px; }
+  .ribbon { padding: 0 10px 4px; scroll-padding: 0 10px; }
+  .rgraph text { display: none; }
+  .rail { margin-bottom: 6px; }
+  .slot { width: 50px; }
+  .mcard { width: 46px; padding: 3px 1px; gap: 0; }
+  .mcard .mc-n { font-size: 9px; }
+  .mcard .mc-g { font-size: 18px; }
+  .mcard .mc-san { font-size: 10.5px; }
+  .mcard .mc-ev { font-size: 9px; }
+  .mcard .mc-stone { width: 16px; height: 16px; margin: 2px auto 1px; }
+  .mcard .mc-digit { font-size: 17px; }
+  .mcard .mc-cardg { font-size: 12px; margin: 2px auto 1px; }
+  .mcard.cur { transform: none; }
+  /* nav buttons sit in a 2×2 block beside the move cards instead of a row under them */
+  .ribbon-wrap .cbody, .ribbon-wrap .gobody, .ribbon-wrap .pzbody { grid-template-columns: minmax(0, 1fr) auto; }
+  .ribbon-wrap :is(.cbody, .gobody, .pzbody) > * { grid-column: 1 / -1; }
+  .ribbon-wrap :is(.cbody, .gobody, .pzbody) > .ribbon { grid-column: 1; grid-row: 1; }
+  .panes > .ribbon-wrap :is(.cbody, .gobody, .pzbody) > .nav { grid-column: 2; grid-row: 1; align-self: end; margin: 0 10px 4px 0; grid-template-columns: repeat(2, 34px); gap: 4px; }
+  .nav button { padding: 0; height: 30px; font-size: 14px; }
+  .group { position: relative; }
+  .group.single .panes > [data-card="coach"] .c-tools { position: absolute; top: 4px; right: 36px; }
+  .group.single .panes > [data-card="coach"] .bubble { position: static; }
+  .sudpad button { aspect-ratio: auto; height: 34px; }
+  .sudwrap { max-width: 350px; margin: 0 auto; gap: 8px; }
+  .ribbon-wrap .empty { font-size: 12.5px; line-height: 1.35; }
+  /* coach: no mascot, a short bubble that expands with More */
+  .coach { grid-template-columns: minmax(0, 1fr); }
+  .coach .pip { display: none; }
+  .bubble { padding: 0; gap: 5px; border: 0; background: none; }
+  .bubble::before { display: none; }
+  .bubble p { font-size: 13.5px; line-height: 1.42; }
+  .c-body { gap: 5px; }
+  #coachBody { height: 78px; }
+  #coachBody.open { height: auto; }
+  .pzbody .c-body, .gobody .c-body { min-height: 0; }
+  .c-tips { display: none; }
+  .c-tools .mini { padding: 1px 6px; font-size: 10.5px; }
+}
 </style>
 </head>
 <body>
@@ -648,7 +721,8 @@ body.creative.brushing .board .sq { cursor: copy; }
 <div class="app">
   <header>
     <h1>Time <span>Chess!</span></h1>
-    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a></div>
+    <div class="hdr-right"><a class="src" href="https://github.com/jonomf/time-chess" target="_blank" rel="noopener">Source on GitHub</a><button type="button" class="newbtn" id="newBtn" aria-haspopup="true" aria-expanded="false">＋ New</button></div>
+    <div class="newpop" id="newPop" hidden role="dialog" aria-label="Start a new game"><span>Start a new game?</span><button type="button" class="np-yes" id="newYes">New game</button><button type="button" class="np-no" id="newNo">Cancel</button></div>
   </header>
 
   <div class="col col-l">
@@ -1563,7 +1637,10 @@ body.creative.brushing .board .sq { cursor: copy; }
   }
 
   // ---------- timeline ribbon: eval graph above, one card per move, same horizontal scale ----------
-  const SLOT = 66, GH = 60;
+  let SLOT = 66, GH = 60;
+  // phones get a shorter graph and narrower move cards (matches the .slot width in the phone CSS)
+  const compactNow = () => !!(window.matchMedia && matchMedia('(max-width: 640px)').matches);
+  function syncCompact() { const c = compactNow(); SLOT = c ? 50 : 66; GH = c ? 30 : 60; }
   const FORK_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1v4c0 2 6 2 6 4v2M3 5v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   const nodeGlyph = n => !n.edit ? GLYPH[pieceOfSan(n.san)] : n.pt ? GLYPH[n.pt] : n.edit[0] === 't' ? '⇄' : n.edit === 'clear' ? '∅' : '↺';
   const pieceOfSan = san => /^[KQRBN]/.test(san) ? san[0].toLowerCase() : san[0] === 'O' ? 'k' : 'p';
@@ -1610,6 +1687,7 @@ body.creative.brushing .board .sq { cursor: copy; }
   }
   function renderRibbon() {
     const line = lineOf(cur), L = line.length, ci = line.findIndex(n => n.id === cur);
+    syncCompact();
     const W = L * SLOT, xs = i => i * SLOT + SLOT / 2, pad = 6, ys = v => GH / 2 - v * (GH / 2 - pad);
     // graph
     let g = '<svg class="rgraph" id="graph" width="' + W + '" height="' + GH + '" viewBox="0 0 ' + W + ' ' + GH + '" role="img" aria-label="Evaluation over this line. Tap to jump to a move.">';
@@ -2510,9 +2588,11 @@ body.creative.brushing .board .sq { cursor: copy; }
   // Wide screens: one card with every tab. Phones: Timeline, then Coach, then one folded card with the rest.
   function defaultGroups() {
     if (!narrowNow()) return [{ id: newId(), tabs: ALL_TOOLS.slice(), active: 'branches', open: true }];
-    const rest = ALL_TOOLS.filter(k => k !== 'timeline' && k !== 'coach');
-    return [{ id: newId(), tabs: ['timeline'], active: 'timeline', open: true }, { id: newId(), tabs: ['coach'], active: 'coach', open: true }, { id: newId(), tabs: rest, active: 'branches', open: false }];
+    return [{ id: newId(), tabs: ['timeline', 'branches'], active: 'timeline', open: true }, { id: newId(), tabs: ['coach'], active: 'coach', open: true },
+      { id: newId(), tabs: ['game', 'review', 'sim', 'online', 'settings', 'dev'], active: 'game', open: false }];
   }
+  // tabs a phone tucks behind "More…" when they share a card with everyday tabs
+  const ADV_TOOLS = ['review', 'sim', 'online', 'settings', 'dev'];
   function layout(repair) {
     let L = opts.layout2;
     if (!L || L.v !== 1) {
@@ -2529,9 +2609,11 @@ body.creative.brushing .board .sq { cursor: copy; }
       opts.layout2 = L;
     }
     // phones: move anyone still on the old single-card default to the phone default, once
-    if (!opts.layoutPhone && narrowNow()) {
-      opts.layoutPhone = 1;
-      if (!L.l.length && L.r.length === 1 && L.r[0].tabs.length === ALL_TOOLS.length && L.r[0].active === 'branches') L.r = defaultGroups();
+    if ((opts.layoutPhone || 0) < 2 && narrowNow()) {
+      opts.layoutPhone = 2;
+      const sig = L.l.length ? '' : L.r.map(g => g.tabs.join(',')).join('|');
+      const oldOne = ALL_TOOLS.join(','), oldThree = 'timeline|coach|' + ALL_TOOLS.filter(k => k !== 'timeline' && k !== 'coach').join(',');
+      if (sig === oldOne || sig === oldThree) L.r = defaultGroups();
     }
     // sanitize: every tool exactly once, no empty groups
     const seen = new Set();
@@ -2572,7 +2654,10 @@ body.creative.brushing .board .sq { cursor: copy; }
     for (const id in groupEls) if (!live.has(id)) { groupEls[id].remove(); delete groupEls[id]; }
     for (const g of allGroups()) {
       const el = groupEls[g.id];
-      el.querySelector('.tabs').innerHTML = g.tabs.map(k => '<button type="button" class="tab" role="tab" data-tab="' + k + '" aria-selected="false">' + TOOL_LABEL[k] + '</button>').join('');
+      const hasMore = g.tabs.some(k => ADV_TOOLS.includes(k)) && g.tabs.some(k => !ADV_TOOLS.includes(k));
+      el.classList.toggle('hasmore', hasMore); el.classList.toggle('single', g.tabs.length === 1);
+      el.querySelector('.tabs').innerHTML = g.tabs.map(k => '<button type="button" class="tab' + (ADV_TOOLS.includes(k) ? ' adv' : '') + '" role="tab" data-tab="' + k + '" aria-selected="false">' + TOOL_LABEL[k] + '</button>').join('') +
+        (hasMore ? '<button type="button" class="moretab" data-moretab="' + g.id + '" aria-expanded="false">More…</button>' : '');
       el.querySelector('.popbtn:not(.gatherbtn)').hidden = g.tabs.length < 2;
       el.querySelector('.gatherbtn').hidden = !(g === (L.r[0] || L.l[0]) && allGroups().length > 1);
     }
@@ -2581,6 +2666,8 @@ body.creative.brushing .board .sq { cursor: copy; }
     for (const g of allGroups()) {
       const el = groupEls[g.id]; if (!el) continue;
       el.classList.toggle('folded', !g.open);
+      el.classList.toggle('showmore', !!g.more);
+      const mt = el.querySelector('.moretab'); if (mt) { mt.textContent = g.more ? 'Less' : 'More…'; mt.setAttribute('aria-expanded', String(!!g.more)); }
       el.querySelector('.gfold').setAttribute('aria-expanded', String(g.open));
       for (const t of el.querySelectorAll('.tab')) t.setAttribute('aria-selected', String(t.dataset.tab === g.active));
       for (const k of g.tabs) { toolEl[k].hidden = k !== g.active; toolEl[k].querySelector('.cbody').hidden = false; }
@@ -2673,6 +2760,28 @@ body.creative.brushing .board .sq { cursor: copy; }
     ph.parentNode.insertBefore(el, ph); ph.remove();
     syncFromDom(); placeAll(); applyState();
   }
+  document.addEventListener('click', e => {
+    const mt = e.target.closest('.moretab'); if (!mt) return;
+    const g = groupById(mt.dataset.moretab); if (!g) return;
+    g.more = !g.more; if (g.more) g.open = true;
+    save(); renderCards(); applyState();
+  });
+  // header New: one place to start over, whatever the game
+  (() => {
+    const btn = $('newBtn'), pop = $('newPop');
+    const show = on => { pop.hidden = !on; btn.setAttribute('aria-expanded', String(on)); if (on) $('newNo').focus(); };
+    btn.onclick = () => show(pop.hidden);
+    $('newNo').onclick = () => show(false);
+    $('newYes').onclick = () => {
+      show(false);
+      const m = opts.mode;
+      if (m === 'chess') $('confirmYes').click();
+      else if (m === 'go') $('goConfirmYes').click();
+      else { const y = document.querySelector('[data-for="' + m + '"] [data-pznew="yes"]'); if (y) y.click(); }
+    };
+    document.addEventListener('pointerdown', e => { if (!pop.hidden && !e.target.closest('#newPop, #newBtn')) show(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) show(false); });
+  })();
   document.addEventListener('pointerdown', e => {
     if (e.button > 0 || drag) return;
     const grip = e.target.closest('.group .grip');
@@ -3258,6 +3367,7 @@ body.creative.brushing .board .sq { cursor: copy; }
   let goRibCam = null, goTreeCam = null;
   function goRenderRibbon() {
     const line = goLine(GO.cur), L = line.length, ci = line.findIndex(n => n.id === GO.cur), rib = $('goRibbon');
+    syncCompact();
     const W = L * SLOT, xs = i => i * SLOT + SLOT / 2, pad = 6, ys = v => GH / 2 - v * (GH / 2 - pad);
     let g = '<svg class="rgraph" width="' + W + '" height="' + GH + '" viewBox="0 0 ' + W + ' ' + GH + '" role="img" aria-label="Win chance over this line. Tap to jump to a move.">';
     g += '<line x1="0" x2="' + W + '" y1="' + GH / 2 + '" y2="' + GH / 2 + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>';
@@ -3971,6 +4081,7 @@ body.creative.brushing .board .sq { cursor: copy; }
     // ---- timeline ribbon ----
     function renderRibbon() {
       const ln = line(P.cur), L = ln.length, ci = ln.findIndex(n => n.id === P.cur), rib = $k('Ribbon');
+      syncCompact();
       const W = L * SLOT, xs = i => i * SLOT + SLOT / 2, pad = 7, ys = v => GH - pad - v * (GH - 2 * pad);
       let g = '<svg class="rgraph" width="' + W + '" height="' + GH + '" viewBox="0 0 ' + W + ' ' + GH + '" role="img" aria-label="Progress over this line. Tap to jump to a move.">';
       g += '<line x1="0" x2="' + W + '" y1="' + ys(0) + '" y2="' + ys(0) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/><line x1="0" x2="' + W + '" y1="' + ys(1) + '" y2="' + ys(1) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>';
