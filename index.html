@@ -694,6 +694,8 @@ header { position: relative; }
   .ribbon-wrap :is(.cbody, .gobody, .pzbody) > .ribbon { grid-column: 1; grid-row: 1; }
   .panes > .ribbon-wrap :is(.cbody, .gobody, .pzbody) > .nav { grid-column: 2; grid-row: 1; align-self: end; margin: 0 10px 4px 0; grid-template-columns: repeat(2, 34px); gap: 4px; }
   .nav button { padding: 0; height: 30px; font-size: 14px; }
+  /* step back/forward on top, jump to start/end underneath */
+  .nav > :nth-child(1) { order: 3; } .nav > :nth-child(2) { order: 1; } .nav > :nth-child(3) { order: 2; } .nav > :nth-child(4) { order: 4; }
   .group { position: relative; }
   .group.single .panes > [data-card="coach"] .c-tools { position: absolute; top: 4px; right: 36px; }
   .group.single .panes > [data-card="coach"] .bubble { position: static; }
