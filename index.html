@@ -2506,6 +2506,13 @@ body.creative.brushing .board .sq { cursor: copy; }
   let gid = 1;
   const newId = () => 'g' + (Date.now().toString(36)) + (gid++);
 
+  const narrowNow = () => window.matchMedia && matchMedia('(max-width: 899px)').matches;
+  // Wide screens: one card with every tab. Phones: Timeline, then Coach, then one folded card with the rest.
+  function defaultGroups() {
+    if (!narrowNow()) return [{ id: newId(), tabs: ALL_TOOLS.slice(), active: 'branches', open: true }];
+    const rest = ALL_TOOLS.filter(k => k !== 'timeline' && k !== 'coach');
+    return [{ id: newId(), tabs: ['timeline'], active: 'timeline', open: true }, { id: newId(), tabs: ['coach'], active: 'coach', open: true }, { id: newId(), tabs: rest, active: 'branches', open: false }];
+  }
   function layout(repair) {
     let L = opts.layout2;
     if (!L || L.v !== 1) {
@@ -2518,8 +2525,13 @@ body.creative.brushing .board .sq { cursor: copy; }
         const main = (d.tabs || []).filter(k => ALL_TOOLS.includes(k));
         if (main.length) L.r.push({ id: newId(), tabs: main, active: main.includes(opts.tab) ? opts.tab : main[0], open: true });
         L.r.push(...(d.r || []).filter(k => ALL_TOOLS.includes(k)).map(single));
-      } else L.r.push({ id: newId(), tabs: ALL_TOOLS.slice(), active: 'branches', open: true });
+      } else L.r.push(...defaultGroups());
       opts.layout2 = L;
+    }
+    // phones: move anyone still on the old single-card default to the phone default, once
+    if (!opts.layoutPhone && narrowNow()) {
+      opts.layoutPhone = 1;
+      if (!L.l.length && L.r.length === 1 && L.r[0].tabs.length === ALL_TOOLS.length && L.r[0].active === 'branches') L.r = defaultGroups();
     }
     // sanitize: every tool exactly once, no empty groups
     const seen = new Set();
