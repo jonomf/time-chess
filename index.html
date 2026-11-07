@@ -715,6 +715,26 @@ header { position: relative; }
   .c-tips { display: none; }
   .c-tools .mini { padding: 1px 6px; font-size: 10.5px; }
 }
+
+/* checkmate replay */
+.sq.mtry::after { content: ""; position: absolute; inset: .5cqi; border: .7cqi dashed var(--ctl-b); border-radius: 4px; pointer-events: none; z-index: 3; }
+.sq.mhit::after { content: ""; position: absolute; inset: 0; background: color-mix(in oklab, var(--ctl-b) 45%, transparent); pointer-events: none; z-index: 1; }
+@media (prefers-reduced-motion: no-preference) { .sq.mhit::after { animation: mhit .5s ease-out; } @keyframes mhit { from { background: color-mix(in oklab, var(--ctl-b) 85%, transparent); } } }
+.sq[data-ghost]::before { content: attr(data-ghost); position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-piece); font-size: 9.6cqi; line-height: 1; z-index: 4; pointer-events: none; color: var(--pc-b); opacity: 0; font-variant-emoji: text; }
+.sq[data-ghost][data-gc="w"]::before { color: var(--pc-w); -webkit-text-stroke: 1px var(--pc-w-edge); }
+@media (prefers-reduced-motion: no-preference) { .sq[data-ghost]::before { animation: kgone .7s ease-out; } @keyframes kgone { 0% { opacity: .95; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(.4) rotate(-50deg) translateY(40%); } } }
+.matecap { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 8; margin: 0; max-width: calc(100% - 20px); padding: 6px 12px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 88%, transparent); color: var(--bg); font-size: 13px; line-height: 1.35; text-align: center; pointer-events: none; box-shadow: 0 4px 14px color-mix(in oklab, var(--ink) 30%, transparent); }
+.matecap b { font-family: var(--f-mono); }
+.matecap.top { bottom: auto; top: 10px; }
+.toast { position: fixed; z-index: 80; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom, 0px)); width: min(520px, calc(100% - 24px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-radius: 12px; background: var(--ink); color: var(--bg); box-shadow: 0 12px 34px color-mix(in oklab, var(--ink) 40%, transparent); }
+@media (prefers-reduced-motion: no-preference) { .toast:not([hidden]) { animation: toastin .35s cubic-bezier(.2,.9,.3,1.2); } @keyframes toastin { from { transform: translate(-50%, 30px); opacity: 0; } } }
+.toast .t-main { flex: 1 1 220px; display: grid; gap: 2px; min-width: 0; }
+.toast .t-main b { font-family: var(--f-display); font-size: 19px; font-weight: 800; letter-spacing: .01em; text-transform: uppercase; }
+.toast .t-main span { font-size: 13px; opacity: .85; line-height: 1.4; }
+.toast .t-acts { display: flex; align-items: center; gap: 6px; }
+.t-btn { padding: 7px 11px; border-radius: 7px; border: 1.5px solid var(--bg); background: none; color: var(--bg); font: 700 13px var(--f-body); cursor: pointer; white-space: nowrap; }
+.t-btn.primary { background: var(--bg); color: var(--ink); }
+.t-x { width: 30px; height: 30px; border: 0; border-radius: 6px; background: none; color: var(--bg); font-size: 15px; cursor: pointer; opacity: .75; }
 </style>
 </head>
 <body>
@@ -730,7 +750,8 @@ header { position: relative; }
   <div class="col col-l">
   <div class="o-board board-wrap">
     <div class="status" id="status" hidden><span class="turn-chip w" id="chip"></span><span id="statusText">White to move</span><span class="evaltag" id="evalTag" title="Engine evaluation, in pawns, from White's side">…</span></div>
-    <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+    <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><p class="matecap" id="mateCap" hidden aria-live="polite"></p><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+    <div class="toast" id="mateToast" hidden role="status" aria-live="polite"><div class="t-main"><b id="mateTitle">Checkmate!</b><span id="mateSub"></span></div><div class="t-acts"><button type="button" class="t-btn" id="mateAgain">Watch again</button><button type="button" class="t-btn primary" id="mateNew">New game</button><button type="button" class="t-x" id="mateX" aria-label="Dismiss">✕</button></div></div>
     <div class="cpal" id="cpal" hidden>
       <div class="cpal-hd"><b>✎ Creative mode</b><button type="button" class="cdone" id="cDone">Done</button></div>
       <div class="cpal-tools" role="toolbar" aria-label="Piece palette">
@@ -1108,13 +1129,19 @@ header { position: relative; }
   }
   function leafOf(id) { const l = lineOf(id); return l[l.length - 1]; }
   function goTo(id) {
+    if (mateView) stopMate();
     const path = pathTo(id);
     for (let i = 1; i < path.length; i++) { const par = nodes[path[i].parent]; par.pref = par.children.indexOf(path[i].id); }
     freshPosition();
     for (let i = 1; i < path.length; i++) applyNode(path[i]);
     cur = id; clearSel();
   }
-  function addChild(m, isSim) { const from = cur, n = addChild0(m, isSim); if (n && typeof onlineLocal === 'function') onlineLocal('chess', from, n); return n; }
+  function addChild(m, isSim) {
+    const from = cur, n = addChild0(m, isSim);
+    if (n && typeof onlineLocal === 'function') onlineLocal('chess', from, n);
+    if (n && !isSim && game.in_checkmate()) mateQueued = n.id;
+    return n;
+  }
   function addChild0(m, isSim) {
     const here = nodes[cur];
     const same = here.children.map(c => nodes[c]).find(c => !c.edit && c.move.from === m.from && c.move.to === m.to && (c.move.promotion || null) === (m.promotion || null) && !!c.sim === !!isSim);
@@ -1307,6 +1334,7 @@ header { position: relative; }
     }
   }
   function onTap(s) {
+    if (mateView) { stopMate(); return; }
     if (navTimer) stopNav();
     if (pendingPromo || sim) return;
     if (review) { focus = ids[s] && ids[s] !== focus ? ids[s] : null; focusStep = null; renderReview(); return; }
@@ -1560,11 +1588,12 @@ header { position: relative; }
   }
   const pendingDrop = id => log.length && log[log.length - 1].mover === id;
   function renderBoard() {
-    const map = attackMap(game), last = log[log.length - 1], turn = game.turn();
+    const MV = mateView, G = MV ? MV.game : game, ID = MV ? MV.ids : ids;  // the checkmate replay draws what-if positions
+    const map = attackMap(G), last = MV ? null : log[log.length - 1], turn = G.turn();
     let checkSq = null;
-    if (game.in_check()) for (const s in cells) { const p = game.get(s); if (p && p.type === 'k' && p.color === turn) checkSq = s; }
+    if (G.in_check()) for (const s in cells) { const p = G.get(s); if (p && p.type === 'k' && p.color === turn) checkSq = s; }
     for (const s in cells) {
-      const c = cells[s], i = idx(c.f, c.r), p = game.get(s), w = map.w[i], b = map.b[i];
+      const c = cells[s], i = idx(c.f, c.r), p = G.get(s), w = map.w[i], b = map.b[i];
       if (opts.map && (w || b)) {
         const n = Math.max(w, b), v = w && b ? '--ctl-c' : (w ? '--ctl-w' : '--ctl-b');
         c.tint.style.background = 'color-mix(in oklab, var(' + v + ') ' + Math.min(16 + n * 13, 58) + '%, transparent)';
@@ -1576,14 +1605,17 @@ header { position: relative; }
       c.el.classList.toggle('last', !!(last && (last.from === s || last.to === s)));
       c.el.classList.toggle('sel', selected === s);
       c.el.classList.toggle('check', checkSq === s);
-      const isDest = selected && safety[s];
+      c.el.classList.toggle('mtry', !!(MV && MV.cls[s] === 'mtry'));
+      c.el.classList.toggle('mhit', !!(MV && MV.cls[s] === 'mhit'));
+      if (MV && MV.ghost && MV.ghost.sq === s) { c.el.dataset.ghost = GLYPH.k; c.el.dataset.gc = MV.ghost.color; } else if (c.el.dataset.ghost) { delete c.el.dataset.ghost; delete c.el.dataset.gc; }
+      const isDest = !MV && selected && safety[s];
       c.hint.hidden = !isDest;
       if (isDest) c.hint.className = 'hint' + (p || legal.find(m => m.to === s && m.flags.includes('e')) ? ' cap' : '') + (opts.safety ? ' ' + safety[s] : '');
       c.el.setAttribute('aria-label', s + (p ? ', ' + (p.color === 'w' ? 'white ' : 'black ') + NAMES[p.type] : '') + (w || b ? ', white attacks ' + w + ', black attacks ' + b : ''));
     }
     boardEl.classList.toggle('simming', !!sim);
     // slide pieces that moved since the last frame
-    const nowSq = {}; for (const sq in ids) nowSq[ids[sq]] = sq;
+    const nowSq = {}; for (const sq in ID) nowSq[ID[sq]] = sq;
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prevSq && !reduce) {
       const moved = Object.keys(nowSq).filter(id => prevSq[id] && prevSq[id] !== nowSq[id]);
@@ -1593,12 +1625,84 @@ header { position: relative; }
         const a = from.el.getBoundingClientRect(), b = to.el.getBoundingClientRect();
         const dx = a.left - b.left, dy = a.top - b.top;
         to.el.classList.add('anim');
-        const anim = to.pc.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'translate(0,0)' }], { duration: navTimer ? animMs : opts.dev.animMs, easing: 'cubic-bezier(.3,.7,.2,1)' });
+        const anim = to.pc.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'translate(0,0)' }], { duration: MV ? MV.dur : navTimer ? animMs : opts.dev.animMs, easing: 'cubic-bezier(.3,.7,.2,1)' });
         anim.onfinish = anim.oncancel = () => to.el.classList.remove('anim');
       }
     }
     prevSq = nowSq;
   }
+
+  // ---------- checkmate replay: the king tries every square it could step to, and gets taken on each ----------
+  let mateView = null, mateRun = 0, mateQueued = null, mateToastFor = null;
+  const VALUE_ORDER = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 10 };
+  // the cheapest piece of the side to move that can capture on sq
+  function takerOf(fen, sq) {
+    let g; try { g = new Chess(fen); } catch (e) { return null; }
+    const ms = g.moves({ verbose: true }).filter(m => m.to === sq).sort((a, b) => VALUE_ORDER[a.piece] - VALUE_ORDER[b.piece]);
+    return ms.length ? ms[0] : null;
+  }
+  function mateTries() {
+    const loser = game.turn(), win = loser === 'w' ? 'b' : 'w', kc = loser === 'w' ? 'K' : 'k';
+    const B = fenBoard(game.fen()), K = Object.keys(B).find(q => B[q] === kc); if (!K) return null;
+    const fi = FILES.indexOf(K[0]), r = +K[1], tries = [];
+    for (const [df, dr] of [[-1, 1], [0, 1], [1, 1], [-1, 0], [1, 0], [-1, -1], [0, -1], [1, -1]]) {
+      const f = fi + df, rr = r + dr; if (f < 0 || f > 7 || rr < 1 || rr > 8) continue;
+      const S = FILES[f] + rr, t = B[S]; if (t && pcColor(t) === loser) continue;  // its own piece is in the way
+      const B2 = Object.assign({}, B); delete B2[K]; B2[S] = kc;
+      const m = takerOf(boardFen(B2) + ' ' + win + ' - - 0 1', S); if (!m) continue;
+      tries.push({ S, B2, taker: m });
+    }
+    const fin = takerOf(boardFen(B) + ' ' + win + ' - - 0 1', K);
+    return { K, B, kc, loser, win, tries, fin };
+  }
+  const msleep = ms => new Promise(r => setTimeout(r, ms));
+  function mateCaption(t) { const el = $('mateCap'); el.hidden = !t; if (t) el.innerHTML = t; }
+  function stopMate() {
+    mateRun++;
+    if (mateView) { mateView = null; prevSq = null; mateCaption(''); renderBoard(); }
+  }
+  async function playMate() {
+    stopMate();
+    const run = mateRun, T = mateTries(), here = cur;
+    const k = Math.max(0.6, Math.min(1.8, opts.replay / 440));
+    const alive = () => run === mateRun && cur === here;
+    if (!T || !opts.replay || review || sim) { showMateToast(T); return; }
+    const base = { game, ids };
+    const nm = (c, t) => (c === 'w' ? 'White' : 'Black') + '’s ' + NAMES[t];
+    const step = async (view, dur, hold) => { mateView = Object.assign({ cls: {}, ghost: null, dur }, view); renderBoard(); await msleep(dur + hold); return alive(); };
+    const attempt = async (S, B2, taker, stepping) => {
+      const I1 = Object.assign({}, ids), kid = ids[T.K];
+      const lead = stepping ? 'The king tries <b>' + S + '</b>…' : 'The king stays on <b>' + S + '</b>…';
+      mateCaption(lead);
+      if (stepping) {
+        delete I1[T.K]; I1[S] = kid;
+        if (!await step({ game: new Chess(boardFen(B2) + ' ' + T.loser + ' - - 0 1'), ids: I1, cls: { [S]: 'mtry' } }, 380 * k, 260 * k)) return false;
+      } else if (!await step({ game, ids, cls: { [S]: 'mtry' } }, 0, 520 * k)) return false;
+      const B3 = Object.assign({}, B2); delete B3[taker.from]; B3[S] = taker.promotion ? (T.win === 'w' ? taker.promotion.toUpperCase() : taker.promotion) : B2[taker.from];
+      const I2 = Object.assign({}, I1); const tid = I2[taker.from]; delete I2[taker.from]; I2[S] = tid;
+      mateCaption(lead + ' ' + nm(T.win, taker.piece) + ' on ' + taker.from + ' takes it.');
+      if (!await step({ game: new Chess(boardFen(B3) + ' ' + T.loser + ' - - 0 1'), ids: I2, cls: { [S]: 'mhit' }, ghost: { sq: S, color: T.loser } }, 340 * k, 620 * k)) return false;
+      return step({ game: base.game, ids: base.ids }, 300 * k, 240 * k);  // rewind
+    };
+    // keep the caption on the half of the board away from the king
+    const kr = cells[T.K].el.getBoundingClientRect(), br = boardEl.getBoundingClientRect();
+    $('mateCap').classList.toggle('top', kr.top + kr.height / 2 > br.top + br.height / 2);
+    await msleep(150);
+    for (const t of T.tries) if (!await attempt(t.S, t.B2, t.taker, true)) return;
+    if (T.fin && !await attempt(T.K, T.B, T.fin, false)) return;
+    mateView = null; mateCaption(''); renderBoard();
+    showMateToast(T);
+  }
+  function showMateToast(T) {
+    const winner = game.turn() === 'w' ? 'Black' : 'White', n = T ? T.tries.length : 0;
+    $('mateTitle').textContent = 'Checkmate! ' + (botCfg.on && winner === 'Black' && !online.active ? 'Stockfish wins.' : winner + ' wins.');
+    $('mateSub').textContent = !T ? '' : n === 1 ? 'The king’s only escape square, ' + T.tries[0].S + ', was covered.' : n ? 'The king had ' + n + ' squares to run to, and every one was covered.' : 'Its own pieces boxed the king in, so it had nowhere to go.';
+    $('mateToast').hidden = false; mateToastFor = cur;
+  }
+  function hideMateToast() { $('mateToast').hidden = true; mateToastFor = null; }
+  $('mateAgain').onclick = () => { hideMateToast(); playMate(); };
+  $('mateNew').onclick = () => { hideMateToast(); $('newBtn').click(); };
+  $('mateX').onclick = hideMateToast;
 
   function renderStatus() {
     const st = $('statusText'), el = $('status'), turn = game.turn(), side = turn === 'w' ? 'White' : 'Black';
@@ -1845,6 +1949,8 @@ header { position: relative; }
     if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
     if (typeof puzzleModes !== 'undefined' && puzzleModes[opts.mode]) setTimeout(() => puzzleModes[opts.mode].render(true), 0);
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect(); renderCreative();
+    if (mateToastFor != null && mateToastFor !== cur) hideMateToast();
+    if (mateQueued != null && mateQueued === cur && !navTimer) { const id = mateQueued; mateQueued = null; setTimeout(() => { if (cur === id && opts.mode === 'chess') playMate(); }, opts.dev.animMs + 350); }
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     boardEl.style.setProperty('--checker', opts.checker + '%');
