@@ -919,6 +919,7 @@ header { position: relative; }
         <button class="tog" data-opt="counts" type="button"><span>Attacker counts<small>White count in green, Black count in red.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="flag" type="button"><span>Flag outnumbered White pieces<small>Dashed ring when Black attackers outnumber White defenders.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="safety" type="button"><span>Move safety<small>Tap a piece: green lands safe, amber is a fair trade, red is outnumbered.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="dragLines" type="button"><span>Lines while dragging<small>As you drag a piece over a square, see which of your pieces would defend it there and which enemy pieces would attack it.</small></span><span class="sw2"></span></button>
       </div>
       </div>
     </section>
@@ -960,7 +961,7 @@ header { position: relative; }
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, dragLines: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1383,8 +1384,41 @@ header { position: relative; }
     }
     return out;
   }
+  // lines from each piece in a group to sq, a ring on each piece, and a count badge
+  function inspectMarks(sq, groups, onPiece) {
+    const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
+    const [tx, ty] = XY(sq); let h = '';
+    for (const g of groups) for (const a of g.list) {
+      const [x, y] = XY(a.sq), dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
+      h += '<line x1="' + (x + dx / L * .3) + '" y1="' + (y + dy / L * .3) + '" x2="' + (tx - dx / L * .4) + '" y2="' + (ty - dy / L * .4) + '" stroke="' + g.col + '" stroke-width=".1" stroke-linecap="round" opacity=".85"/>';
+      h += '<circle cx="' + x + '" cy="' + y + '" r=".44" fill="none" stroke="' + g.col + '" stroke-width=".08"/>';
+    }
+    if (onPiece) {
+      h += '<rect x="' + (tx - .47) + '" y="' + (ty - .47) + '" width=".94" height=".94" rx=".08" fill="none" stroke="var(--ink)" stroke-width=".06"/>';
+      h += '<rect x="' + (tx - .46) + '" y="' + (ty - .78) + '" width=".92" height=".3" rx=".08" fill="var(--surface)" stroke="var(--ink)" stroke-width=".03"/>';
+      h += '<text x="' + tx + '" y="' + (ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="' + groups[0].col + '">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="' + groups[1].col + '">' + groups[1].list.length + '</tspan></text>';
+    }
+    return h;
+  }
+  // while dragging: who would defend and attack the piece if it landed on the hovered square
+  let dragOver = null;
+  function drawDragInspect() {
+    const svg = $('inspectLayer'), { from, to } = dragOver;
+    const B = fenBoard(game.fen()), ch = B[from]; if (!ch) { svg.innerHTML = ''; return; }
+    delete B[from]; B[to] = ch;
+    let g; try { g = new Chess(boardFen(B) + ' w - - 0 1'); } catch (e) { svg.innerHTML = ''; return; }
+    const me = pcColor(ch), att = attackersOf(g, to).filter(a => a.sq !== to);
+    svg.innerHTML = inspectMarks(to, [{ list: att.filter(a => a.p.color === me), col: 'var(--accent)' }, { list: att.filter(a => a.p.color !== me), col: 'var(--ctl-b)' }], true);
+  }
+  function setDragOver(from, to) {
+    const k = to ? from + to : '';
+    if (k === (dragOver ? dragOver.from + dragOver.to : '')) return;
+    dragOver = to ? { from, to } : null;
+    renderInspect();
+  }
   function renderInspect() {
     const svg = $('inspectLayer'), note = $('inspectNote');
+    if (dragOver) { drawDragInspect(); return; }
     const keepOpen = note.classList.contains('open') && note.dataset.sq === inspectSq;
     note.dataset.sq = inspectSq || '';
     if (!inspectSq || review) { svg.innerHTML = ''; note.className = 'inspect idle'; note.textContent = 'Tap any square or piece to see what attacks and protects it.'; return; }
@@ -1461,9 +1495,11 @@ header { position: relative; }
     ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
     const t = squareAt(e.clientX, e.clientY), cr = creativeOn(), ok = t && (cr ? t !== ptr.s : safety[t]) ? t : null;
     ghost.classList.toggle('bin', cr && !t);
+    setDragOver(ptr.s, opts.dragLines && ok ? ok : null);
     if (ok !== ptr.over) { if (ptr.over) cells[ptr.over].el.classList.remove('drop'); if (ok) cells[ok].el.classList.add('drop'); ptr.over = ok; }
   });
   function endDrag() {
+    if (dragOver) setDragOver(null, null);
     if (ghost) { ghost.remove(); ghost = null; }
     if (ptr) { cells[ptr.s] && cells[ptr.s].el.classList.remove('lifted'); if (ptr.over) cells[ptr.over].el.classList.remove('drop'); }
   }
