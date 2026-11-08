@@ -735,6 +735,26 @@ header { position: relative; }
 .t-btn { padding: 7px 11px; border-radius: 7px; border: 1.5px solid var(--bg); background: none; color: var(--bg); font: 700 13px var(--f-body); cursor: pointer; white-space: nowrap; }
 .t-btn.primary { background: var(--bg); color: var(--ink); }
 .t-x { width: 30px; height: 30px; border: 0; border-radius: 6px; background: none; color: var(--bg); font-size: 15px; cursor: pointer; opacity: .75; }
+
+/* timeline card: branch tree (default) or move cards */
+[data-card="branches"] { display: none !important; }
+[data-card="timeline"].tl-tree .ribbon { display: none; }
+[data-card="timeline"].tl-cards .tree { display: none !important; }
+.tlview { display: flex; justify-content: flex-end; gap: 0; margin-bottom: 6px; }
+.tlview button { padding: 2px 9px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 600 11px var(--f-mono); letter-spacing: .03em; text-transform: uppercase; cursor: pointer; }
+.tlview button:first-child { border-radius: 5px 0 0 5px; }
+.tlview button + button { border-left: 0; border-radius: 0 5px 5px 0; }
+.tlview button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+[data-card="timeline"].tl-tree .tree { margin-bottom: 2px; }
+@media (max-width: 640px) {
+  .panes > .ribbon-wrap > .tlview { margin: 0 10px 6px; }
+  .group.single .panes > [data-card="timeline"] > .tlview { position: absolute; top: 5px; right: 66px; margin: 0; }
+  .group.single:not(:has(.gatherbtn:not([hidden]))) .panes > [data-card="timeline"] > .tlview { right: 36px; }
+  .tlview button { padding: 2px 7px; font-size: 10.5px; }
+  .ribbon-wrap :is(.cbody, .gobody, .pzbody) > .tree { grid-column: 1; grid-row: 1; margin-left: 10px; }
+  .app, .col { gap: 6px; }
+  body { padding-block: 4px 20px; }
+}
 </style>
 </head>
 <body>
@@ -772,7 +792,9 @@ header { position: relative; }
     <div class="panes">
     <div class="o-time ribbon-wrap" data-card="timeline">
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="timeline" aria-expanded="false"><span class="label">Timeline</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="tlview" role="group" aria-label="Timeline view"><button type="button" data-tlview="tree" title="Every line you've played, as a tree">Branches</button><button type="button" data-tlview="cards" title="One card per move, with the evaluation graph">Moves</button></div>
       <div class="cbody">
+      <div class="tree" id="tree" hidden></div>
       <div class="ribbon" id="ribbon"><div class="rib-inner" id="ribInner"></div></div>
       <p class="empty" id="ribEmpty">No moves yet. White starts: drag a piece, or tap it and then a highlighted square.</p>
       <div class="alts" id="alts" hidden></div>
@@ -784,10 +806,9 @@ header { position: relative; }
       </div>
       </div>
     </div>
-    <section class="o-branch card" data-card="branches">
+    <section class="o-branch card" data-card="branches" hidden>
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="branches" aria-expanded="false"><span class="label">Branches</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
-      <div class="tree" id="tree" hidden></div>
       <div class="branches" id="branches"></div>
       </div>
     </section>
@@ -1746,6 +1767,14 @@ header { position: relative; }
   let SLOT = 66, GH = 60;
   // phones get a shorter graph and narrower move cards (matches the .slot width in the phone CSS)
   const compactNow = () => !!(window.matchMedia && matchMedia('(max-width: 640px)').matches);
+  // branch trees draw at this scale so the piece icons read easily; phones give the tree a fixed height so the card never jumps
+  const TREE_SCALE = 1.3;
+  function treeBox(wrap, h) {
+    const cap = compactNow() ? 108 : 260;
+    wrap.style.height = (compactNow() ? cap : Math.min(h + 2, cap)) + 'px';
+    wrap.style.overflowY = h + 2 > cap ? 'auto' : 'hidden';
+    wrap.style.paddingTop = compactNow() && h + 2 < cap ? Math.floor((cap - h - 2) / 2) + 'px' : '';  // centre a short tree in its fixed box
+  }
   function syncCompact() { const c = compactNow(); SLOT = c ? 50 : 66; GH = c ? 30 : 60; }
   const FORK_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1v4c0 2 6 2 6 4v2M3 5v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   const nodeGlyph = n => !n.edit ? GLYPH[pieceOfSan(n.san)] : n.pt ? GLYPH[n.pt] : n.edit[0] === 't' ? '⇄' : n.edit === 'clear' ? '∅' : '↺';
@@ -1888,14 +1917,14 @@ header { position: relative; }
     const wrap = $('tree');
     if (!nodes[0].children.length) { wrap.hidden = true; wrap.innerHTML = ''; lastTreeCur = null; return; }
     wrap.hidden = false;
-    const DX = 26, DY = 32, PX = 20, PY = 30;
+    const TS = TREE_SCALE, DX = 26, DY = 32, PX = 20, PY = 24;
     const lane = {}; let next = 0, maxPly = 0;
     (function dfs(id, l) {
       lane[id] = l; maxPly = Math.max(maxPly, nodes[id].ply);
       nodes[id].children.forEach((c, k) => dfs(c, k === 0 ? l : ++next));
     })(0, 0);
     const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
-    const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / 2 - 40), H = PY + next * DY + 30;
+    const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / (2 * TS) - 40), H = PY + next * DY + 28;
     const onLine = new Set(lineOf(cur).map(n => n.id)), onPath = new Set(pathTo(cur).map(n => n.id));
     let edges = '', dots = '', labels = '';
     // move-number axis
@@ -1924,12 +1953,11 @@ header { position: relative; }
       const par = n.parent != null ? nodes[n.parent] : null;
       if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + esc(n.san) + '</text>';
     }
-    wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a dot to jump to that move.">' + labels + edges + dots + '</svg>';
-    wrap.style.height = Math.min(H + 2, 260) + 'px';
-    wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
+    wrap.innerHTML = '<svg width="' + W * TS + '" height="' + H * TS + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a dot to jump to that move.">' + labels + edges + dots + '</svg>';
+    treeBox(wrap, H * TS);
     treeCam = treeCam || makeCam(wrap);
     const fid = navDest != null && nodes[navDest] ? navDest : cur, cn = nodes[fid];
-    treeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, fid);
+    treeCam.follow(X(cn) * TS - wrap.clientWidth / 2, Y(cn) * TS - wrap.clientHeight / 2, fid);
   }
 
   function renderEngine() {
@@ -2678,7 +2706,7 @@ header { position: relative; }
   // ---------- tab groups: every panel is a card with one or more tabs ----------
   // Drag a tab along its bar to reorder, onto another card's bar to move it there, or off any
   // bar to make a new card. Drag a card by its grip onto another card's bar to merge them.
-  const ALL_TOOLS = ['timeline', 'branches', 'coach', 'review', 'sim', 'game', 'online', 'settings', 'dev'];
+  const ALL_TOOLS = ['timeline', 'coach', 'review', 'sim', 'game', 'online', 'settings', 'dev'];  // the branch tree lives inside Timeline
   const TOOL_LABEL = { timeline: 'Timeline', branches: 'Branches', coach: 'Coach', review: 'Story Mode', sim: 'Simulate', game: 'Game', settings: 'Settings', online: 'Online', dev: 'Developer' };
   const toolEl = {}; document.querySelectorAll('[data-card]').forEach(c => { toolEl[c.dataset.card] = c; });
   const colL = document.querySelector('.col-l'), colR = document.querySelector('.col-r');
@@ -2695,8 +2723,8 @@ header { position: relative; }
   const narrowNow = () => window.matchMedia && matchMedia('(max-width: 899px)').matches;
   // Wide screens: one card with every tab. Phones: Timeline, then Coach, then one folded card with the rest.
   function defaultGroups() {
-    if (!narrowNow()) return [{ id: newId(), tabs: ALL_TOOLS.slice(), active: 'branches', open: true }];
-    return [{ id: newId(), tabs: ['timeline', 'branches'], active: 'timeline', open: true }, { id: newId(), tabs: ['coach'], active: 'coach', open: true },
+    if (!narrowNow()) return [{ id: newId(), tabs: ALL_TOOLS.slice(), active: 'timeline', open: true }];
+    return [{ id: newId(), tabs: ['timeline'], active: 'timeline', open: true }, { id: newId(), tabs: ['coach'], active: 'coach', open: true },
       { id: newId(), tabs: ['game', 'review', 'sim', 'online', 'settings', 'dev'], active: 'game', open: false }];
   }
   // tabs a phone tucks behind "More…" when they share a card with everyday tabs
@@ -2720,7 +2748,7 @@ header { position: relative; }
     if ((opts.layoutPhone || 0) < 2 && narrowNow()) {
       opts.layoutPhone = 2;
       const sig = L.l.length ? '' : L.r.map(g => g.tabs.join(',')).join('|');
-      const oldOne = ALL_TOOLS.join(','), oldThree = 'timeline|coach|' + ALL_TOOLS.filter(k => k !== 'timeline' && k !== 'coach').join(',');
+      const oldAll = ['timeline', 'branches', ...ALL_TOOLS.slice(1)], oldOne = oldAll.join(','), oldThree = 'timeline|coach|' + oldAll.filter(k => k !== 'timeline' && k !== 'coach').join(',');
       if (sig === oldOne || sig === oldThree) L.r = defaultGroups();
     }
     // sanitize: every tool exactly once, no empty groups
@@ -2771,6 +2799,9 @@ header { position: relative; }
     }
   }
   function renderCards() {
+    const tv = opts.tlView === 'cards' ? 'cards' : 'tree';
+    toolEl.timeline.classList.toggle('tl-cards', tv === 'cards'); toolEl.timeline.classList.toggle('tl-tree', tv === 'tree');
+    for (const b of toolEl.timeline.querySelectorAll('[data-tlview]')) b.setAttribute('aria-pressed', String(b.dataset.tlview === tv));
     for (const g of allGroups()) {
       const el = groupEls[g.id]; if (!el) continue;
       el.classList.toggle('folded', !g.open);
@@ -2869,6 +2900,8 @@ header { position: relative; }
     syncFromDom(); placeAll(); applyState();
   }
   document.addEventListener('click', e => {
+    const tv = e.target.closest('[data-tlview]');
+    if (tv) { opts.tlView = tv.dataset.tlview; save(); render(); return; }
     const mt = e.target.closest('.moretab'); if (!mt) return;
     const g = groupById(mt.dataset.moretab); if (!g) return;
     g.more = !g.more; if (g.more) g.open = true;
@@ -3391,8 +3424,8 @@ header { position: relative; }
     document.querySelector('.hdr-right').prepend(sw);
     // a Go body for every tool
     const body = {
-      timeline: '<div class="ribbon" id="goRibbon"><div class="rib-inner" id="goRibInner"></div></div><p class="empty" id="goRibEmpty">No moves yet. Black plays first: tap an intersection.</p><div class="alts" id="goAlts" hidden></div><div class="nav"><button id="goNavStart" type="button" aria-label="Go to start">«</button><button id="goNavBack" type="button" aria-label="Back one move">‹</button><button id="goNavFwd" type="button" aria-label="Forward one move">›</button><button id="goNavEnd" type="button" aria-label="Go to end of this line">»</button></div>',
-      branches: '<div class="tree" id="goTree"></div><div class="branches" id="goBranchNote"></div>',
+      timeline: '<div class="tree" id="goTree"></div><div class="ribbon" id="goRibbon"><div class="rib-inner" id="goRibInner"></div></div><p class="empty" id="goRibEmpty">No moves yet. Black plays first: tap an intersection.</p><div class="alts" id="goAlts" hidden></div><div class="nav"><button id="goNavStart" type="button" aria-label="Go to start">«</button><button id="goNavBack" type="button" aria-label="Back one move">‹</button><button id="goNavFwd" type="button" aria-label="Forward one move">›</button><button id="goNavEnd" type="button" aria-label="Go to end of this line">»</button></div>',
+      branches: '<div class="branches" id="goBranchNote"></div>',
       coach: '<div class="coach">' + GO_PIP + '<div class="bubble"><div class="c-tools"><button type="button" class="mini" id="goCoachMarks" aria-pressed="true" title="Show suggested points on the board">Marks</button></div><div class="c-body" id="goCoachBody"></div></div></div>',
       review: '<p class="label">Turning points</p><div class="turns" id="goTurns"></div><p class="label">Biggest captures</p><div class="turns" id="goCaps"></div><p class="label">The story so far</p><p class="story" id="goStory"></p><button class="btn simgo" id="goStoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="goStoryNote" hidden></p>',
       sim: '<div class="simrow"><div class="seg" id="goSegLen"><span class="label">Length</span><button type="button" data-len="20">10 moves</button><button type="button" data-len="60">30 moves</button><button type="button" data-len="400">To the end</button></div><div class="seg" id="goSegStr"><span class="label">Strength</span><button type="button" data-str="strong">Strong</button><button type="button" data-str="club">Club</button><button type="button" data-str="casual">Casual</button></div><div class="seg" id="goSegPace"><span class="label">Speed</span><button type="button" data-pace="0">Fastest</button><button type="button" data-pace="200">Fast</button><button type="button" data-pace="700">Normal</button><button type="button" data-pace="1600">Slow</button></div><button class="btn simgo" id="goSimBtn" type="button">Simulate from here</button></div>',
@@ -3517,10 +3550,10 @@ header { position: relative; }
     const wrap = $('goTree'), any = GO.nodes[0].children.length > 0;
     $('goBranchNote').innerHTML = any ? '' : '<span class="empty">Your moves will grow into a tree here. Go back to any move and play somewhere else to start a new branch.</span>';
     wrap.hidden = !any; if (!any) return;
-    const DX = 26, DY = 32, PX = 20, PY = 30, lane = {}; let next = 0, maxPly = 0;
+    const TS = TREE_SCALE, DX = 26, DY = 32, PX = 20, PY = 24, lane = {}; let next = 0, maxPly = 0;
     (function dfs(id, l) { lane[id] = l; maxPly = Math.max(maxPly, GO.nodes[id].ply); GO.nodes[id].children.forEach((c, k) => dfs(c, k === 0 ? l : ++next)); })(0, 0);
     const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
-    const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / 2 - 40), H = PY + next * DY + 30;
+    const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / (2 * TS) - 40), H = PY + next * DY + 28;
     const onLine = new Set(goLine(GO.cur).map(n => n.id));
     let edges = '', dots = '', labels = '';
     for (let m = 10; m <= maxPly; m += 10) { const x = PX + m * DX; labels += '<text x="' + x + '" y="11" text-anchor="middle">' + m + '</text><line x1="' + x + '" x2="' + x + '" y1="15" y2="' + (H - 4) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>'; }
@@ -3542,11 +3575,11 @@ header { position: relative; }
           : '<circle class="dot ' + (n.color === 1 ? 'gs-b' : 'gs-w') + '" cx="' + x + '" cy="' + y + '" r="' + (isCur ? 10 : 7.5) + '" fill="' + (n.color === 1 ? '#1c2320' : '#f6f4ee') + '" stroke="' + (isCur ? 'var(--ink)' : ring) + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
       if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + goLabel(n.p) + '</text>';
     }
-    wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a stone to jump to that move.">' + labels + edges + dots + '</svg>';
-    wrap.style.height = Math.min(H + 2, 260) + 'px'; wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
+    wrap.innerHTML = '<svg width="' + W * TS + '" height="' + H * TS + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a stone to jump to that move.">' + labels + edges + dots + '</svg>';
+    treeBox(wrap, H * TS);
     goTreeCam = goTreeCam || makeCam(wrap);
     const fid = GO.navDest != null && GO.nodes[GO.navDest] ? GO.navDest : GO.cur, cn = GO.nodes[fid];
-    goTreeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, fid);
+    goTreeCam.follow(X(cn) * TS - wrap.clientWidth / 2, Y(cn) * TS - wrap.clientHeight / 2, fid);
   }
 
   // ---- coach ----
@@ -4135,8 +4168,8 @@ header { position: relative; }
       const pip = document.querySelector('.pip') ? document.querySelector('.pip').outerHTML : '';
       const settings = (M.settings || []).map(([key, label, desc]) => '<button class="tog" data-pzv="' + key + '" type="button"><span>' + label + '<small>' + desc + '</small></span><span class="sw2"></span></button>').join('');
       const body = {
-        timeline: '<div class="pzstuck" id="' + k + 'Stuck" hidden></div><div class="ribbon" id="' + k + 'Ribbon"><div class="rib-inner" id="' + k + 'RibInner"></div></div><p class="empty" id="' + k + 'RibEmpty">' + M.emptyText + '</p><div class="alts" id="' + k + 'Alts" hidden></div><div class="nav"><button data-pznav="start" type="button" aria-label="Go to start">«</button><button data-pznav="back" type="button" aria-label="Back one move">‹</button><button data-pznav="fwd" type="button" aria-label="Forward one move">›</button><button data-pznav="end" type="button" aria-label="Go to end of this line">»</button></div>',
-        branches: '<div class="tree" id="' + k + 'Tree"></div><div class="branches" id="' + k + 'BranchNote"></div>',
+        timeline: '<div class="pzstuck" id="' + k + 'Stuck" hidden></div><div class="tree" id="' + k + 'Tree"></div><div class="ribbon" id="' + k + 'Ribbon"><div class="rib-inner" id="' + k + 'RibInner"></div></div><p class="empty" id="' + k + 'RibEmpty">' + M.emptyText + '</p><div class="alts" id="' + k + 'Alts" hidden></div><div class="nav"><button data-pznav="start" type="button" aria-label="Go to start">«</button><button data-pznav="back" type="button" aria-label="Back one move">‹</button><button data-pznav="fwd" type="button" aria-label="Forward one move">›</button><button data-pznav="end" type="button" aria-label="Go to end of this line">»</button></div>',
+        branches: '<div class="branches" id="' + k + 'BranchNote"></div>',
         coach: '<div class="coach">' + pip + '<div class="bubble"><div class="c-tools"><button type="button" class="mini" data-pzv="marks" aria-pressed="true" title="Show the hint on the board">Marks</button></div><div class="c-body" id="' + k + 'CoachBody"></div></div></div>',
         review: '<p class="label">The story so far</p><p class="story" id="' + k + 'Story"></p><button class="btn simgo" id="' + k + 'StoryBtn" type="button" hidden>Tell the story with Claude</button><p class="note" id="' + k + 'StoryNote" hidden></p><div id="' + k + 'StorySections"></div><p class="label">Mistakes</p><div class="turns" id="' + k + 'Mistakes"></div>',
         sim: '<div class="simrow"><div class="seg"><span class="label">Length</span><button type="button" data-pzlen="20">20 moves</button><button type="button" data-pzlen="60">60 moves</button><button type="button" data-pzlen="999">To the end</button></div><div class="seg"><span class="label">Speed</span><button type="button" data-pzpace="0">Fastest</button><button type="button" data-pzpace="200">Fast</button><button type="button" data-pzpace="700">Normal</button><button type="button" data-pzpace="1600">Slow</button></div><button class="btn simgo" id="' + k + 'SimBtn" type="button">Simulate from here</button><p class="note">' + M.simNote + '</p></div>',
@@ -4232,10 +4265,10 @@ header { position: relative; }
       const wrap = $k('Tree'), any = node(0).children.length > 0;
       $k('BranchNote').innerHTML = any ? '' : '<span class="empty">Your moves grow into a tree here. Go back to any move and try something else to start a new branch.</span>';
       wrap.hidden = !any; if (!any) return;
-      const DX = 26, DY = 32, PX = 20, PY = 30, lane = {}; let next = 0, maxPly = 0;
+      const TS = TREE_SCALE, DX = 26, DY = 32, PX = 20, PY = 24, lane = {}; let next = 0, maxPly = 0;
       (function dfs(id, l) { lane[id] = l; maxPly = Math.max(maxPly, node(id).ply); node(id).children.forEach((c, j) => dfs(c, j === 0 ? l : ++next)); })(0, 0);
       const X = n => PX + n.ply * DX, Y = n => PY + lane[n.id] * DY;
-      const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / 2 - 40), H = PY + next * DY + 30;
+      const W = PX * 2 + maxPly * DX + 24 + Math.max(0, wrap.clientWidth / (2 * TS) - 40), H = PY + next * DY + 28;
       const onLine = new Set(line(P.cur).map(n => n.id));
       let edges = '', dots = '', labels = '';
       for (let m = 10; m <= maxPly; m += 10) { const x = PX + m * DX; labels += '<text x="' + x + '" y="11" text-anchor="middle">' + m + '</text><line x1="' + x + '" x2="' + x + '" y1="15" y2="' + (H - 4) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>'; }
@@ -4256,11 +4289,11 @@ header { position: relative; }
             : '<rect class="pzdot ' + (M.dotClass ? M.dotClass(api, n) : '') + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + 2 * r + '" height="' + 2 * r + '" rx="' + (r * .35) + '" stroke="' + ring + '" stroke-width="' + (isCur ? 3 : q ? 2.4 : 1.6) + '"' + (n.sim && !q ? ' stroke-dasharray="3 2"' : '') + '/>') + '</g>';
         if (isCur && n.id) labels += '<text class="san" x="' + x + '" y="' + (y + 24) + '" text-anchor="middle">' + esc(M.shortLabel ? M.shortLabel(api, n) : M.label(api, n)) + '</text>';
       }
-      wrap.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a move to jump there.">' + labels + edges + dots + '</svg>';
-      wrap.style.height = Math.min(H + 2, 260) + 'px'; wrap.style.overflowY = H + 2 > 260 ? 'auto' : 'hidden';
+      wrap.innerHTML = '<svg width="' + W * TS + '" height="' + H * TS + '" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Branch tree. Tap a move to jump there.">' + labels + edges + dots + '</svg>';
+      treeBox(wrap, H * TS);
       P.treeCam = P.treeCam || makeCam(wrap);
       const fid = P.navDest != null && node(P.navDest) ? P.navDest : P.cur, cn = node(fid);
-      P.treeCam.follow(X(cn) - wrap.clientWidth / 2, Y(cn) - wrap.clientHeight / 2, fid);
+      P.treeCam.follow(X(cn) * TS - wrap.clientWidth / 2, Y(cn) * TS - wrap.clientHeight / 2, fid);
     }
 
     // ---- coach ----
