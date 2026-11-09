@@ -1437,6 +1437,8 @@ header { position: relative; }
   function renderInspect() {
     const svg = $('inspectLayer'), note = $('inspectNote');
     if (dragOver) { drawDragInspect(); return; }
+    if (mateSummary && mateSummary.at !== cur) mateSummary = null;
+    if (mateSummary && (!inspectSq || inspectByMouse)) { note.hidden = true; drawMateSummary(); return; }  // a mouse resting on the board after the mate keeps the summary; a finger press overrides it
     const keepOpen = note.classList.contains('open') && note.dataset.sq === inspectSq;
     note.dataset.sq = inspectSq || '';
     if (!inspectSq || review) { svg.innerHTML = ''; note.className = 'inspect idle'; note.textContent = 'Hover over a square, or press and slide a finger across the board, to see what attacks and protects each square.'; return; }
@@ -1713,7 +1715,36 @@ header { position: relative; }
   }
 
   // ---------- checkmate replay: the king tries every square it could step to, and gets taken on each ----------
-  let mateView = null, mateRun = 0, mateQueued = null, mateToastFor = null;
+  let mateView = null, mateRun = 0, mateQueued = null, mateToastFor = null, mateSummary = null;
+  // after the replay: every attack line that seals the king in, drawn on the final position
+  function buildMateSummary(T) {
+    if (!T) return null;
+    const B = Object.assign({}, T.B); delete B[T.K];  // without the king, so lines that pass through it count
+    let g; try { g = new Chess(boardFen(B) + ' w - - 0 1'); } catch (e) { return null; }
+    const marks = [];
+    for (const t of T.tries) {
+      const occ = T.B[t.S], by = attackersOf(g, t.S).filter(a => a.p.color === T.win);
+      marks.push({ sq: t.S, guard: !!occ, list: by });  // guard: an enemy piece sits there, and these protect it
+    }
+    marks.push({ sq: T.K, guard: false, king: true, list: attackersOf(game, T.K).filter(a => a.p.color === T.win) });
+    return { at: cur, marks };
+  }
+  function drawMateSummary() {
+    const XY = q => { const [f, r] = sqXY(q); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
+    let h = '';
+    for (const m of mateSummary.marks) {
+      const col = m.guard ? 'var(--accent)' : 'var(--ctl-b)', [tx, ty] = XY(m.sq);
+      for (const a of m.list) {
+        const [x, y] = XY(a.sq), dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
+        h += '<line x1="' + (x + dx / L * .3) + '" y1="' + (y + dy / L * .3) + '" x2="' + (tx - dx / L * .34) + '" y2="' + (ty - dy / L * .34) + '" stroke="' + col + '" stroke-width=".09" stroke-linecap="round" opacity=".8"/>';
+        h += '<circle cx="' + x + '" cy="' + y + '" r=".42" fill="none" stroke="' + col + '" stroke-width=".06" opacity=".8"/>';
+      }
+      h += m.king ? '<rect x="' + (tx - .47) + '" y="' + (ty - .47) + '" width=".94" height=".94" rx=".08" fill="none" stroke="var(--ctl-b)" stroke-width=".1"/>'
+        : m.guard ? '<circle cx="' + tx + '" cy="' + ty + '" r=".4" fill="none" stroke="var(--accent)" stroke-width=".09" stroke-dasharray=".16 .1"/>'
+        : '<rect x="' + (tx - .44) + '" y="' + (ty - .44) + '" width=".88" height=".88" rx=".06" fill="color-mix(in oklab, var(--ctl-b) 22%, transparent)" stroke="var(--ctl-b)" stroke-width=".07" stroke-dasharray=".18 .12"/>';
+    }
+    $('inspectLayer').innerHTML = h;
+  }
   const VALUE_ORDER = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 10 };
   // the cheapest piece of the side to move that can capture on sq
   function takerOf(fen, sq) {
@@ -1746,7 +1777,8 @@ header { position: relative; }
     const run = mateRun, T = mateTries(), here = cur;
     const k = opts.mateSpeed ?? 0.45;  // its own setting: Fast 0.45, Normal 0.8, Slow 1.4, Off 0
     const alive = () => run === mateRun && cur === here;
-    if (!T || !k || review || sim) { showMateToast(T); return; }
+    mateSummary = null; renderInspect();
+    if (!T || !k || review || sim) { mateSummary = review || sim ? null : buildMateSummary(T); renderInspect(); showMateToast(T); return; }
     const base = { game, ids };
     const nm = (c, t) => (c === 'w' ? 'White' : 'Black') + '’s ' + NAMES[t];
     const step = async (view, dur, hold) => { mateView = Object.assign({ cls: {}, ghost: null, dur }, view); renderBoard(); await msleep(dur + hold); return alive(); };
@@ -1771,6 +1803,7 @@ header { position: relative; }
     for (const t of T.tries) if (!await attempt(t.S, t.B2, t.taker, true)) return;
     if (T.fin && !await attempt(T.K, T.B, T.fin, false)) return;
     mateView = null; mateCaption(''); renderBoard();
+    mateSummary = buildMateSummary(T); renderInspect();
     showMateToast(T);
   }
   function showMateToast(T) {
