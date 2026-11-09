@@ -2696,22 +2696,44 @@ header { position: relative; }
     if (svg) { const line = lineOf(cur), i = Math.min(line.length - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left) / SLOT))); navTo(line[i].id); }
   });
   $('alts').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g && !sim) navTo(+g.dataset.go); });
-  // Drag-to-scroll with a mouse (touch already scrolls natively); a drag never counts as a tap.
-  function dragScroll(el) {
+  // Dragging a timeline: sideways scrubs through the moves (the board follows), up/down scrolls the branch lanes.
+  // A scrub walks the line it started on, so going forward past a fork keeps to that same branch.
+  // Drag left to go forward, like pulling a filmstrip; a drag never counts as a tap.
+  function dragScroll(el, S) {
     let d = null;
-    el.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0) return; d = { x: e.clientX, y: e.clientY, sl: el.scrollLeft, st: el.scrollTop, moved: false, id: e.pointerId }; });
+    if (S) el.style.touchAction = 'pan-y';
+    el.addEventListener('pointerdown', e => {
+      if (e.button > 0 || (e.pointerType !== 'mouse' && !S)) return;
+      d = { x: e.clientX, y: e.clientY, sl: el.scrollLeft, st: el.scrollTop, moved: false, id: e.pointerId, mouse: e.pointerType === 'mouse', mode: null };
+    });
     el.addEventListener('pointermove', e => {
       if (!d || e.pointerId !== d.id) return;
       const dx = e.clientX - d.x, dy = e.clientY - d.y;
-      if (!d.moved && Math.hypot(dx, dy) < 5) return;
-      if (!d.moved) { d.moved = true; el.classList.add('dragging'); try { el.setPointerCapture(e.pointerId); } catch (_) {} }
-      el.scrollLeft = d.sl - dx; el.scrollTop = d.st - dy;
+      if (!d.moved && Math.hypot(dx, dy) < 6) return;
+      if (!d.moved) {
+        d.mode = S && S.ok() && Math.abs(dx) >= Math.abs(dy) ? 'scrub' : 'pan';
+        if (d.mode === 'pan' && !d.mouse) { d = null; return; }  // a finger moving up/down: let the page scroll
+        d.moved = true; el.classList.add('dragging'); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+        if (d.mode === 'scrub') { d.line = S.line(); d.i0 = Math.max(0, d.line.indexOf(S.cur())); d.last = S.cur(); d.x = e.clientX; }
+      }
+      if (d.mode === 'scrub') {
+        const i = Math.max(0, Math.min(d.line.length - 1, d.i0 - Math.round((e.clientX - d.x) / S.unit(el))));
+        if (d.line[i] !== d.last) { d.last = d.line[i]; S.go(d.last); }
+        if (d.mouse) el.scrollTop = d.st - dy;
+      } else { el.scrollLeft = d.sl - dx; el.scrollTop = d.st - dy; }
     });
-    const end = () => { if (!d) return; const moved = d.moved; d = null; el.classList.remove('dragging'); if (moved) { el.dataset.dragged = '1'; setTimeout(() => { delete el.dataset.dragged; }, 0); } };
+    const end = () => {
+      if (!d) return; const moved = d.moved, scrub = d.mode === 'scrub'; d = null; el.classList.remove('dragging');
+      if (scrub && S.end) S.end();
+      if (moved) { el.dataset.dragged = '1'; setTimeout(() => { delete el.dataset.dragged; }, 0); }
+    };
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
     el.addEventListener('click', e => { if (el.dataset.dragged) { e.stopPropagation(); e.preventDefault(); } }, true);
   }
-  dragScroll($('ribbon')); dragScroll($('tree'));
+  const scrubUnit = el => el.classList.contains('tree') ? 26 * TREE_SCALE : SLOT;
+  const chessScrub = { ok: () => !sim, line: () => lineOf(cur).map(n => n.id), cur: () => cur, unit: scrubUnit, end: save,
+    go: id => { if (navTimer) stopNav(); if (mateView) stopMate(); goTo(id); render(); } };
+  dragScroll($('ribbon'), chessScrub); dragScroll($('tree'), chessScrub);
   $('tree').addEventListener('click', e => { const g = e.target.closest('[data-node]'); if (g && !sim) navTo(+g.dataset.node); });
   $('tree').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const g = e.target.closest('[data-node]'); if (g && !sim) { e.preventDefault(); navTo(+g.dataset.node); } });
   $('branches').addEventListener('click', e => {
@@ -3835,7 +3857,9 @@ header { position: relative; }
     });
     $('goAlts').addEventListener('click', e => { const g = e.target.closest('[data-gogo]'); if (g && !GO.sim) goNavTo(+g.dataset.gogo); });
     $('goTree').addEventListener('click', e => { const g = e.target.closest('[data-gonode]'); if (g && !GO.sim) goNavTo(+g.dataset.gonode); });
-    dragScroll($('goRibbon')); dragScroll($('goTree'));
+    const goScrub = { ok: () => !GO.sim, line: () => goLine(GO.cur).map(n => n.id), cur: () => GO.cur, unit: scrubUnit, end: goSave,
+      go: id => { if (GO.navTimer) goStopNav(); goGoTo(id); goRender(); } };
+    dragScroll($('goRibbon'), goScrub); dragScroll($('goTree'), goScrub);
     $('goNavStart').onclick = () => goNavTo(0);
     $('goNavBack').onclick = () => { if (GO.navTimer) goStopNav(); if (GO.cur) { goGoTo(GO.nodes[GO.cur].parent); goSave(); goRender(); } };
     $('goNavFwd').onclick = () => { if (GO.navTimer) goStopNav(); const n = GO.nodes[GO.cur]; if (n.children.length) { goGoTo(n.children[Math.min(n.pref, n.children.length - 1)]); goSave(); goRender(); } };
@@ -4260,7 +4284,9 @@ header { position: relative; }
         const g = document.createElement('div'); g.className = 'pzbody'; g.dataset.for = k; g.innerHTML = body[t];
         el.appendChild(g); g.addEventListener('click', onClick);
       }
-      dragScroll($k('Ribbon')); dragScroll($k('Tree'));
+      const pzScrub = { ok: () => !P.sim, line: () => line(P.cur).map(n => n.id), cur: () => P.cur, unit: scrubUnit, end: save,
+        go: id => { if (P.navTimer) stopNav(); goTo(id); render(); } };
+      dragScroll($k('Ribbon'), pzScrub); dragScroll($k('Tree'), pzScrub);
       M.buildBoard(api, box);
     }
 
