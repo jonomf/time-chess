@@ -912,6 +912,10 @@ header { position: relative; }
         <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
       </div>
       <p class="note">How quickly moves play back when you jump around the timeline or tree.</p>
+      <div class="seg" id="segMate"><span class="label">Checkmate</span>
+        <button type="button" data-mate="0">Off</button><button type="button" data-mate="0.45">Fast</button><button type="button" data-mate="0.8">Normal</button><button type="button" data-mate="1.4">Slow</button>
+      </div>
+      <p class="note">The replay at checkmate, where the king tries each escape square and gets taken. Off goes straight to the checkmate message.</p>
       <p class="label">Square control · counted from White's side</p>
       <div class="legend">
         <div class="key"><span class="sw" style="background:var(--ctl-w)"></span>White only</div>
@@ -965,7 +969,7 @@ header { position: relative; }
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, dragLines: true, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1735,9 +1739,9 @@ header { position: relative; }
   async function playMate() {
     stopMate();
     const run = mateRun, T = mateTries(), here = cur;
-    const k = Math.max(0.6, Math.min(1.8, opts.replay / 440));
+    const k = opts.mateSpeed ?? 0.45;  // its own setting: Fast 0.45, Normal 0.8, Slow 1.4, Off 0
     const alive = () => run === mateRun && cur === here;
-    if (!T || !opts.replay || review || sim) { showMateToast(T); return; }
+    if (!T || !k || review || sim) { showMateToast(T); return; }
     const base = { game, ids };
     const nm = (c, t) => (c === 'w' ? 'White' : 'Black') + '’s ' + NAMES[t];
     const step = async (view, dur, hold) => { mateView = Object.assign({ cls: {}, ghost: null, dur }, view); renderBoard(); await msleep(dur + hold); return alive(); };
@@ -2034,6 +2038,7 @@ header { position: relative; }
     boardEl.style.setProperty('--checker', opts.checker + '%');
     $('checkerRange').value = opts.checker; $('checkerVal').textContent = opts.checker + '%';
     for (const b of document.querySelectorAll('#segSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
+    for (const b of document.querySelectorAll('#segMate button')) b.setAttribute('aria-pressed', String(+b.dataset.mate === (opts.mateSpeed ?? 0.45)));
     renderCards();
     pump();
   }
@@ -2831,6 +2836,7 @@ header { position: relative; }
     opts.skin = b.dataset.skin; save(); applySkin(); render();
     if (opts.mode === 'go' && GO.nodes) goRender();
   });
+  $('segMate').addEventListener('click', e => { const b = e.target.closest('[data-mate]'); if (b) { opts.mateSpeed = +b.dataset.mate; save(); render(); } });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
   // ---------- tab groups: every panel is a card with one or more tabs ----------
   // Drag a tab along its bar to reorder, onto another card's bar to move it there, or off any
