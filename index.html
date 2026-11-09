@@ -759,6 +759,11 @@ header { position: relative; }
 }
 
 .overlay.dim { opacity: .3; transition: opacity .15s; }
+
+/* timeline: no step buttons; the full width scrubs, and the screen edges roll */
+.ribbon-wrap .nav { display: none !important; }
+.tabs > .tlview { align-self: center; margin: 0 0 0 8px; }
+.tabs > .tlview[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -2741,7 +2746,9 @@ header { position: relative; }
       if (d.mode === 'scrub') {
         const now = performance.now(); d.lastX = e.clientX;
         d.samples.push({ t: now, x: e.clientX }); while (d.samples.length > 2 && now - d.samples[0].t > 120) d.samples.shift();
-        const r = el.getBoundingClientRect(), side = e.clientX <= r.left + EDGE ? 1 : e.clientX >= r.right - EDGE ? -1 : 0;
+        // the roll zone is the timeline's side edge or the screen's, whichever reaches further in
+        const r = el.getBoundingClientRect(), W = document.documentElement.clientWidth;
+        const side = e.clientX <= Math.max(r.left + EDGE, 44) ? 1 : e.clientX >= Math.min(r.right - EDGE, W - 44) ? -1 : 0;
         if (side && !d.edge) {
           const sp = d.samples.length > 1 ? Math.abs(d.samples[d.samples.length - 1].x - d.samples[0].x) / Math.max(16, now - d.samples[0].t) * 1000 / S.unit(el) : 0;
           d.edge = { rate: side * Math.max(5, Math.min(30, sp)), t: now }; d.edge.raf = requestAnimationFrame(edgeTick);
@@ -2941,11 +2948,8 @@ header { position: relative; }
     // the view switch rides in the tab bar of whichever card shows Timeline, so it costs no height
     const sw = tlViewEl || (tlViewEl = $('tlView')), tg = groupOf('timeline'), tgEl = tg && groupEls[tg.id];  // kept by reference: it moves between cards
     if (tgEl && tg.active === 'timeline' && tg.open) {
-      if (tg.tabs.length === 1) { const bar = tgEl.querySelector('.tabbar'), at = bar.querySelector('.gatherbtn'); if (sw.parentNode !== bar || sw.nextSibling !== at) bar.insertBefore(sw, at); }
-      else {  // a busy tab bar would wrap: sit at the end of this game's « ‹ › » row instead
-        const nav = toolEl.timeline.querySelector(opts.mode === 'chess' ? '.cbody .nav' : opts.mode === 'go' ? '.gobody .nav' : '[data-for="' + opts.mode + '"] .nav');
-        if (nav && sw.parentNode !== nav) nav.appendChild(sw);
-      }
+      // flows right after the tab labels: clear of the screen edges, which drive the timeline's continuous roll
+      const tabs = tgEl.querySelector('.tabs'); if (sw.parentNode !== tabs || sw !== tabs.lastElementChild) tabs.appendChild(sw);
       sw.hidden = false;
     } else sw.hidden = true;
     for (const g of allGroups()) {
