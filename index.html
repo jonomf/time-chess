@@ -757,6 +757,8 @@ header { position: relative; }
   .app, .col { gap: 6px; }
   body { padding-block: 4px 20px; }
 }
+
+.overlay.dim { opacity: .3; transition: opacity .15s; }
 </style>
 </head>
 <body>
@@ -1343,10 +1345,16 @@ header { position: relative; }
   }
 
   // ---------- selection ----------
-  let inspectSq = null;
-  function clearSel() { selected = null; legal = []; safety = {}; inspectSq = null; }
+  // inspectSq is transient: the square under the mouse, or under a finger while it's pressed
+  let inspectSq = null, inspectByMouse = false;
+  function clearSel() { selected = null; legal = []; safety = {}; }
+  function setInspect(sq, mouse) {
+    if (review || mateView) sq = null;
+    if (sq === inspectSq && !!mouse === inspectByMouse) return;
+    inspectSq = sq; inspectByMouse = !!mouse;
+    renderInspect(); renderCoachArrows();
+  }
   function select(s) {
-    inspectSq = s;
     selected = s; legal = game.moves({ square: s, verbose: true }); safety = {};
     const mover = game.get(s).color, foe = mover === 'w' ? 'b' : 'w';
     for (const m of legal) {
@@ -1371,9 +1379,8 @@ header { position: relative; }
         addChild({ from: selected, to: s }, false); save(); render(); return;
       }
     }
-    if (!p) { const was = inspectSq; clearSel(); inspectSq = was === s ? null : s; render(); return; }
     if (p && p.color === game.turn() && (online.active ? onlineMine(p.color) : !(botCfg.on && p.color === 'b')) && !botThinking && !game.game_over() && s !== selected) select(s);
-    else { const was = inspectSq; clearSel(); if (s !== was) inspectSq = s; }
+    else clearSel();  // empty square, enemy piece, or the selected piece again: deselect
     render();
   }
 
@@ -1423,7 +1430,7 @@ header { position: relative; }
     if (dragOver) { drawDragInspect(); return; }
     const keepOpen = note.classList.contains('open') && note.dataset.sq === inspectSq;
     note.dataset.sq = inspectSq || '';
-    if (!inspectSq || review) { svg.innerHTML = ''; note.className = 'inspect idle'; note.textContent = 'Tap any square or piece to see what attacks and protects it.'; return; }
+    if (!inspectSq || review) { svg.innerHTML = ''; note.className = 'inspect idle'; note.textContent = 'Hover over a square, or press and slide a finger across the board, to see what attacks and protects each square.'; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     const target = game.get(inspectSq), att = attackersOf(game, inspectSq), [tx, ty] = XY(inspectSq);
     // On a piece: its own side protects it, the other side attacks it. On an empty square: color by side.
@@ -1476,13 +1483,16 @@ header { position: relative; }
   boardEl.addEventListener('pointerdown', e => {
     if (e.button > 0) return;
     const s = squareAt(e.clientX, e.clientY); if (!s) return;
-    ptr = { s, x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, justSelected: false, over: null };
+    ptr = { s, x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, justSelected: false, over: null, mouse: e.pointerType === 'mouse' };
+    setInspect(s, ptr.mouse);
     if (creativeOn()) { if (!brush && game.get(s) && selected !== s) { select(s); safety = {}; ptr.justSelected = true; render(); } }
     else if (canMove(game.get(s)) && selected !== s) { select(s); ptr.justSelected = true; render(); }
     try { boardEl.setPointerCapture(e.pointerId); } catch (_) {}
   });
   boardEl.addEventListener('pointermove', e => {
-    if (!ptr || e.pointerId !== ptr.id) return;
+    if (!ptr) { if (e.pointerType === 'mouse') setInspect(squareAt(e.clientX, e.clientY), true); return; }  // mouse hover
+    if (e.pointerId !== ptr.id) return;
+    if (!ptr.drag) setInspect(squareAt(e.clientX, e.clientY), ptr.mouse);  // finger sliding across squares
     if (!ptr.drag) {
       if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) < 6 || selected !== ptr.s || !(creativeOn() ? !brush && game.get(ptr.s) : canMove(game.get(ptr.s)))) return;
       ptr.drag = true;
@@ -1508,6 +1518,7 @@ header { position: relative; }
   boardEl.addEventListener('pointerup', e => {
     if (!ptr || e.pointerId !== ptr.id) return;
     const info = ptr; endDrag(); ptr = null;
+    setInspect(info.mouse ? squareAt(e.clientX, e.clientY) : null, info.mouse);  // a lifted finger goes back to the coach's arrows
     if (info.drag) {
       const t = squareAt(e.clientX, e.clientY);
       skipAnim = true;
@@ -1519,7 +1530,8 @@ header { position: relative; }
     if (info.justSelected) return;
     onTap(squareAt(e.clientX, e.clientY) || info.s);
   });
-  boardEl.addEventListener('pointercancel', () => { endDrag(); ptr = null; render(); });
+  boardEl.addEventListener('pointercancel', () => { endDrag(); ptr = null; setInspect(null); render(); });
+  boardEl.addEventListener('pointerleave', e => { if (!ptr && e.pointerType === 'mouse') setInspect(null); });
 
   // ---------- creative mode: free setup with the palette ----------
   let brush = null;  // null = move tool, 'wq' etc. = place that piece, 'x' = eraser
@@ -1548,7 +1560,7 @@ header { position: relative; }
   }
   function creativeTap(s) {
     const p = game.get(s);
-    const inspect = () => { const was = inspectSq; clearSel(); inspectSq = was === s ? null : s; render(); };
+    const inspect = () => { clearSel(); render(); };
     if (brush === 'x') { if (p) doEdit('d ' + s); else inspect(); return; }
     if (brush) { placeBrush(s); return; }
     if (selected && s !== selected) {
@@ -2614,9 +2626,11 @@ header { position: relative; }
     if (!coachCfg.on || !n.coach || !n.coach.lines.length || !humanTurnNow()) { svg.innerHTML = ''; return; }
     if (!coachCfg.showArrows || coachCfg.style === 'rate') { svg.innerHTML = ''; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
-    if (inspectSq) {
+    svg.classList.toggle('dim', !!inspectSq && inspectByMouse);
+    if (inspectSq && !inspectByMouse && inspectSq !== selected) { svg.innerHTML = ''; return; }  // a finger is inspecting: lines only
+    if (selected) {
       // a piece picked up to move: point out the coach's best move for that piece, among its move dots
-      if (!selected || selected !== inspectSq || !legal.length) { svg.innerHTML = ''; return; }
+      if (!legal.length) { svg.innerHTML = ''; return; }
       const rank = n.coach.lines.findIndex(l => l.uci.slice(0, 2) === selected && legal.some(m => m.to === l.uci.slice(2, 4)));
       if (rank < 0) { svg.innerHTML = ''; return; }
       const l = n.coach.lines[rank], top = rank === 0, col = top ? 'var(--ctl-w)' : 'var(--accent)';
