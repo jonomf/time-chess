@@ -764,6 +764,8 @@ header { position: relative; }
 .ribbon-wrap .nav { display: none !important; }
 .tabs > .tlview { align-self: center; margin: 0 0 0 8px; }
 .tabs > .tlview[hidden] { display: none; }
+
+.overlay.pinned + .overlay, #inspectLayer.pinned { filter: drop-shadow(0 0 1px var(--surface)); }
 </style>
 </head>
 <body>
@@ -1355,7 +1357,7 @@ header { position: relative; }
 
   // ---------- selection ----------
   // inspectSq is transient: the square under the mouse, or under a finger while it's pressed
-  let inspectSq = null, inspectByMouse = false;
+  let inspectSq = null, inspectByMouse = false, pinnedSq = null, lastTap = null, scrubbing = false;  // pinnedSq: double-tapped to stay on
   function clearSel() { selected = null; legal = []; safety = {}; }
   function setInspect(sq, mouse) {
     if (review || mateView) sq = null;
@@ -1437,6 +1439,8 @@ header { position: relative; }
   function renderInspect() {
     const svg = $('inspectLayer'), note = $('inspectNote');
     if (dragOver) { drawDragInspect(); return; }
+    if (!inspectSq && pinnedSq && !mateView) { inspectSq = pinnedSq; try { renderInspect(); } finally { inspectSq = null; } svg.classList.add('pinned'); return; }
+    svg.classList.remove('pinned');
     if (mateSummary && mateSummary.at !== cur) mateSummary = null;
     if (mateSummary && (!inspectSq || inspectByMouse)) { note.hidden = true; drawMateSummary(); return; }  // a mouse resting on the board after the mate keeps the summary; a finger press overrides it
     const keepOpen = note.classList.contains('open') && note.dataset.sq === inspectSq;
@@ -1530,6 +1534,11 @@ header { position: relative; }
     if (!ptr || e.pointerId !== ptr.id) return;
     const info = ptr; endDrag(); ptr = null;
     setInspect(info.mouse ? squareAt(e.clientX, e.clientY) : null, info.mouse);  // a lifted finger goes back to the coach's arrows
+    if (!info.drag) {  // double tap: pin this square's coverage on, or unpin it
+      const now = performance.now(), sq = squareAt(e.clientX, e.clientY);
+      if (sq && lastTap && lastTap.sq === sq && now - lastTap.t < 380) { pinnedSq = pinnedSq === sq ? null : sq; lastTap = null; clearSel(); render(); return; }
+      lastTap = { sq, t: now };
+    }
     if (info.drag) {
       const t = squareAt(e.clientX, e.clientY);
       skipAnim = true;
@@ -2670,6 +2679,7 @@ header { position: relative; }
     if (!coachCfg.showArrows || coachCfg.style === 'rate') { svg.innerHTML = ''; return; }
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     svg.classList.toggle('dim', !!inspectSq && inspectByMouse);
+    if (navTimer || scrubbing || (pinnedSq && !selected)) { svg.innerHTML = ''; return; }  // no hints while rewinding / fast-forwarding, or under a pinned square
     if (inspectSq && !inspectByMouse && inspectSq !== selected) { svg.innerHTML = ''; return; }  // a finger is inspecting: lines only
     if (selected) {
       // a piece picked up to move: point out the coach's best move for that piece, among its move dots
@@ -2815,8 +2825,9 @@ header { position: relative; }
     el.addEventListener('click', e => { if (el.dataset.dragged) { e.stopPropagation(); e.preventDefault(); } }, true);
   }
   const scrubUnit = el => el.classList.contains('tree') ? 26 * TREE_SCALE : SLOT;
-  const chessScrub = { ok: () => !sim, line: () => lineOf(cur).map(n => n.id), cur: () => cur, unit: scrubUnit, end: save,
-    go: id => { if (navTimer) stopNav(); if (mateView) stopMate(); goTo(id); render(); } };
+  const chessScrub = { ok: () => !sim, line: () => lineOf(cur).map(n => n.id), cur: () => cur, unit: scrubUnit,
+    end: () => { scrubbing = false; save(); renderCoachArrows(); },
+    go: id => { scrubbing = true; if (navTimer) stopNav(); if (mateView) stopMate(); goTo(id); render(); } };
   dragScroll($('ribbon'), chessScrub); dragScroll($('tree'), chessScrub);
   $('tree').addEventListener('click', e => { const g = e.target.closest('[data-node]'); if (g && !sim) navTo(+g.dataset.node); });
   $('tree').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const g = e.target.closest('[data-node]'); if (g && !sim) { e.preventDefault(); navTo(+g.dataset.node); } });
