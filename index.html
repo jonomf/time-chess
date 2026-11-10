@@ -1357,7 +1357,7 @@ header { position: relative; }
 
   // ---------- selection ----------
   // inspectSq is transient: the square under the mouse, or under a finger while it's pressed
-  let inspectSq = null, inspectByMouse = false, pinnedSq = null, lastTap = null, scrubbing = false;  // pinnedSq: double-tapped to stay on
+  let inspectSq = null, inspectByMouse = false, pinnedSq = null, scrubbing = false;  // pinnedSq: tapped to stay on
   function clearSel() { selected = null; legal = []; safety = {}; }
   function setInspect(sq, mouse) {
     if (review || mateView) sq = null;
@@ -1415,8 +1415,8 @@ header { position: relative; }
     }
     if (onPiece) {
       h += '<rect x="' + (tx - .47) + '" y="' + (ty - .47) + '" width=".94" height=".94" rx=".08" fill="none" stroke="var(--ink)" stroke-width=".06"/>';
-      h += '<rect x="' + (tx - .46) + '" y="' + (ty - .78) + '" width=".92" height=".3" rx=".08" fill="var(--surface)" stroke="var(--ink)" stroke-width=".03"/>';
-      h += '<text x="' + tx + '" y="' + (ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="' + groups[0].col + '">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="' + groups[1].col + '">' + groups[1].list.length + '</tspan></text>';
+      h += '<rect x="' + (tx - .46) + '" y="' + (ty < 1 ? ty + .48 : ty - .78) + '" width=".92" height=".3" rx=".08" fill="var(--surface)" stroke="var(--ink)" stroke-width=".03"/>';
+      h += '<text x="' + tx + '" y="' + (ty < 1 ? ty + .7 : ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="' + groups[0].col + '">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="' + groups[1].col + '">' + groups[1].list.length + '</tspan></text>';
     }
     return h;
   }
@@ -1455,6 +1455,14 @@ header { position: relative; }
       : [{ list: att.filter(a => a.p.color === 'w'), col: 'var(--ctl-w)', word: 'White', cls: 'w' },
          { list: att.filter(a => a.p.color === 'b'), col: 'var(--ctl-b)', word: 'Black', cls: 'b' }];
     let h = '';
+    if (target && target.color !== game.turn()) {  // an enemy piece: shade every square it covers
+      const [pf, pr] = sqXY(inspectSq);
+      for (const i of attacksFrom(game, pf, pr, target)) {
+        const [x, y] = XY(sqName(i % 8, i >> 3));
+        h += '<rect x="' + (x - .47) + '" y="' + (y - .47) + '" width=".94" height=".94" rx=".06" fill="color-mix(in oklab, var(--ctl-b) 26%, transparent)" stroke="var(--ctl-b)" stroke-width=".04" stroke-dasharray=".12 .08"/>';
+        h += '<circle cx="' + x + '" cy="' + y + '" r=".09" fill="var(--ctl-b)"/>';
+      }
+    }
     for (const g of groups) for (const a of g.list) {
       const [x, y] = XY(a.sq), dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy) || 1;
       h += '<line x1="' + (x + dx / L * .3) + '" y1="' + (y + dy / L * .3) + '" x2="' + (tx - dx / L * .4) + '" y2="' + (ty - dy / L * .4) + '" stroke="' + g.col + '" stroke-width=".1" stroke-linecap="round" opacity=".85"/>';
@@ -1462,8 +1470,8 @@ header { position: relative; }
     }
     if (target) {
       h += '<rect x="' + (tx - .47) + '" y="' + (ty - .47) + '" width=".94" height=".94" rx=".08" fill="none" stroke="var(--ink)" stroke-width=".06"/>';
-      h += '<rect x="' + (tx - .46) + '" y="' + (ty - .78) + '" width=".92" height=".3" rx=".08" fill="var(--surface)" stroke="var(--ink)" stroke-width=".03"/>';
-      h += '<text x="' + tx + '" y="' + (ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="var(--accent)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
+      h += '<rect x="' + (tx - .46) + '" y="' + (ty < 1 ? ty + .48 : ty - .78) + '" width=".92" height=".3" rx=".08" fill="var(--surface)" stroke="var(--ink)" stroke-width=".03"/>';
+      h += '<text x="' + tx + '" y="' + (ty < 1 ? ty + .7 : ty - .56) + '" text-anchor="middle" font-size=".22" font-weight="700"><tspan fill="var(--accent)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)"> · </tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
     } else {
       h += '<rect x="' + (tx - .46) + '" y="' + (ty - .46) + '" width=".92" height=".92" rx=".08" fill="color-mix(in oklab, var(--ink) 10%, transparent)" stroke="var(--ink)" stroke-width=".06"/>';
       h += '<text x="' + tx + '" y="' + (ty + .12) + '" text-anchor="middle" font-size=".34" font-weight="700"><tspan fill="var(--ctl-w)">' + groups[0].list.length + '</tspan><tspan fill="var(--ink)">·</tspan><tspan fill="var(--ctl-b)">' + groups[1].list.length + '</tspan></text>';
@@ -1492,13 +1500,15 @@ header { position: relative; }
   const squareAt = (x, y) => { const el = document.elementFromPoint(x, y); const c = el && el.closest && el.closest('.sq'); return c && boardEl.contains(c) ? c.dataset.sq : null; };
   function tryMove(from, to) {
     if (!legal.some(m => m.from === from && m.to === to)) return false;
+    pinnedSq = null;  // a move clears any kept coverage, so the coach's arrows come back
     if (legal.some(m => m.to === to && m.flags.includes('p'))) { openPromo(from, to); return true; }
     addChild({ from, to }, false); save(); render(); return true;
   }
   boardEl.addEventListener('pointerdown', e => {
     if (e.button > 0) return;
     const s = squareAt(e.clientX, e.clientY); if (!s) return;
-    ptr = { s, x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, justSelected: false, over: null, mouse: e.pointerType === 'mouse' };
+    const willMove = !!(selected && s !== selected && (creativeOn() ? !brush : legal.some(m => m.to === s)));
+    ptr = { s, x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, justSelected: false, over: null, mouse: e.pointerType === 'mouse', pinAtDown: pinnedSq, willMove };
     setInspect(s, ptr.mouse);
     if (creativeOn()) { if (!brush && game.get(s) && selected !== s) { select(s); safety = {}; ptr.justSelected = true; render(); } }
     else if (canMove(game.get(s)) && selected !== s) { select(s); ptr.justSelected = true; render(); }
@@ -1534,12 +1544,11 @@ header { position: relative; }
     if (!ptr || e.pointerId !== ptr.id) return;
     const info = ptr; endDrag(); ptr = null;
     setInspect(info.mouse ? squareAt(e.clientX, e.clientY) : null, info.mouse);  // a lifted finger goes back to the coach's arrows
-    if (!info.drag) {
-      const now = performance.now(), sq = squareAt(e.clientX, e.clientY);
-      // double tap: pin this square's coverage on, or off when it was already the pinned square
-      if (sq && lastTap && lastTap.sq === sq && now - lastTap.t < 380) { pinnedSq = lastTap.pinBefore === sq ? null : sq; lastTap = null; clearSel(); render(); return; }
-      lastTap = { sq, t: now, pinBefore: pinnedSq };
-      if (pinnedSq && sq && sq !== pinnedSq) { pinnedSq = sq; renderInspect(); renderCoachArrows(); }  // while pinned, the pin stays wherever the finger lifts
+    if (!info.drag && !review) {
+      // a tap keeps that square's coverage on screen; tapping it again, or making a move, clears it
+      const sq = squareAt(e.clientX, e.clientY);
+      pinnedSq = info.willMove || !sq ? null : sq !== info.s ? sq : info.pinAtDown === sq ? null : sq;
+      renderInspect(); renderCoachArrows();
     }
     if (info.drag) {
       const t = squareAt(e.clientX, e.clientY);
