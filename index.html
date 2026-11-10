@@ -1534,10 +1534,12 @@ header { position: relative; }
     if (!ptr || e.pointerId !== ptr.id) return;
     const info = ptr; endDrag(); ptr = null;
     setInspect(info.mouse ? squareAt(e.clientX, e.clientY) : null, info.mouse);  // a lifted finger goes back to the coach's arrows
-    if (!info.drag) {  // double tap: pin this square's coverage on, or unpin it
+    if (!info.drag) {
       const now = performance.now(), sq = squareAt(e.clientX, e.clientY);
-      if (sq && lastTap && lastTap.sq === sq && now - lastTap.t < 380) { pinnedSq = pinnedSq === sq ? null : sq; lastTap = null; clearSel(); render(); return; }
-      lastTap = { sq, t: now };
+      // double tap: pin this square's coverage on, or off when it was already the pinned square
+      if (sq && lastTap && lastTap.sq === sq && now - lastTap.t < 380) { pinnedSq = lastTap.pinBefore === sq ? null : sq; lastTap = null; clearSel(); render(); return; }
+      lastTap = { sq, t: now, pinBefore: pinnedSq };
+      if (pinnedSq && sq && sq !== pinnedSq) { pinnedSq = sq; renderInspect(); renderCoachArrows(); }  // while pinned, the pin stays wherever the finger lifts
     }
     if (info.drag) {
       const t = squareAt(e.clientX, e.clientY);
