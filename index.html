@@ -771,6 +771,11 @@ header { position: relative; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pin: #c592ff; --pin-soft: #b08ad9; } }
 :root[data-theme="dark"] { --pin: #c592ff; --pin-soft: #b08ad9; }
 .pinlayer { z-index: 4; }
+
+:root { --tac: #c26a00; --disc: #0f7f8c; --fork: #d9480f; --ks: #b42318; --threat: #e8590c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tac: #ffb547; --disc: #4fd1dd; --fork: #ff8a4c; --ks: #ff6b5b; --threat: #ff9b54; } }
+:root[data-theme="dark"] { --tac: #ffb547; --disc: #4fd1dd; --fork: #ff8a4c; --ks: #ff6b5b; --threat: #ff9b54; }
+.pinlayer text { font-family: var(--f-mono); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -940,6 +945,12 @@ header { position: relative; }
         <button class="tog" data-opt="flag" type="button"><span>Flag outnumbered White pieces<small>Dashed ring when Black attackers outnumber White defenders.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="safety" type="button"><span>Move safety<small>Tap a piece: green lands safe, amber is a fair trade, red is outnumbered.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="pins" type="button"><span>Pins<small>Mark pinned pieces: a solid line when moving would expose the king, dashed when it would expose the queen.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="forks" type="button"><span>Forks<small>A piece hitting two or more targets at once: the king, something worth more than it, or a loose piece.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="forkChances" type="button"><span>Fork chances<small>On your turn, squares where one of your pieces could land and fork next move.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="skewers" type="button"><span>Skewers<small>A rook, bishop or queen hitting a valuable piece with a lesser one behind it.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="discovered" type="button"><span>Discovered attacks<small>A piece blocking its own rook, bishop or queen: moving it opens an attack (or a check).</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="kingSafety" type="button"><span>King safety<small>Squares around each king that the enemy hits, and open files leading to it.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="threat" type="button"><span>Their threat<small>On your turn, what the opponent would play if they could move again, when it captures, checks or mates.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="dragLines" type="button"><span>Lines while dragging<small>As you drag a piece over a square, see which of your pieces would defend it there and which enemy pieces would attack it.</small></span><span class="sw2"></span></button>
       </div>
       </div>
@@ -982,7 +993,7 @@ header { position: relative; }
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: true, forkChances: true, skewers: true, discovered: true, kingSafety: true, threat: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1714,11 +1725,96 @@ header { position: relative; }
     }
     return out.sort((a, b) => b.abs - a.abs);
   }
+  // ---------- tactics overlays: forks, skewers, discovered attacks, king safety, the opponent's threat ----------
+  const TV = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+  const defendedBy = (G, q, color) => attackersOf(G, q).some(a => a.p.color === color);
+  // does the piece on q attack two or more worthwhile targets? (king, more valuable than it, or loose and worth a minor+)
+  function forkTargets(G, q) {
+    const p = G.get(q); if (!p) return [];
+    const [f, r] = sqXY(q), out = [];
+    for (const i of attacksFrom(G, f, r, p)) {
+      const tq = sqName(i % 8, i >> 3), t = G.get(tq); if (!t || t.color === p.color) continue;
+      if (t.type === 'k' || TV[t.type] > TV[p.type] || (TV[t.type] >= 3 && !defendedBy(G, tq, t.color))) out.push(tq);
+    }
+    return out.length >= 2 ? out : [];
+  }
+  function lineWalk(G, f0, r0, df, dr) {  // pieces met walking from a square in one direction
+    const out = [];
+    for (let f = f0 + df, r = r0 + dr; f >= 0 && f < 8 && r >= 0 && r < 8; f += df, r += dr) { const q = sqName(f, r), p = G.get(q); if (p) out.push({ q, p }); }
+    return out;
+  }
+  const RAYS = [[1, 0, 'rq'], [-1, 0, 'rq'], [0, 1, 'rq'], [0, -1, 'rq'], [1, 1, 'bq'], [1, -1, 'bq'], [-1, 1, 'bq'], [-1, -1, 'bq']];
+  function findLines(G) {  // skewers and discovered attacks
+    const sk = [], disc = [];
+    for (let f = 0; f < 8; f++) for (let r = 0; r < 8; r++) {
+      const q = sqName(f, r), S = G.get(q); if (!S || !'rbq'.includes(S.type)) continue;
+      for (const [df, dr, sl] of RAYS) {
+        if (!sl.includes(S.type)) continue;
+        const w = lineWalk(G, f, r, df, dr); if (w.length < 2) continue;
+        const [A, B] = w;
+        if (A.p.color !== S.color && B.p.color !== S.color && (A.p.type === 'k' || TV[A.p.type] > TV[B.p.type]) && (TV[B.p.type] >= 3 || !defendedBy(G, B.q, B.p.color)) && B.p.type !== 'k')
+          sk.push({ by: q, front: A.q, back: B.q, color: S.color });
+        if (A.p.color === S.color && A.p.type !== 'k' && B.p.color !== S.color && (B.p.type === 'k' || TV[B.p.type] > TV[S.type] || TV[B.p.type] >= 5 || (TV[B.p.type] >= 3 && !defendedBy(G, B.q, B.p.color))))
+          disc.push({ by: q, blocker: A.q, target: B.q, check: B.p.type === 'k', color: S.color });
+      }
+    }
+    return { sk, disc };
+  }
+  let forkChanceCache = { fen: '', list: [] };
+  function forkChances(G) {  // squares the side to move can reach this turn that create a fork
+    const fen = G.fen(); if (forkChanceCache.fen === fen) return forkChanceCache.list;
+    const out = new Map();
+    for (const m of G.moves({ verbose: true })) {
+      const g = new Chess(fen); g.move(m); const ts = forkTargets(g, m.to); if (!ts.length) continue;
+      const enemy = m.color === 'w' ? 'b' : 'w', mover = g.get(m.to);
+      // skip a fork that just hangs the forking piece to something cheaper
+      if (attackersOf(g, m.to).some(a => a.p.color === enemy && TV[a.p.type] < TV[mover.type]) || (!defendedBy(g, m.to, m.color) && attackersOf(g, m.to).some(a => a.p.color === enemy))) continue;
+      if (!out.has(m.to)) out.set(m.to, { to: m.to, from: m.from, san: m.san, targets: ts });
+    }
+    forkChanceCache = { fen, list: [...out.values()] };
+    return forkChanceCache.list;
+  }
+  function requestThreat(n) {
+    if (!opts.threat || opts.mode !== 'chess' || !n || n.invalid || n.threat !== undefined || n.threatPending || engine.state !== 'ready' || sim || navTimer) return;
+    const g = new Chess(n.fen); if (g.game_over() || g.in_check()) { n.threat = null; return; }
+    const parts = n.fen.split(' '); parts[1] = parts[1] === 'w' ? 'b' : 'w'; parts[3] = '-';
+    const flip = parts.join(' '), gf = new Chess(flip); if (gf.in_check() || !gf.moves().length) { n.threat = null; return; }
+    n.threatPending = true;
+    runEngine(flip, { skill: 20, ms: Math.max(250, opts.dev.analysisMs), multipv: 1 }, false).then(r => {
+      n.threatPending = false; if (!nodes[n.id]) return;
+      const uci = r.best && r.best !== '(none)' ? r.best : null; if (!uci) { n.threat = null; render(); return; }
+      const m = new Chess(flip).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' });
+      const mate = r.score && r.score.kind === 'mate' && r.score.v > 0 ? r.score.v : 0;
+      n.threat = m && (mate || m.captured || /[+#]/.test(m.san)) ? { from: m.from, to: m.to, san: m.san, mate, color: m.color } : null;
+      render();
+    });
+  }
   function renderPins(G) {
-    const svg = $('pinLayer'); if (!opts.pins || review) { svg.innerHTML = ''; return; }
+    const svg = $('pinLayer'); if (review || (mateView && !opts.pins)) { svg.innerHTML = ''; return; }
     const XY = q => { const [f, r] = sqXY(q); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
-    let h = ''; const marked = new Set();
-    for (const p of findPins(G)) {
+    const tag = (x, y, t, col) => { const w = .12 + t.length * .1; return '<rect x="' + (x - w / 2) + '" y="' + (y - .13) + '" width="' + w + '" height=".26" rx=".13" fill="' + col + '"/><text x="' + x + '" y="' + (y + .075) + '" text-anchor="middle" font-size=".17" fill="var(--surface)" style="letter-spacing:.01em">' + t + '</text>'; };
+    const ln = (a, b, col, wdt, dash, shrink) => { const [x1, y1] = XY(a), [x2, y2] = XY(b), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, k = shrink || 0; return '<line x1="' + (x1 + dx / L * k) + '" y1="' + (y1 + dy / L * k) + '" x2="' + (x2 - dx / L * k) + '" y2="' + (y2 - dy / L * k) + '" stroke="' + col + '" stroke-width="' + wdt + '" stroke-linecap="round" opacity=".8"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>'; };
+    let h = ''; const marked = new Set(), tags = [];
+    const live = !mateView;
+    // king safety: enemy hits around each king, and open files toward it
+    if (opts.kingSafety && live) for (let f0 = 0; f0 < 8; f0++) for (let r0 = 0; r0 < 8; r0++) {
+      const K = G.get(sqName(f0, r0)); if (!K || K.type !== 'k') continue;
+      const enemy = K.color === 'w' ? 'b' : 'w';
+      for (let df = -1; df <= 1; df++) for (let dr = -1; dr <= 1; dr++) {
+        const f = f0 + df, r = r0 + dr; if (f < 0 || f > 7 || r < 0 || r > 7) continue;
+        const q = sqName(f, r), n = attackersOf(G, q).filter(a => a.p.color === enemy).length; if (!n) continue;
+        const [x, y] = XY(q);
+        h += '<circle cx="' + (x + .3) + '" cy="' + (y + .3) + '" r=".13" fill="var(--ks)" opacity="' + Math.min(1, .45 + n * .2) + '"/><text x="' + (x + .3) + '" y="' + (y + .36) + '" text-anchor="middle" font-size=".16" fill="var(--surface)">' + n + '</text>';
+      }
+      for (let f = Math.max(0, f0 - 1); f <= Math.min(7, f0 + 1); f++) {
+        let own = false, theirs = false;
+        for (let r = 0; r < 8; r++) { const p = G.get(sqName(f, r)); if (p && p.type === 'p') { if (p.color === K.color) own = true; else theirs = true; } }
+        if (own) continue;
+        const dir = K.color === 'w' ? 1 : -1, [x, y] = XY(sqName(f, r0)), [, y2] = XY(sqName(f, Math.max(0, Math.min(7, r0 + dir * 3))));
+        h += '<line x1="' + x + '" y1="' + y + '" x2="' + x + '" y2="' + y2 + '" stroke="var(--ks)" stroke-width=".05" stroke-dasharray=".08 .1" opacity="' + (theirs ? .5 : .8) + '"/>';
+      }
+    }
+    if (opts.pins) for (const p of findPins(G)) {
       const [x1, y1] = XY(p.by), [x2, y2] = XY(p.to), [px, py] = XY(p.sq), col = p.abs ? 'var(--pin)' : 'var(--pin-soft)';
       h += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + (p.abs ? .07 : .05) + '" stroke-linecap="round" opacity=".75"' + (p.abs ? '' : ' stroke-dasharray=".16 .12"') + '/>';
       if (marked.has(p.sq)) continue; marked.add(p.sq);
@@ -1726,6 +1822,35 @@ header { position: relative; }
       const bx = px - .3, by = py - .3;
       h += '<g transform="translate(' + bx + ' ' + by + ') rotate(-35)"><line x1="0" y1=".05" x2="0" y2=".24" stroke="' + col + '" stroke-width=".04" stroke-linecap="round"/><circle cx="0" cy="-.02" r=".1" fill="' + col + '" stroke="var(--surface)" stroke-width=".03"/></g>';
     }
+    if (live && (opts.skewers || opts.discovered)) {
+      const L = findLines(G);
+      if (opts.skewers) for (const k of L.sk) {
+        h += ln(k.by, k.back, 'var(--tac)', .06, '.2 .1', .3);
+        const [x, y] = XY(k.front); tags.push([x, y - .36, 'SKEWER', 'var(--tac)']);
+      }
+      if (opts.discovered) for (const d of L.disc) {
+        h += ln(d.by, d.target, 'var(--disc)', .05, '.05 .1', .3);
+        const [x, y] = XY(d.blocker); tags.push([x, y + .36, d.check ? 'DISC +' : 'DISC', 'var(--disc)']);
+      }
+    }
+    if (opts.forks && live) for (let f = 0; f < 8; f++) for (let r = 0; r < 8; r++) {
+      const q = sqName(f, r), ts = forkTargets(G, q); if (!ts.length) continue;
+      for (const t of ts) h += ln(q, t, 'var(--fork)', .08, '', .32);
+      const [x, y] = XY(q); tags.push([x, y + .36, 'FORK', 'var(--fork)']);
+    }
+    if (opts.forkChances && live && humanTurnNow() && !game.game_over()) for (const c of forkChances(G)) {
+      const [x, y] = XY(c.to);
+      h += '<circle cx="' + x + '" cy="' + y + '" r=".38" fill="none" stroke="var(--fork)" stroke-width=".05" stroke-dasharray=".1 .08"/>';
+      tags.push([x, y + .3, 'FORK?', 'var(--fork)']);
+    }
+    const n = nodes[cur];
+    if (opts.threat && live && n && n.threat && humanTurnNow()) {
+      const t = n.threat, [x1, y1] = XY(t.from), [x2, y2] = XY(t.to), dx = x2 - x1, dy = y2 - y1, Lh = Math.hypot(dx, dy) || 1;
+      h += '<defs><marker id="thh" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--threat)"/></marker></defs>';
+      h += '<line x1="' + (x1 + dx / Lh * .3) + '" y1="' + (y1 + dy / Lh * .3) + '" x2="' + (x2 - dx / Lh * .35) + '" y2="' + (y2 - dy / Lh * .35) + '" stroke="var(--threat)" stroke-width=".11" stroke-linecap="round" stroke-dasharray=".25 .12" opacity=".9" marker-end="url(#thh)"/>';
+      tags.push([x2, y2 + (y2 > 7 ? -.36 : .36), t.mate ? 'MATE IN ' + t.mate : 'THREAT ' + t.san.replace(/[+#]$/, ''), 'var(--threat)']);
+    }
+    for (const [x, y, t, c] of tags) h += tag(x, y, t, c);
     svg.innerHTML = h;
   }
   function renderBoard() {
@@ -2130,6 +2255,7 @@ header { position: relative; }
     if (typeof puzzleModes !== 'undefined' && puzzleModes[opts.mode]) setTimeout(() => puzzleModes[opts.mode].render(true), 0);
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect(); renderCreative();
     if (mateToastFor != null && mateToastFor !== cur) hideMateToast();
+    if (opts.threat && humanTurnNow() && !scrubbing) requestThreat(nodes[cur]);
     if (mateQueued != null && mateQueued === cur && !navTimer) { const id = mateQueued; mateQueued = null; setTimeout(() => { if (cur === id && opts.mode === 'chess') playMate(); }, opts.dev.animMs + 350); }
     setTimeout(maybeBotMove, 0);
     for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
