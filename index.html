@@ -766,6 +766,11 @@ header { position: relative; }
 .tabs > .tlview[hidden] { display: none; }
 
 .overlay.pinned + .overlay, #inspectLayer.pinned { filter: drop-shadow(0 0 1px var(--surface)); }
+
+:root { --pin: #8a3fd1; --pin-soft: #a46ad8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pin: #c592ff; --pin-soft: #b08ad9; } }
+:root[data-theme="dark"] { --pin: #c592ff; --pin-soft: #b08ad9; }
+.pinlayer { z-index: 4; }
 </style>
 </head>
 <body>
@@ -781,7 +786,7 @@ header { position: relative; }
   <div class="col col-l">
   <div class="o-board board-wrap">
     <div class="status" id="status" hidden><span class="turn-chip w" id="chip"></span><span id="statusText">White to move</span><span class="evaltag" id="evalTag" title="Engine evaluation, in pawns, from White's side">…</span></div>
-    <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><p class="matecap" id="mateCap" hidden aria-live="polite"></p><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+    <div class="board-box"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="overlay pinlayer" id="pinLayer" viewBox="0 0 8 8" aria-hidden="true"></svg><svg class="overlay" id="overlay" viewBox="0 0 8 8" aria-hidden="true"></svg><p class="matecap" id="mateCap" hidden aria-live="polite"></p><svg class="overlay" id="inspectLayer" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
     <div class="toast" id="mateToast" hidden role="status" aria-live="polite"><div class="t-main"><b id="mateTitle">Checkmate!</b><span id="mateSub"></span></div><div class="t-acts"><button type="button" class="t-btn" id="mateAgain">Watch again</button><button type="button" class="t-btn primary" id="mateNew">New game</button><button type="button" class="t-x" id="mateX" aria-label="Dismiss">✕</button></div></div>
     <div class="cpal" id="cpal" hidden>
       <div class="cpal-hd"><b>✎ Creative mode</b><button type="button" class="cdone" id="cDone">Done</button></div>
@@ -934,6 +939,7 @@ header { position: relative; }
         <button class="tog" data-opt="counts" type="button"><span>Attacker counts<small>White count in green, Black count in red.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="flag" type="button"><span>Flag outnumbered White pieces<small>Dashed ring when Black attackers outnumber White defenders.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="safety" type="button"><span>Move safety<small>Tap a piece: green lands safe, amber is a fair trade, red is outnumbered.</small></span><span class="sw2"></span></button>
+        <button class="tog" data-opt="pins" type="button"><span>Pins<small>Mark pinned pieces: a solid line when moving would expose the king, dashed when it would expose the queen.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="dragLines" type="button"><span>Lines while dragging<small>As you drag a piece over a square, see which of your pieces would defend it there and which enemy pieces would attack it.</small></span><span class="sw2"></span></button>
       </div>
       </div>
@@ -976,7 +982,7 @@ header { position: relative; }
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1689,8 +1695,42 @@ header { position: relative; }
     tick();
   }
   const pendingDrop = id => log.length && log[log.length - 1].mover === id;
+  // pins: a piece standing between an enemy rook, bishop or queen and its own king (absolute) or queen (relative)
+  function findPins(G) {
+    const out = [], seen = new Set(), DIRS = [[1, 0, 'rq'], [-1, 0, 'rq'], [0, 1, 'rq'], [0, -1, 'rq'], [1, 1, 'bq'], [1, -1, 'bq'], [-1, 1, 'bq'], [-1, -1, 'bq']];
+    for (let f0 = 0; f0 < 8; f0++) for (let r0 = 0; r0 < 8; r0++) {
+      const anchor = G.get(sqName(f0, r0)); if (!anchor || (anchor.type !== 'k' && anchor.type !== 'q')) continue;
+      for (const [df, dr, sl] of DIRS) {
+        let f = f0 + df, r = r0 + dr, first = null;
+        for (; f >= 0 && f < 8 && r >= 0 && r < 8; f += df, r += dr) {
+          const q = sqName(f, r), p = G.get(q); if (!p) continue;
+          if (!first) { if (p.color !== anchor.color || p.type === 'k' || (anchor.type === 'q' && p.type === 'q')) break; first = q; continue; }
+          if (p.color !== anchor.color && sl.includes(p.type) && !(anchor.type === 'q' && p.type === 'q')) {
+            const key = first + q; if (!seen.has(key)) { seen.add(key); out.push({ sq: first, by: q, to: sqName(f0, r0), abs: anchor.type === 'k' }); }
+          }
+          break;
+        }
+      }
+    }
+    return out.sort((a, b) => b.abs - a.abs);
+  }
+  function renderPins(G) {
+    const svg = $('pinLayer'); if (!opts.pins || review) { svg.innerHTML = ''; return; }
+    const XY = q => { const [f, r] = sqXY(q); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
+    let h = ''; const marked = new Set();
+    for (const p of findPins(G)) {
+      const [x1, y1] = XY(p.by), [x2, y2] = XY(p.to), [px, py] = XY(p.sq), col = p.abs ? 'var(--pin)' : 'var(--pin-soft)';
+      h += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + (p.abs ? .07 : .05) + '" stroke-linecap="round" opacity=".75"' + (p.abs ? '' : ' stroke-dasharray=".16 .12"') + '/>';
+      if (marked.has(p.sq)) continue; marked.add(p.sq);
+      // a pushpin badge in the pinned piece's corner
+      const bx = px - .3, by = py - .3;
+      h += '<g transform="translate(' + bx + ' ' + by + ') rotate(-35)"><line x1="0" y1=".05" x2="0" y2=".24" stroke="' + col + '" stroke-width=".04" stroke-linecap="round"/><circle cx="0" cy="-.02" r=".1" fill="' + col + '" stroke="var(--surface)" stroke-width=".03"/></g>';
+    }
+    svg.innerHTML = h;
+  }
   function renderBoard() {
-    const MV = mateView, G = MV ? MV.game : game, ID = MV ? MV.ids : ids;  // the checkmate replay draws what-if positions
+    const MV = mateView, G = MV ? MV.game : game, ID = MV ? MV.ids : ids;
+    renderPins(G);  // the checkmate replay draws what-if positions
     const map = attackMap(G), last = MV ? null : log[log.length - 1], turn = G.turn();
     let checkSq = null;
     if (G.in_check()) for (const s in cells) { const p = G.get(s); if (p && p.type === 'k' && p.color === turn) checkSq = s; }
