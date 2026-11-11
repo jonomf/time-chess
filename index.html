@@ -924,7 +924,7 @@ header { position: relative; }
       <div class="cardhd"><span class="grip" role="button" tabindex="0" aria-label="Move card. Drag, or use arrow keys." title="Drag to move this card"><svg viewBox="0 0 10 16" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg></span><button type="button" class="cardtog" data-tog="settings" aria-expanded="false"><span class="label">Settings</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
       <div class="cbody">
       <div class="seg segSkin"><span class="label">Skin</span><button type="button" data-skin="classic">Classic</button><button type="button" data-skin="neon">Neon</button></div>
-      <div class="diff"><div class="diffhead"><label for="checkerRange">Checkerboard</label><span id="checkerVal">100%</span></div><input type="range" id="checkerRange" min="0" max="100" step="5" value="100"><div class="diffscale"><span>Hidden</span><span>Full</span></div></div>
+      <div class="diff"><div class="diffhead"><label for="checkerRange">Checkerboard</label><span id="checkerVal">0%</span></div><input type="range" id="checkerRange" min="0" max="100" step="5" value="100"><div class="diffscale"><span>Hidden</span><span>Full</span></div></div>
       <div class="seg" id="segSpeed"><span class="label">Replay</span>
         <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
       </div>
@@ -993,7 +993,7 @@ header { position: relative; }
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: true, forkChances: true, skewers: true, discovered: true, kingSafety: true, threat: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 0, defaultsV: 2, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -5650,6 +5650,9 @@ header { position: relative; }
     if (s) {
       flipped = !!s.flipped;
       if (s.opts) opts = Object.assign(opts, s.opts);
+      if (s.opts && (s.opts.defaultsV || 0) < 2) {  // one-time update to the new defaults: quieter overlays, no checkerboard
+        Object.assign(opts, { forks: false, forkChances: false, skewers: false, kingSafety: false, checker: 0, defaultsV: 2 });
+      }
       opts.dev = Object.assign({}, DEV_DEFAULTS, opts.dev || {});
       if (s.simCfg) simCfg = Object.assign(simCfg, s.simCfg);
       if (s.botCfg) botCfg = Object.assign(botCfg, s.botCfg);
