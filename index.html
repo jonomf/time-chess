@@ -1475,7 +1475,9 @@ header { position: relative; }
     if (target && target.color !== game.turn()) {  // an enemy piece: shade every square it covers
       const [pf, pr] = sqXY(inspectSq);
       for (const i of attacksFrom(game, pf, pr, target)) {
-        const [x, y] = XY(sqName(i % 8, i >> 3));
+        const cq = sqName(i % 8, i >> 3), on = game.get(cq);
+        if (on && on.color === target.color) continue;  // a square it only guards for its own side: no dot
+        const [x, y] = XY(cq);
         h += '<circle cx="' + x + '" cy="' + y + '" r=".11" fill="var(--ctl-b)" opacity=".85"/>';
       }
     }
@@ -1788,6 +1790,8 @@ header { position: relative; }
       render();
     });
   }
+  // the side the player is playing: White against Stockfish, their own colour online, whoever is to move at a shared board
+  const mySide = c => online.active ? c === online.myColor : botCfg.on ? c === 'w' : c === game.turn();
   function renderPins(G) {
     const svg = $('pinLayer'); if (review || (mateView && !opts.pins)) { svg.innerHTML = ''; return; }
     const XY = q => { const [f, r] = sqXY(q); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
@@ -1828,6 +1832,7 @@ header { position: relative; }
         const [x, y] = XY(k.front); tags.push([x, y - .36, 'SKEWER', 'var(--tac)']);
       }
       if (opts.discovered) for (const d of L.disc) {
+        if (!mySide(d.color)) continue;  // only your own discovered attacks
         h += ln(d.by, d.target, 'var(--disc)', .05, '.05 .1', .3);
       }
     }
@@ -1837,6 +1842,7 @@ header { position: relative; }
       const [x, y] = XY(q); tags.push([x, y + .36, 'FORK', 'var(--fork)']);
     }
     if (opts.forkChances && live && humanTurnNow() && !game.game_over()) for (const c of forkChances(G)) {
+      if (selected && c.from !== selected) continue;  // with a piece picked up, only its own fork chances
       const [x, y] = XY(c.to);
       h += '<circle cx="' + x + '" cy="' + y + '" r=".38" fill="none" stroke="var(--fork)" stroke-width=".05" stroke-dasharray=".1 .08"/>';
       tags.push([x, y + .3, 'FORK?', 'var(--fork)']);
