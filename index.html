@@ -936,10 +936,8 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
       <div class="cbody">
       <div class="seg segSkin"><span class="label">Skin</span><button type="button" data-skin="classic">Classic</button><button type="button" data-skin="neon">Neon</button></div>
       <div class="diff"><div class="diffhead"><label for="checkerRange">Checkerboard</label><span id="checkerVal">0%</span></div><input type="range" id="checkerRange" min="0" max="100" step="5" value="100"><div class="diffscale"><span>Hidden</span><span>Full</span></div></div>
-      <div class="seg" id="segSpeed"><span class="label">Replay</span>
-        <button type="button" data-speed="0">Instant</button><button type="button" data-speed="220">Fast</button><button type="button" data-speed="440">Normal</button><button type="button" data-speed="1100">Slow</button>
-      </div>
-      <p class="note">How quickly moves play back when you jump around the timeline or tree.</p>
+      <div class="diff"><div class="diffhead"><label for="speedRange">Time travel speed</label><span id="speedVal"></span></div><input type="range" id="speedRange" min="0" max="8" step="1"></div>
+      <p class="note">How quickly moves play back when you jump around the timeline or tree. All the way right is instant.</p>
       <div class="seg" id="segMate"><span class="label">Checkmate</span>
         <button type="button" data-mate="0">Off</button><button type="button" data-mate="0.45">Fast</button><button type="button" data-mate="0.8">Normal</button><button type="button" data-mate="1.4">Slow</button>
       </div>
@@ -1029,11 +1027,14 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     }
     return out;
   }
+  // time travel speed: a multiple of the original pace (440ms of replay per jump), or instant
+  const SPEEDS = [0.5, 1, 1.5, 2, 3, 4, 6, 8, 0];
+  const speedIndex = () => { if (!opts.replay) return SPEEDS.length - 1; const m = 440 / opts.replay; let best = 0; SPEEDS.forEach((v, i) => { if (v && Math.abs(v - m) < Math.abs(SPEEDS[best] - m)) best = i; }); return best; };
   function replayPer(n) {
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 0, defaultsV: 2, timeTint: true, tintBack: 100, tintFwd: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 147, checker: 0, defaultsV: 3, timeTint: true, tintBack: 100, tintFwd: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -2306,7 +2307,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     for (const t of document.querySelectorAll('.tog[data-opt]')) t.setAttribute('aria-pressed', String(!!opts[t.dataset.opt]));
     boardEl.style.setProperty('--checker', opts.checker + '%');
     $('checkerRange').value = opts.checker; $('checkerVal').textContent = opts.checker + '%';
-    for (const b of document.querySelectorAll('#segSpeed button')) b.setAttribute('aria-pressed', String(+b.dataset.speed === opts.replay));
+    { const i = speedIndex(); if (document.activeElement !== $('speedRange')) $('speedRange').value = i; $('speedVal').textContent = SPEEDS[i] ? SPEEDS[i] + '×' : 'Instant'; }
     for (const b of document.querySelectorAll('#segMate button')) b.setAttribute('aria-pressed', String(+b.dataset.mate === (opts.mateSpeed ?? 0.45)));
     renderCards();
     pump();
@@ -3126,7 +3127,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   });
   for (const [k, id] of [['tintBack', 'tintBack'], ['tintFwd', 'tintFwd']]) $(id).addEventListener('input', e => { opts[k] = +e.target.value; applyTint(); save(); });
   $('segMate').addEventListener('click', e => { const b = e.target.closest('[data-mate]'); if (b) { opts.mateSpeed = +b.dataset.mate; save(); render(); } });
-  $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
+  $('speedRange').addEventListener('input', e => { const v = SPEEDS[+e.target.value]; opts.replay = v ? Math.round(440 / v) : 0; $('speedVal').textContent = v ? v + '×' : 'Instant'; save(); });
   // ---------- tab groups: every panel is a card with one or more tabs ----------
   // Drag a tab along its bar to reorder, onto another card's bar to move it there, or off any
   // bar to make a new card. Drag a card by its grip onto another card's bar to merge them.
@@ -5716,6 +5717,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
       if (s.opts && (s.opts.defaultsV || 0) < 2) {  // one-time update to the new defaults: quieter overlays, no checkerboard
         Object.assign(opts, { forks: false, forkChances: false, skewers: false, kingSafety: false, checker: 0, defaultsV: 2 });
       }
+      if (s.opts && (s.opts.defaultsV || 0) < 3) Object.assign(opts, { replay: 147, defaultsV: 3 });  // one-time: faster time travel (3×)
       opts.dev = Object.assign({}, DEV_DEFAULTS, opts.dev || {});
       if (s.simCfg) simCfg = Object.assign(simCfg, s.simCfg);
       if (s.botCfg) botCfg = Object.assign(botCfg, s.botCfg);
