@@ -1,0 +1,112 @@
+{
+  "rev": 1,
+  "applyToExisting": false,
+  "savedAt": "2026-11-21T04:19:42.019Z",
+  "about": "TIME CHESS! shared defaults. New players start from this; Settings > Reset to defaults uses it. Export from the Developer tab.",
+  "opts": {
+    "dev": {
+      "camEase": 0.06,
+      "camMax": 28,
+      "animMs": 220,
+      "travStart": 4,
+      "travTop": 14,
+      "travAccel": 24,
+      "travDecel": 24,
+      "travPause": 120,
+      "analysisMs": 300,
+      "coachMs": 900,
+      "botDelay": 450,
+      "debug": false
+    },
+    "skin": "classic",
+    "map": true,
+    "counts": false,
+    "flag": true,
+    "safety": true,
+    "pins": true,
+    "forks": false,
+    "forkChances": false,
+    "skewers": false,
+    "discovered": true,
+    "kingSafety": false,
+    "threat": true,
+    "dragLines": true,
+    "mateSpeed": 0.45,
+    "replay": 147,
+    "checker": 0,
+    "timeTint": true,
+    "tintBack": 100,
+    "tintFwd": 100
+  },
+  "botCfg": {
+    "on": true,
+    "level": 4
+  },
+  "coachCfg": {
+    "showArrows": true,
+    "style": "guide"
+  },
+  "simCfg": {
+    "len": 20,
+    "str": "club",
+    "pace": 200
+  },
+  "layout": {
+    "desktop": {
+      "v": 1,
+      "l": [],
+      "r": [
+        {
+          "id": "gmwpwfqhl1",
+          "tabs": [
+            "timeline",
+            "coach",
+            "review",
+            "sim",
+            "game",
+            "online",
+            "settings",
+            "dev"
+          ],
+          "active": "timeline",
+          "open": true
+        }
+      ]
+    },
+    "phone": {
+      "v": 1,
+      "l": [],
+      "r": [
+        {
+          "id": "gmwpwfrly1",
+          "tabs": [
+            "timeline"
+          ],
+          "active": "timeline",
+          "open": true
+        },
+        {
+          "id": "gmwpwfrly2",
+          "tabs": [
+            "coach"
+          ],
+          "active": "coach",
+          "open": true
+        },
+        {
+          "id": "gmwpwfrly3",
+          "tabs": [
+            "game",
+            "review",
+            "sim",
+            "online",
+            "settings",
+            "dev"
+          ],
+          "active": "game",
+          "open": false
+        }
+      ]
+    }
+  }
+}

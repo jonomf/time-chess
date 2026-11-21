@@ -794,6 +794,12 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
 .curved .cv-pt { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
 .curved .cv-lab { fill: var(--muted); font: 600 9px var(--f-mono); letter-spacing: .03em; text-transform: uppercase; }
 .curvebtns { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.defbox { display: grid; gap: 6px; margin: 10px 0; padding: 10px; border: 1.5px dashed var(--line); border-radius: 8px; }
+.defbox h4 { margin: 0; }
+.defchk { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.defout { width: 100%; box-sizing: border-box; font: 11px/1.4 var(--f-mono); padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; }
+a.btn { text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -940,6 +946,14 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
         <div class="diff devrow"><div class="diffhead"><label for="dev-coachMs">Coach thinking</label><span id="devv-coachMs"></span></div><input type="range" id="dev-coachMs" data-dev="coachMs" min="200" max="5000" step="100" data-unit=" ms"><p class="note">Thinking time for Coach Pip’s suggestions.</p></div>
         <button class="tog" data-devflag="debug" type="button"><span>Debug readout<small>Show live counters for the move tree and the engine.</small></span><span class="sw2"></span></button>
         <pre class="devdebug" id="devDebug" hidden></pre>
+        <div class="defbox">
+          <h4 class="label">Defaults for everyone</h4>
+          <p class="note" id="defInfo"></p>
+          <label class="defchk"><input type="checkbox" id="defApplyAll"> Also apply once to players who already have saved settings</label>
+          <div class="controls"><button class="btn" id="defExport" type="button">Export my setup</button><a class="btn" id="defEdit" href="https://github.com/jonomf/time-chess/edit/main/defaults.json" target="_blank" rel="noopener">Open defaults.json on GitHub</a></div>
+          <textarea id="defOut" class="defout" readonly rows="6" hidden aria-label="Exported defaults"></textarea>
+          <p class="note">Captures your settings, these developer values, opponent and coach choices, and this screen's card layout. Phone and desktop layouts are kept separately, so export once from each. Then paste it over defaults.json on GitHub and commit, and everyone who loads the game afterward starts from it.</p>
+        </div>
         <div class="controls"><button class="btn" id="devResetDev" type="button">Reset developer settings</button><button class="btn" id="devResetLayout" type="button">Reset layout</button><button class="btn danger" id="devWipe" type="button">Clear saved data</button></div>
       </div>
     </section>
@@ -954,6 +968,8 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
         <button type="button" data-mate="0">Off</button><button type="button" data-mate="0.45">Fast</button><button type="button" data-mate="0.8">Normal</button><button type="button" data-mate="1.4">Slow</button>
       </div>
       <p class="note">The replay at checkmate, where the king tries each escape square and gets taken. Off goes straight to the checkmate message.</p>
+      <div class="controls"><button class="btn" id="settingsDefaults" type="button">Reset to defaults</button></div>
+      <p class="note">Puts every setting and the card layout back to the game's shared defaults. Your games and timelines stay.</p>
       <p class="label">Square control · counted from White's side</p>
       <div class="legend">
         <div class="key"><span class="sw" style="background:var(--ctl-w)"></span>White only</div>
@@ -3132,6 +3148,14 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   document.addEventListener('click', e => {
     const f = e.target.closest('[data-devflag]'); if (f) { opts.dev[f.dataset.devflag] = !opts.dev[f.dataset.devflag]; save(); renderDev(); return; }
     if (e.target.closest('#devResetDev')) { opts.dev = Object.assign({}, DEV_DEFAULTS); save(); renderDev(); return; }
+    if (e.target.closest('#defExport')) {
+      const out = $('defOut'); out.value = JSON.stringify(exportSetup($('defApplyAll').checked), null, 2); out.hidden = false; out.select();
+      const b = $('defExport');
+      const done = t => { b.textContent = t; setTimeout(() => { b.textContent = 'Export my setup'; }, 2200); };
+      try { navigator.clipboard.writeText(out.value).then(() => done('Copied ✓'), () => done('Select and copy below')); } catch (err) { done('Select and copy below'); }
+      return;
+    }
+    if (e.target.closest('#settingsDefaults')) { applySharedDefaults(sharedDefaults || BUILTIN); return; }
     if (e.target.closest('#devResetLayout')) { opts.layout2 = null; opts.dock = null; opts.cards = {}; layout(); placeAll(); applyState(); return; }
     const w = e.target.closest('#devWipe');
     if (w) {
@@ -5732,8 +5756,58 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   function sudNewNow(api) { api.P.root = sudGenerate(api.P.cfg.level); const s = SUD.initial(api.P.root); api.P.st = s; api.node(0).enc = sudEnc(s); api.node(0).ev = 0; api.save(); }
 
   // ---------- boot ----------
+  // ---------- shared defaults: defaults.json next to the page sets everyone's starting settings and layout ----------
+  const DEFAULTS_URL = 'defaults.json', DEFAULTS_CACHE = 'timechess-defaults';
+  const DEF_SKIP = new Set(['mode', 'creative', 'defaultsV', 'layoutPhone', 'layout2', 'dock', 'cards', 'defaultsRev', 'tab']);  // per-person state, not settings
+  const clone = v => v == null ? v : JSON.parse(JSON.stringify(v));
+  let sharedDefaults = null, BUILTIN = null;
+  const formFactor = () => narrowNow() ? 'phone' : 'desktop';
+  function applySharedDefaults(d) {
+    for (const k in (d.opts || {})) if (!DEF_SKIP.has(k) && k !== 'dev') opts[k] = clone(d.opts[k]);
+    opts.dev = Object.assign({}, DEV_DEFAULTS, clone((d.opts || {}).dev) || {});
+    if (d.botCfg) Object.assign(botCfg, clone(d.botCfg));
+    if (d.simCfg) Object.assign(simCfg, clone(d.simCfg));
+    if (d.coachCfg) { const { on, ...rest } = d.coachCfg; Object.assign(coachCfg, clone(rest)); }
+    const L = d.layout && d.layout[formFactor()];
+    opts.layout2 = L ? clone(L) : null; opts.dock = null; opts.cards = {};
+    layout(); placeAll(); applyState();
+    coachCfg.on = cardOpen('coach');
+    opts.defaultsRev = d.rev || 0;
+    save(); render(); renderDefaultsInfo();
+  }
+  function bootDefaults(firstVisit) {
+    renderDefaultsInfo();
+    const use = d => {
+      if (!d || !d.opts) return;
+      sharedDefaults = d;
+      const newer = (d.rev || 0) > (opts.defaultsRev || 0);
+      if (newer && (firstVisit || d.applyToExisting)) applySharedDefaults(d);
+      renderDefaultsInfo();
+    };
+    try { use(JSON.parse(localStorage.getItem(DEFAULTS_CACHE) || 'null')); } catch (e) {}
+    if (location.protocol === 'file:' || typeof fetch !== 'function') return;
+    fetch(DEFAULTS_URL, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || !d.opts) return;
+      try { localStorage.setItem(DEFAULTS_CACHE, JSON.stringify(d)); } catch (e) {}
+      use(d);
+    }).catch(() => {});
+  }
+  function exportSetup(applyAll) {
+    const base = sharedDefaults || {}, o = {};
+    for (const k in opts) if (!DEF_SKIP.has(k)) o[k] = clone(opts[k]);
+    const { on, ...coach } = coachCfg;
+    return { rev: (base.rev || 0) + 1, applyToExisting: !!applyAll, savedAt: new Date().toISOString(),
+      about: 'TIME CHESS! shared defaults. New players start from this; Settings > Reset to defaults uses it. Export from the Developer tab.',
+      opts: o, botCfg: clone(botCfg), coachCfg: coach, simCfg: clone(simCfg),
+      layout: Object.assign({}, clone(base.layout) || {}, { [formFactor()]: clone(opts.layout2) }) };
+  }
+  function renderDefaultsInfo() {
+    const el = $('defInfo'); if (!el) return;
+    el.textContent = sharedDefaults ? 'Shared defaults: revision ' + (sharedDefaults.rev || 0) + (sharedDefaults.savedAt ? ', saved ' + new Date(sharedDefaults.savedAt).toLocaleString() : '') + (sharedDefaults.layout ? ' · layouts: ' + Object.keys(sharedDefaults.layout).join(', ') : '') + '.' : 'No shared defaults file found yet, so the built-in defaults apply.';
+  }
   function start(data) {
     const s = (data && data.v === 2) ? data : load();
+    BUILTIN = { opts: clone(opts), botCfg: clone(botCfg), coachCfg: clone(coachCfg), simCfg: clone(simCfg), rev: 0 };
     resetTree();
     if (s) {
       flipped = !!s.flipped;
@@ -5754,6 +5828,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     buildBoard(); render(); initEngine();
     goBoot();
     netBoot();
+    bootDefaults(!s);
   }
   if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(serialize);
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
