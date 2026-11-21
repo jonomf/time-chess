@@ -786,6 +786,14 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap) { filter: satu
 body.travel-back :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { content: "◀◀"; left: 8px; right: auto; opacity: .9; background: #6b5a43; color: #f4ead8; transition-duration: .1s; }
 body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { content: "▶▶"; right: 8px; left: auto; opacity: .9; background: var(--accent); color: var(--surface); transition-duration: .1s; }
 @media (prefers-reduced-motion: reduce) { :is(.board-box, .goboard-box, .solwrap, .sudwrap) { transition: none; } }
+
+.curved { display: block; width: 100%; max-width: 360px; height: auto; touch-action: none; cursor: ns-resize; margin: 4px 0 6px; }
+.curved .cv-bg { fill: var(--bg); stroke: var(--line); stroke-width: 1; rx: 6; }
+.curved .cv-ref { stroke: var(--line); stroke-dasharray: 3 4; }
+.curved .cv-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+.curved .cv-pt { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+.curved .cv-lab { fill: var(--muted); font: 600 9px var(--f-mono); letter-spacing: .03em; text-transform: uppercase; }
+.curvebtns { display: flex; flex-wrap: wrap; gap: 4px; }
 </style>
 </head>
 <body>
@@ -920,7 +928,10 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
         <div class="diff devrow"><div class="diffhead"><label for="dev-camMax">Follow top speed</label><span id="devv-camMax"></span></div><input type="range" id="dev-camMax" data-dev="camMax" min="4" max="200" step="2" data-unit=" px/frame"><p class="note">Caps how fast the timeline and tree can scroll toward the current move.</p></div>
         <p class="label">Motion</p>
         <div class="diff devrow"><div class="diffhead"><label for="dev-animMs">Piece slide</label><span id="devv-animMs"></span></div><input type="range" id="dev-animMs" data-dev="animMs" min="0" max="800" step="10" data-unit=" ms"><p class="note">How long a single move takes to slide.</p></div>
-        <div class="diff devrow"><div class="diffhead"><label for="dev-navEase">Replay ease</label><span id="devv-navEase"></span></div><input type="range" id="dev-navEase" data-dev="navEase" min="0" max="2.5" step="0.1" data-unit=""><p class="note">How much timeline jumps slow down near their start, their end and any branch point, and speed up in between. 0 is an even pace.</p></div>
+        <div class="diff devrow"><div class="diffhead"><label>Replay easing</label><span id="curveVal"></span></div>
+        <svg class="curved" id="curveEd" viewBox="0 0 280 130" role="img" aria-label="Replay easing curve: time per move across each stretch of a jump"></svg>
+        <div class="curvebtns"><button type="button" class="mini" data-curve="inout">Ease in-out</button><button type="button" class="mini" data-curve="lin">Linear</button><button type="button" class="mini" data-curve="in">Ease in</button><button type="button" class="mini" data-curve="out">Ease out</button></div>
+        <p class="note">Time each move takes across a stretch of a jump: left is where it starts (or leaves a branch point), right is where it stops (or reaches one). Higher is slower. Drag the points.</p></div>
         <div class="diff devrow"><div class="diffhead"><label for="dev-replayStep">Replay step</label><span id="devv-replayStep"></span></div><input type="range" id="dev-replayStep" data-dev="replayStep" min="20" max="300" step="5" data-unit=" ms"><p class="note">Shortest time each move gets when jumping through the timeline, at Normal replay speed. Long jumps take longer instead of snapping.</p></div>
         <div class="diff devrow"><div class="diffhead"><label for="dev-botDelay">Stockfish reply delay</label><span id="devv-botDelay"></span></div><input type="range" id="dev-botDelay" data-dev="botDelay" min="0" max="2000" step="50" data-unit=" ms"><p class="note">Minimum wait before Stockfish plays, so its move doesn’t feel instant.</p></div>
         <p class="label">Engine</p>
@@ -998,7 +1009,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
   const online = { active: false, applying: false };
-  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, replayStep: 75, navEase: 1.2, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
+  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, replayStep: 75, navCurve: [2.05, 1.2, 0.85, 1.2, 2.05], analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
   // Time per step when replaying a jump: the whole jump shares opts.replay, but no step drops below
   // the Replay step floor (scaled by the Replay setting), so each move still visibly slides.
   // time-travel cue: the board goes sepia while moving back through time and vivid while moving forward
@@ -1016,13 +1027,22 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   }
   // momentum for timeline replays: split the path where it changes direction (back to a fork, then forward
   // into the other branch); each part accelerates out of its start and slows into its end
+  // the easing curve: five knots across a stretch (start..end), smoothed with Catmull-Rom; values are time-per-move multipliers
+  const CURVE_PRESETS = { inout: [2.05, 1.2, 0.85, 1.2, 2.05], lin: [1, 1, 1, 1, 1], in: [2.4, 1.5, 1, 0.8, 0.7], out: [0.7, 0.8, 1, 1.5, 2.4] };
+  function curveAt(t) {
+    const k = (opts.dev.navCurve && opts.dev.navCurve.length === 5) ? opts.dev.navCurve : CURVE_PRESETS.inout;
+    const x = Math.max(0, Math.min(1, t)) * 4, i = Math.min(3, Math.floor(x)), u = x - i;
+    const p0 = k[Math.max(0, i - 1)], p1 = k[i], p2 = k[i + 1], p3 = k[Math.min(4, i + 2)];
+    const v = 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (-p0 + 3 * p1 - 3 * p2 + p3) * u * u * u);
+    return Math.max(0.2, v);
+  }
   function easedDelays(depths, per) {
-    const n = depths.length - 1, dir = i => Math.sign(depths[i] - depths[i - 1]), out = new Array(n), E = opts.dev.navEase ?? 1.2;
+    const n = depths.length - 1, dir = i => Math.sign(depths[i] - depths[i - 1]), out = new Array(n);
     let a = 1;
     while (a <= n) {
       let b = a; while (b < n && dir(b + 1) === dir(a)) b++;
       const m = b - a + 1;
-      for (let j = 0; j < m; j++) out[a - 1 + j] = per * (0.85 + E * (1 - Math.sin(Math.PI * (j + 0.5) / m)));
+      for (let j = 0; j < m; j++) out[a - 1 + j] = per * curveAt((j + 0.5) / m);
       a = b + 1;
     }
     return out;
@@ -3087,7 +3107,37 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   $('segOpp').addEventListener('click', e => { const b = e.target.closest('[data-opp]'); if (b) { botCfg.on = b.dataset.opp === 'bot'; if (botCfg.on && flipped) { flipped = false; buildBoard(); } clearSel(); save(); render(); } });
   $('diffRange').addEventListener('input', e => { botCfg.level = +e.target.value; save(); renderOpp(); });
   $('checkerRange').addEventListener('input', e => { opts.checker = +e.target.value; boardEl.style.setProperty('--checker', opts.checker + '%'); $('checkerVal').textContent = opts.checker + '%'; save(); });
+  const CURVE_MAX = 3, CW = 280, CH = 130, CPAD = 14;
+  const curveX = i => CPAD + i * (CW - 2 * CPAD) / 4, curveY = v => CH - CPAD - (v / CURVE_MAX) * (CH - 2 * CPAD);
+  function drawCurve() {
+    const svg = $('curveEd'); if (!svg) return;
+    const k = opts.dev.navCurve; let d = '';
+    for (let t = 0; t <= 1.0001; t += 0.02) { const x = CPAD + t * (CW - 2 * CPAD), y = curveY(Math.min(CURVE_MAX, curveAt(t))); d += (d ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }
+    let h = '<rect x="' + CPAD + '" y="' + CPAD + '" width="' + (CW - 2 * CPAD) + '" height="' + (CH - 2 * CPAD) + '" class="cv-bg"/>';
+    h += '<line x1="' + CPAD + '" x2="' + (CW - CPAD) + '" y1="' + curveY(1) + '" y2="' + curveY(1) + '" class="cv-ref"/>';
+    h += '<text x="' + (CPAD + 3) + '" y="' + (CPAD + 10) + '" class="cv-lab">slower</text><text x="' + (CPAD + 3) + '" y="' + (CH - CPAD - 4) + '" class="cv-lab">faster</text>';
+    h += '<text x="' + CPAD + '" y="' + (CH - 2) + '" class="cv-lab">start</text><text x="' + (CW - CPAD) + '" y="' + (CH - 2) + '" class="cv-lab" text-anchor="end">end / branch point</text>';
+    h += '<path d="' + d + '" class="cv-line"/>';
+    k.forEach((v, i) => { h += '<circle cx="' + curveX(i) + '" cy="' + curveY(Math.min(CURVE_MAX, v)) + '" r="7" class="cv-pt" data-knot="' + i + '"/>'; });
+    svg.innerHTML = h;
+    $('curveVal').textContent = k.map(v => v.toFixed(2)).join(' · ');
+    for (const b of document.querySelectorAll('[data-curve]')) b.setAttribute('aria-pressed', String(CURVE_PRESETS[b.dataset.curve].every((v, i) => Math.abs(v - k[i]) < 0.01)));
+  }
+  (() => {
+    const svg = $('curveEd'); let drag = null;
+    const toV = e => { const r = svg.getBoundingClientRect(), y = (e.clientY - r.top) * CH / r.height; return Math.max(0.2, Math.min(CURVE_MAX, (CH - CPAD - y) / (CH - 2 * CPAD) * CURVE_MAX)); };
+    svg.addEventListener('pointerdown', e => {
+      const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * CW / r.width;
+      let i = Math.round((x - CPAD) / ((CW - 2 * CPAD) / 4)); i = Math.max(0, Math.min(4, i));
+      drag = i; svg.setPointerCapture(e.pointerId); opts.dev.navCurve = opts.dev.navCurve.slice(); opts.dev.navCurve[i] = toV(e); drawCurve(); e.preventDefault();
+    });
+    svg.addEventListener('pointermove', e => { if (drag == null) return; opts.dev.navCurve[drag] = toV(e); drawCurve(); });
+    const up = () => { if (drag == null) return; drag = null; save(); };
+    svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+    document.addEventListener('click', e => { const b = e.target.closest('[data-curve]'); if (!b) return; opts.dev.navCurve = CURVE_PRESETS[b.dataset.curve].slice(); drawCurve(); save(); });
+  })();
   function renderDev() {
+    drawCurve();
     for (const r of document.querySelectorAll('[data-dev]')) {
       const k = r.dataset.dev, v = opts.dev[k];
       if (document.activeElement !== r) r.value = v;
