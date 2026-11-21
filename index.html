@@ -779,8 +779,9 @@ header { position: relative; }
 
 /* time travel: sepia going back, vivid going forward */
 :is(.board-box, .goboard-box, .solwrap, .sudwrap) { position: relative; transition: filter .3s ease-out; }
-body.travel-back :is(.board-box, .goboard-box, .solwrap, .sudwrap) { filter: saturate(.3) sepia(.35) brightness(.96) contrast(.95); transition-duration: .12s; }
-body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap) { filter: saturate(1.75) contrast(1.06) brightness(1.04); transition-duration: .12s; }
+body.travel-back :is(.board-box, .goboard-box, .solwrap, .sudwrap) { filter: saturate(calc(1 - .7 * var(--tb, 1))) sepia(calc(.35 * var(--tb, 1))) brightness(calc(1 - .04 * var(--tb, 1))) contrast(calc(1 - .05 * var(--tb, 1))); transition-duration: .12s; }
+body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap) { filter: saturate(calc(1 + .75 * var(--tf, 1))) contrast(calc(1 + .06 * var(--tf, 1))) brightness(calc(1 + .04 * var(--tf, 1))); transition-duration: .12s; }
+.tintrow { margin-top: 2px; }
 :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { content: ""; position: absolute; top: 8px; z-index: 9; padding: 4px 11px; border-radius: 999px; font: 800 17px/1 var(--f-mono); letter-spacing: -.08em; box-shadow: 0 2px 8px rgba(0,0,0,.25); pointer-events: none; opacity: 0; transition: opacity .3s; }
 body.travel-back :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { content: "◀◀"; left: 8px; right: auto; opacity: .9; background: #6b5a43; color: #f4ead8; transition-duration: .1s; }
 body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { content: "▶▶"; right: 8px; left: auto; opacity: .9; background: var(--accent); color: var(--surface); transition-duration: .1s; }
@@ -919,6 +920,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
         <div class="diff devrow"><div class="diffhead"><label for="dev-camMax">Follow top speed</label><span id="devv-camMax"></span></div><input type="range" id="dev-camMax" data-dev="camMax" min="4" max="200" step="2" data-unit=" px/frame"><p class="note">Caps how fast the timeline and tree can scroll toward the current move.</p></div>
         <p class="label">Motion</p>
         <div class="diff devrow"><div class="diffhead"><label for="dev-animMs">Piece slide</label><span id="devv-animMs"></span></div><input type="range" id="dev-animMs" data-dev="animMs" min="0" max="800" step="10" data-unit=" ms"><p class="note">How long a single move takes to slide.</p></div>
+        <div class="diff devrow"><div class="diffhead"><label for="dev-navEase">Replay ease</label><span id="devv-navEase"></span></div><input type="range" id="dev-navEase" data-dev="navEase" min="0" max="2.5" step="0.1" data-unit=""><p class="note">How much timeline jumps slow down near their start, their end and any branch point, and speed up in between. 0 is an even pace.</p></div>
         <div class="diff devrow"><div class="diffhead"><label for="dev-replayStep">Replay step</label><span id="devv-replayStep"></span></div><input type="range" id="dev-replayStep" data-dev="replayStep" min="20" max="300" step="5" data-unit=" ms"><p class="note">Shortest time each move gets when jumping through the timeline, at Normal replay speed. Long jumps take longer instead of snapping.</p></div>
         <div class="diff devrow"><div class="diffhead"><label for="dev-botDelay">Stockfish reply delay</label><span id="devv-botDelay"></span></div><input type="range" id="dev-botDelay" data-dev="botDelay" min="0" max="2000" step="50" data-unit=" ms"><p class="note">Minimum wait before Stockfish plays, so its move doesn’t feel instant.</p></div>
         <p class="label">Engine</p>
@@ -954,6 +956,8 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
         <button class="tog" data-opt="flag" type="button"><span>Flag outnumbered White pieces<small>Dashed ring when Black attackers outnumber White defenders.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="safety" type="button"><span>Move safety<small>Tap a piece: green lands safe, amber is a fair trade, red is outnumbered.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="timeTint" type="button"><span>Time-travel tint<small>While you rewind or scrub, the board turns sepia going back in time and vivid going forward, with ◀◀ or ▶▶ in the corner.</small></span><span class="sw2"></span></button>
+        <div class="diff tintrow"><div class="diffhead"><label for="tintBack">Rewind tint</label><span id="tintBackVal"></span></div><input type="range" id="tintBack" min="0" max="100" step="5"></div>
+        <div class="diff tintrow"><div class="diffhead"><label for="tintFwd">Forward tint</label><span id="tintFwdVal"></span></div><input type="range" id="tintFwd" min="0" max="100" step="5"></div>
         <button class="tog" data-opt="pins" type="button"><span>Pins<small>Mark pinned pieces: a solid line when moving would expose the king, dashed when it would expose the queen.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="forks" type="button"><span>Forks<small>A piece hitting two or more targets at once: the king, something worth more than it, or a loose piece.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="forkChances" type="button"><span>Fork chances<small>On your turn, squares where one of your pieces could land and fork next move.</small></span><span class="sw2"></span></button>
@@ -996,22 +1000,40 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
   let game, ids, log;               // position at `cur`, with piece identity
   let selected = null, legal = [], safety = {}, flipped = false;
   const online = { active: false, applying: false };
-  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, replayStep: 75, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
+  const DEV_DEFAULTS = { camEase: 0.06, camMax: 28, animMs: 220, replayStep: 75, navEase: 1.2, analysisMs: 300, coachMs: 900, botDelay: 450, debug: false };
   // Time per step when replaying a jump: the whole jump shares opts.replay, but no step drops below
   // the Replay step floor (scaled by the Replay setting), so each move still visibly slides.
   // time-travel cue: the board goes sepia while moving back through time and vivid while moving forward
   let travelT = null;
+  function applyTint() {
+    const r = document.documentElement.style;
+    r.setProperty('--tb', (opts.tintBack ?? 100) / 100); r.setProperty('--tf', (opts.tintFwd ?? 100) / 100);
+    for (const [k, id] of [['tintBack', 'tintBack'], ['tintFwd', 'tintFwd']]) { const el = $(id); if (el) { el.value = opts[k] ?? 100; $(id + 'Val').textContent = (opts[k] ?? 100) + '%'; } }
+  }
   function travelCue(dir) {
     if (!opts.timeTint || !dir) return;
     const b = document.body;
     b.classList.toggle('travel-back', dir < 0); b.classList.toggle('travel-fwd', dir > 0);
     clearTimeout(travelT); travelT = setTimeout(() => b.classList.remove('travel-back', 'travel-fwd'), 450);
   }
+  // momentum for timeline replays: split the path where it changes direction (back to a fork, then forward
+  // into the other branch); each part accelerates out of its start and slows into its end
+  function easedDelays(depths, per) {
+    const n = depths.length - 1, dir = i => Math.sign(depths[i] - depths[i - 1]), out = new Array(n), E = opts.dev.navEase ?? 1.2;
+    let a = 1;
+    while (a <= n) {
+      let b = a; while (b < n && dir(b + 1) === dir(a)) b++;
+      const m = b - a + 1;
+      for (let j = 0; j < m; j++) out[a - 1 + j] = per * (0.85 + E * (1 - Math.sin(Math.PI * (j + 0.5) / m)));
+      a = b + 1;
+    }
+    return out;
+  }
   function replayPer(n) {
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 0, defaultsV: 2, timeTint: true, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 440, checker: 0, defaultsV: 2, timeTint: true, tintBack: 100, tintFwd: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1714,13 +1736,13 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     if (steps.length <= 1 || reduce) { goTo(id); save(); render(); return; }
     if (!opts.replay) { goTo(id); save(); render(); return; }
     navDest = id;
-    const per = replayPer(steps.length);
-    animMs = Math.round(per * 0.9);
+    const per = replayPer(steps.length), delays = easedDelays([nodes[cur].ply, ...steps.map(x => nodes[x].ply)], per);
     let i = 0;
     const tick = () => {
+      animMs = Math.round(delays[i] * 0.9);  // each slide matches its step's pace
       goTo(steps[i++]);
       if (i >= steps.length) { navTimer = null; navDest = null; render(); save(); return; }
-      navTimer = setTimeout(tick, per);
+      navTimer = setTimeout(tick, delays[i - 1]);
       render();
     };
     tick();
@@ -2275,6 +2297,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     renderDev();
     if (opts.mode === 'go' && typeof goRender === 'function' && GO.nodes) setTimeout(() => goRender(true), 0);
     if (typeof puzzleModes !== 'undefined' && puzzleModes[opts.mode]) setTimeout(() => puzzleModes[opts.mode].render(true), 0);
+    applyTint();
     renderBoard(); renderStatus(); renderTimeline(); renderEval(); renderEngine(); renderReview(); renderOpp(); renderCoach(); renderInspect(); renderCreative();
     if (mateToastFor != null && mateToastFor !== cur) hideMateToast();
     if (opts.threat && humanTurnNow() && !scrubbing) requestThreat(nodes[cur]);
@@ -3101,6 +3124,7 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     opts.skin = b.dataset.skin; save(); applySkin(); render();
     if (opts.mode === 'go' && GO.nodes) goRender();
   });
+  for (const [k, id] of [['tintBack', 'tintBack'], ['tintFwd', 'tintFwd']]) $(id).addEventListener('input', e => { opts[k] = +e.target.value; applyTint(); save(); });
   $('segMate').addEventListener('click', e => { const b = e.target.closest('[data-mate]'); if (b) { opts.mateSpeed = +b.dataset.mate; save(); render(); } });
   $('segSpeed').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if (b) { opts.replay = +b.dataset.speed; save(); render(); } });
   // ---------- tab groups: every panel is a card with one or more tabs ----------
@@ -4140,9 +4164,9 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (steps.length <= 1 || reduce || !opts.replay) { goGoTo(id); goSave(); goRender(); return; }
     GO.navDest = id;
-    const per = replayPer(steps.length);
+    const per = replayPer(steps.length), delays = easedDelays([goPath(GO.cur).length, ...steps.map(x => goPath(x).length)], per);
     let i = 0;
-    const tick = () => { goGoTo(steps[i++]); if (i >= steps.length) { GO.navTimer = null; GO.navDest = null; goRender(); goSave(); return; } GO.navTimer = setTimeout(tick, per); goRender(true); };
+    const tick = () => { goGoTo(steps[i++]); if (i >= steps.length) { GO.navTimer = null; GO.navDest = null; goRender(); goSave(); return; } GO.navTimer = setTimeout(tick, delays[i - 1]); goRender(true); };
     tick();
   }
 
@@ -4561,9 +4585,9 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
       const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (steps.length <= 1 || reduce || !opts.replay) { goTo(id); save(); render(); return; }
       P.navDest = id;
-      const per = replayPer(steps.length);
+      const per = replayPer(steps.length), delays = easedDelays([path(P.cur).length, ...steps.map(x => path(x).length)], per);
       let i = 0;
-      const tick = () => { goTo(steps[i++]); if (i >= steps.length) { P.navTimer = null; P.navDest = null; render(); save(); return; } P.navTimer = setTimeout(tick, per); render(true); };
+      const tick = () => { goTo(steps[i++]); if (i >= steps.length) { P.navTimer = null; P.navDest = null; render(); save(); return; } P.navTimer = setTimeout(tick, delays[i - 1]); render(true); };
       tick();
     }
     function play(mv) {
