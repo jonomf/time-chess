@@ -800,6 +800,8 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
 .defchk { display: flex; gap: 6px; align-items: center; font-size: 13px; }
 .defout { width: 100%; box-sizing: border-box; font: 11px/1.4 var(--f-mono); padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; }
 a.btn { text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+
+:root { --lm-w: #fbf4e2; --lm-b: #2a2a2e; }
 </style>
 </head>
 <body>
@@ -984,6 +986,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
         <button class="tog" data-opt="timeTint" type="button"><span>Time-travel tint<small>While you rewind or scrub, the board turns sepia going back in time and vivid going forward, with ◀◀ or ▶▶ in the corner.</small></span><span class="sw2"></span></button>
         <div class="diff tintrow"><div class="diffhead"><label for="tintBack">Rewind tint</label><span id="tintBackVal"></span></div><input type="range" id="tintBack" min="0" max="100" step="5"></div>
         <div class="diff tintrow"><div class="diffhead"><label for="tintFwd">Forward tint</label><span id="tintFwdVal"></span></div><input type="range" id="tintFwd" min="0" max="100" step="5"></div>
+        <button class="tog" data-opt="lastBoth" type="button"><span>Last moves<small>An arrow for each side's most recent move: light for White, dark for Black.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="pins" type="button"><span>Pins<small>Mark pinned pieces: a solid line when moving would expose the king, dashed when it would expose the queen.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="forks" type="button"><span>Forks<small>A piece hitting two or more targets at once: the king, something worth more than it, or a loose piece.</small></span><span class="sw2"></span></button>
         <button class="tog" data-opt="forkChances" type="button"><span>Fork chances<small>On your turn, squares where one of your pieces could land and fork next move.</small></span><span class="sw2"></span></button>
@@ -1074,7 +1077,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     const k = opts.replay / 440, floor = (opts.dev.replayStep || 75) * k;
     return Math.max(floor, Math.min(opts.replay / 2, opts.replay / Math.max(1, n)));
   }
-  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 147, checker: 0, defaultsV: 3, timeTint: true, tintBack: 100, tintFwd: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
+  let opts = { dev: Object.assign({}, DEV_DEFAULTS), skin: 'classic', map: true, counts: false, flag: true, safety: true, lastBoth: true, pins: true, forks: false, forkChances: false, skewers: false, discovered: true, kingSafety: false, threat: true, dragLines: true, mateSpeed: 0.45, replay: 147, checker: 0, defaultsV: 3, timeTint: true, tintBack: 100, tintFwd: 100, cards: { game: false, settings: false, timeline: true, branches: true, sim: true } };
   let simCfg = { len: 20, str: 'club', pace: 200 };
   let botCfg = { on: true, level: 4 };
   let botThinking = false;
@@ -1881,6 +1884,21 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     const ln = (a, b, col, wdt, dash, shrink) => { const [x1, y1] = XY(a), [x2, y2] = XY(b), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, k = shrink || 0; return '<line x1="' + (x1 + dx / L * k) + '" y1="' + (y1 + dy / L * k) + '" x2="' + (x2 - dx / L * k) + '" y2="' + (y2 - dy / L * k) + '" stroke="' + col + '" stroke-width="' + wdt + '" stroke-linecap="round" opacity=".8"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>'; };
     let h = ''; const marked = new Set(), tags = [];
     const live = !mateView;
+    // each side's most recent move in this line, as a translucent arrow under everything else
+    if (opts.lastBoth && live) {
+      const seen = {};
+      for (let i = log.length - 1; i >= 0 && !(seen.w && seen.b); i--) { const m = log[i]; if (!m.edit && m.from && !seen[m.color]) seen[m.color] = m; }
+      for (const c of ['b', 'w']) {
+        const m = seen[c]; if (!m) continue;
+        const [x1, y1] = XY(m.from), [x2, y2] = XY(m.to), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1;
+        const fill = c === 'w' ? 'var(--lm-w)' : 'var(--lm-b)', edge = c === 'w' ? 'var(--lm-b)' : 'var(--lm-w)';
+        const ex = x2 - dx / L * .3, ey = y2 - dy / L * .3, sx = x1 + dx / L * .18, sy = y1 + dy / L * .18;
+        const hx = ex - dx / L * .28, hy = ey - dy / L * .28, nx = -dy / L, ny = dx / L;
+        h += '<g opacity=".62"><line x1="' + sx + '" y1="' + sy + '" x2="' + hx + '" y2="' + hy + '" stroke="' + edge + '" stroke-width=".2" stroke-linecap="round"/>' +
+          '<line x1="' + sx + '" y1="' + sy + '" x2="' + hx + '" y2="' + hy + '" stroke="' + fill + '" stroke-width=".13" stroke-linecap="round"/>' +
+          '<path d="M' + ex + ' ' + ey + 'L' + (hx + nx * .2) + ' ' + (hy + ny * .2) + 'L' + (hx - nx * .2) + ' ' + (hy - ny * .2) + 'Z" fill="' + fill + '" stroke="' + edge + '" stroke-width=".035" stroke-linejoin="round"/></g>';
+      }
+    }
     // king safety: enemy hits around each king, and open files toward it
     if (opts.kingSafety && live) for (let f0 = 0; f0 < 8; f0++) for (let r0 = 0; r0 < 8; r0++) {
       const K = G.get(sqName(f0, r0)); if (!K || K.type !== 'k') continue;
