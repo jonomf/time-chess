@@ -802,14 +802,6 @@ body.travel-fwd :is(.board-box, .goboard-box, .solwrap, .sudwrap)::after { conte
 a.btn { text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
 
 :root { --lm-w: #fbf4e2; --lm-b: #2a2a2e; }
-
-/* story mode: follow one piece through time */
-.follow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin: 2px 0 6px; }
-.follow-at { font: 600 12px var(--f-mono); color: var(--muted); }
-.follow-btns { display: flex; gap: 4px; }
-.follow-btns button { padding: 5px 10px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: 700 12.5px var(--f-body); cursor: pointer; }
-.follow-btns button:hover { background: var(--ink); color: var(--bg); }
-@media (prefers-reduced-motion: no-preference) { .focus-ring { animation: fring 1.6s ease-in-out infinite; } @keyframes fring { 50% { opacity: .4; } } }
 </style>
 </head>
 <body>
@@ -1488,7 +1480,6 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
   }
   function onTap(s) {
     if (mateView) { stopMate(); return; }
-    if (!review && game.game_over() && ids[s] && !creativeOn() && !sim) { openStory(ids[s]); return; }  // game over: tap a piece to follow its story
     if (navTimer) stopNav();
     if (pendingPromo || sim) return;
     if (review) { focus = ids[s] && ids[s] !== focus ? ids[s] : null; focusStep = null; renderReview(); return; }
@@ -2107,7 +2098,6 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     const winner = game.turn() === 'w' ? 'Black' : 'White', n = T ? T.tries.length : 0;
     $('mateTitle').textContent = 'Checkmate! ' + (botCfg.on && winner === 'Black' && !online.active ? 'Stockfish wins.' : winner + ' wins.');
     $('mateSub').textContent = !T ? '' : n === 1 ? 'The king’s only escape square, ' + T.tries[0].S + ', was covered.' : n ? 'The king had ' + n + ' squares to run to, and every one was covered.' : 'Its own pieces boxed the king in, so it had nowhere to go.';
-    $('mateSub').textContent += ' Tap any piece to follow its story.';
     $('mateToast').hidden = false; mateToastFor = cur;
   }
   function hideMateToast() { $('mateToast').hidden = true; mateToastFor = null; }
@@ -2554,10 +2544,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     const j = J[focus], col = j.color === 'w' ? 'var(--accent)' : 'var(--sim)';
     const XY = s => { const [f, r] = sqXY(s); return [(flipped ? 7 - f : f) + 0.5, (flipped ? r : 7 - r) + 0.5]; };
     const k = focusStep == null ? j.steps.length : focusStep;
-    const here = Object.keys(ids).find(q => ids[q] === focus);
-    let ring = '';
-    if (here) { const [rx, ry] = XY(here); ring = '<circle cx="' + rx + '" cy="' + ry + '" r=".47" fill="none" stroke="' + col + '" stroke-width=".09" class="focus-ring"/>'; }
-    let h = ring + '<defs><marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="' + col + '"/></marker></defs>';
+    let h = '<defs><marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="' + col + '"/></marker></defs>';
     const [sx, sy] = XY(j.start);
     h += '<circle cx="' + sx + '" cy="' + sy + '" r=".36" fill="none" stroke="' + col + '" stroke-width=".06" stroke-dasharray=".12 .08"/>';
     j.steps.forEach((s, i) => {
@@ -2609,8 +2596,6 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     const jEl = $('journey'), key = storyKey(), gen = storyCache[key] || {};
     if (stepSliding) { /* leave the slider alone mid-drag */ }
     else if (focus && J[focus]) {
-      const j0 = J[focus];
-      if (cur !== storySyncCur) { storySyncCur = cur; const kk = storyIndex(j0); focusStep = kk >= j0.steps.length ? null : kk; }  // the path follows time travel
       const j = J[focus], n = j.steps.length, k = focusStep == null ? n : focusStep;
       let stats = '<span class="stat">' + n + ' move' + (n === 1 ? '' : 's') + '</span><span class="stat">' + j.dist + ' squares</span>';
       if (j.kills.length) stats += '<span class="stat kill">' + j.kills.length + ' capture' + (j.kills.length > 1 ? 's' : '') + '</span>';
@@ -2619,10 +2604,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
       if (j.mate) stats += '<span class="stat mate">Checkmate</span>';
       stats += j.death ? '<span class="stat dead">Captured move ' + mvNo(j.death.ply) + '</span>' : '<span class="stat">On the board</span>';
       const stepTxt = k === 0 ? 'Starting square ' + j.start : 'Step ' + k + ' of ' + n + ' · ' + mvNo(j.steps[k - 1].ply) + (j.steps[k - 1].ply % 2 ? '. ' : '… ') + j.steps[k - 1].san;
-      const at = storyIndex(j), dead = j.death && nodes[cur] && nodes[cur].ply >= j.death.ply;
-      const follow = '<div class="follow"><span class="follow-at">' + (dead ? 'Captured by now' : at === 0 ? 'Hasn’t moved yet here' : 'Here: after its move ' + at + ' of ' + n) + '</span>' +
-        '<div class="follow-btns" role="group" aria-label="Travel through this piece’s moves"><button type="button" data-follow="first" title="Before its first move" aria-label="Before its first move">⏮</button><button type="button" data-follow="prev" title="Its previous move">◀ Prev</button><button type="button" data-follow="next" title="Its next move">Next ▶</button><button type="button" data-follow="last" title="Its last move" aria-label="Its last move">⏭</button></div></div>';
-      jEl.innerHTML = '<h3>' + esc(pieceName(j.id)) + '</h3>' + follow + '<div class="stats">' + stats + '</div>' +
+      jEl.innerHTML = '<h3>' + esc(pieceName(j.id)) + '</h3><div class="stats">' + stats + '</div>' +
         (n ? '<div class="stepper"><label for="stepRange">' + esc(stepTxt) + '</label><input type="range" id="stepRange" min="0" max="' + n + '" value="' + k + '"></div>' +
           '<div class="seg"><span class="label">Board</span><button type="button" data-storyboard="final" aria-pressed="' + (opts.storyBoard !== 'follow') + '">Final position</button><button type="button" data-storyboard="follow" aria-pressed="' + (opts.storyBoard === 'follow') + '">Follow slider</button></div>' : '') +
         '<span class="story-src">' + (gen[j.id] ? 'Written by Claude' : 'Auto summary') + '</span><p class="story">' + esc(gen[j.id] || templateStory(j, J)) + '</p>';
@@ -2666,30 +2648,6 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     $('turns').innerHTML = th;
   }
 
-  // open Story Mode focused on one piece, as of where the game stands now
-  let storySyncCur = null;
-  function openStory(id) {
-    pinnedSq = null; focus = id; focusStep = null; storySyncCur = null;
-    hideMateToast();
-    setTab('review'); review = true; clearSel(); render();
-  }
-  // where the focused piece is in its own story at the position on the board: how many of its moves have happened
-  function storyIndex(j) {
-    const ply = nodes[cur] ? nodes[cur].ply : 0;
-    return j.steps.filter(st => st.ply <= ply).length;
-  }
-  function storyJump(j, where) {
-    const line = reviewLine(), n = j.steps.length, k = storyIndex(j), ply0 = nodes[cur].ply;
-    const before = n ? j.steps[0].ply - 1 : 0;
-    const plyOf = kk => kk <= 0 ? before : j.steps[kk - 1].ply;
-    let ply = null;
-    if (where === 'first') ply = before;
-    else if (where === 'prev') ply = ply0 > plyOf(k) ? plyOf(k) : plyOf(k - 1);  // back to its last move (or the one before, if standing on it)
-    else if (where === 'next') ply = k < n ? j.steps[k].ply : (j.death && j.death.ply > ply0 ? j.death.ply : null);
-    else if (where === 'last') ply = j.death ? j.death.ply : plyOf(n);
-    if (ply == null || ply < 0 || !line[ply]) return;
-    navTo(line[ply].id);
-  }
   function setReview(on) { review = on; clearSel(); if (on && !focus) { const p = notables(journeys())[0]; focus = p ? p.id : null; } focusStep = null; render(); }
   $('storyBtn').onclick = writeStories;
   $('reviewCard').addEventListener('click', e => {
@@ -2698,7 +2656,6 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     const b = e.target.closest('[data-branch]');
     if (b) { goTo(+b.dataset.branch); review = false; save(); render(); document.querySelector('.simrow').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
     const v = e.target.closest('[data-view]'); if (v) navTo(+v.dataset.view);
-    const fw = e.target.closest('[data-follow]'); if (fw && focus) { const J = journeys(); if (J[focus]) storyJump(J[focus], fw.dataset.follow); }
   });
 
   // ---------- coach mode ----------
@@ -2913,7 +2870,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
 
     let actions = '';
     if (n.invalid) h += '<p class="c-main">This setup can’t be played or analyzed yet. ' + esc(n.invalid) + '</p>';
-    else if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Tap any piece to follow its story, or open Story Mode for the turning points.</p>';
+    else if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Story Mode to see the turning points.</p>';
     else if (sim) h += '<p class="c-main muted">Watching the simulation.</p>';
     else if (!humanTurnNow()) h += '<p class="c-main muted">Stockfish is choosing its reply…</p>';
     else {
@@ -2978,7 +2935,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; align-i
     } else if (vn && v && v.pending) h += '<p class="c-verdict muted">Rating your last move…</p>';
     if (bk.name) h += '<p class="c-open"><span class="label">Opening</span> <b>' + esc(bk.name) + '</b></p>';
     if (n.invalid) h += '<p class="c-main">This setup can’t be played or analyzed yet. ' + esc(n.invalid) + '</p>';
-    else if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Tap any piece to follow its story, or open Story Mode for the turning points.</p>';
+    else if (game.game_over()) h += '<p class="c-main">' + esc($('statusText').textContent) + '. Open Story Mode to see the turning points.</p>';
     else if (sim) h += '<p class="c-main muted">Watching the simulation.</p>';
     else if (!humanTurnNow()) h += '<p class="c-main muted">Stockfish is choosing its reply…</p>';
     else if (!vn) h += '<p class="c-main">No hints in this mode. Make your move and I’ll rate it, with any better options you can branch to.</p>';
